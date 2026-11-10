@@ -148,3 +148,46 @@ Unknown formats, extra projection fields, unsafe members, missing references or
 projections, and incorrect hashes/sizes fail. A hash proves identity of supplied
 bytes; it does not prove unseen forecast values. New scans and evidence records
 append to the original inventory rather than changing its measured identities.
+
+## CI publication check
+
+`npm run test:evidence-publication` scans all blobs at the exact tested `HEAD`,
+using the policy from that same Git tree. It accepts no changed-path or bypass
+arguments. This complete check also observes unchanged original dependencies,
+so deleting or holding the #138 original withdraws the #169 copy exception even
+when the archives themselves were not edited. Owner-selected removal paths are
+forbidden independently of whether a future classifier recognizes their bytes.
+
+App checks run it before affected-task selection, with no path filter,
+conditional or ignored error. The aggregate CI job requires its raw outcome to
+be `success`, preventing an accidental skip or hidden failure from qualifying.
+The guard checks publication content, with no timing assertions, database,
+credentials, network fetch or private-byte access. It uses the same bounded
+decoder and exact-disposition code as the inventory. Policy changes remain
+explicit owner/reviewer decisions; CI cannot itself establish legal permission.
+
+The regression suite includes real post-removal tree scans and both #169
+archives, plus synthetic positive/negative controls for nested encoding,
+malformed inputs and refusal paths. Test-case counts are distinct from empirical
+evidence: the step 2 total of 136 comprises 37 new cases and 99 existing cases;
+four directly consume committed evidence/policy and 132 use synthetic or mixed
+fixtures. Parameterized refusal cases expand that total. The independent scan
+comparison and private ObjectStore readbacks/audits are separate evidence, not
+additional unit-test cases or a new capacity qualification.
+
+Step 3 preserves those 136 cases and adds nine publication-guard cases. The
+38 producer refusal cases now identify the expected assertion or verdict error.
+Where the format repeats a measurement or hashes its source inventory, the
+controls update those copies/checksums so an earlier consistency failure cannot
+stand in for the named safeguard. Reference-schema tests match the specific
+refusal; retention exercises two distinct members, checks both stored objects
+and rejects a corrupt second-member identity. The pinned-policy control includes
+an actual approving worktree edit, which remains ineffective until committed in
+its disposable test repository.
+
+Three targeted mutations in disposable source copies disabled the required
+#241 source check, the live-host allowlist and second-member verification in
+turn. Each made its named test fail. This checks those three assertions; it is
+not a mutation score or an assertion that every case independently proves a
+different requirement. The permanent auditors, original receipts and retained
+archive bytes are unchanged by this test reinforcement.

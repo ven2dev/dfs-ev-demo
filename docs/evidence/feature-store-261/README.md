@@ -85,5 +85,36 @@ node services/pipeline/scripts/feature-store/artifact-governance-evidence.ts aud
   docs/evidence/feature-store-242 "$PRIVATE_OBJECTSTORE"
 ```
 
-The next step wires the shared scanner into an always-executed CI check.
+## Step 3: publication guard
+
+`npm run test:evidence-publication` scans the complete tested `HEAD`, with its
+policy read from that exact Git tree. No changed-path or bypass argument is
+accepted. The check runs unconditionally in App checks before affected-task
+selection; the aggregate CI gate requires its raw success outcome. It validates
+unchanged dependencies too, so the #169 exceptions cannot outlive their noticed
+original. Pending removal paths fail even if their payload is unrecognized.
+
+The guard refuses new unapproved payloads, unsupported/malformed containers and
+unsafe members. Encoded/double-encoded JSON, base64 source maps and nested
+archives share the same decoder. Dispositions stay exact hash-bound decisions;
+no source-provided synthetic marker grants permission. The existing full-tree
+inventory remains immutable; new verification receipts append alongside it.
+
+The step 2 count of 136 focused tests comprises 37 new #261 cases (23 scanner/
+inventory, 14 reference/audit) and 99 existing regression cases. Four directly
+consume committed evidence/policy; 132 use synthetic or mixed fixtures. They
+exercise failure/boundary behavior, not 136 independent empirical qualifications.
+Step 3 adds real-tree and real-#169 guard checks as well as synthetic refusal
+controls and CI-wiring coverage. Private-byte audits remain separate local
+evidence and never silently run in public CI.
+
+`step-3-publication-guard.json` records the complete candidate-tree scan,
+validation counts and three targeted test mutations. All 136 step 2 cases stay;
+nine guard cases are new. The strengthened controls check named refusal reasons,
+two-member retention and an actually approving but uncommitted policy edit.
+The mutations used disposable source copies and did not change the permanent
+auditors. They validate the three identified weak cases, without claiming a
+suite-wide mutation score. The candidate scan uses a disposable Git snapshot of
+the pending files, not an implementation commit in the owner-reviewed branch.
+
 #256 remains the qualified rights review, separate from this technical scan.
