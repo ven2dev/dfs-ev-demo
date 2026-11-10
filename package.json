@@ -15,6 +15,7 @@
     "test:firebase-admin-runtime": "node --no-experimental-require-module -e \"require('firebase-admin/auth')\"",
     "test:firestore-rules": "npm run test:firestore-rules --workspace @dfs-ev/web --",
     "test:ci-gate": "node --test tests/ciGate.check.mjs tests/monorepo-layout.check.mjs",
+    "test:evidence-publication": "node services/pipeline/scripts/feature-store/evidence-publication-guard.ts",
     "test:db": "node scripts/db/test-db.mjs run",
     "test:db:local": "node scripts/db/test-db.mjs local",
     "test:db:repeat": "node scripts/db/test-db.mjs repeat",

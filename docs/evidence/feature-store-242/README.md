@@ -109,7 +109,7 @@ the standard container was not restarted or reconfigured.
 Raw full-record SHA-256:
 `cb729388732ec50daa0e25dedbe5abe2e68a226de23f8dc583e3577eaa1efe13` (4714220 bytes).
 
-`final-benchmark-full-records-20261108T064349Z.tar.gz` is a deterministic USTAR/gzip -n mirror,
+At qualification, `final-benchmark-full-records-20261108T064349Z.tar.gz` was a deterministic USTAR/gzip -n mirror,
 213413 bytes, SHA-256
 `3a37ddc23b7cfbd3f8420d1dbe6e3862c4c262c2b856315b4a4899db7904c778`.
 Both the exact raw record and bundle were persisted through the private local
@@ -124,12 +124,31 @@ node services/pipeline/scripts/feature-store/artifact-governance-evidence.ts aud
 node services/pipeline/scripts/feature-store/artifact-governance-evidence.ts audit docs/evidence/feature-store-168
 ```
 
-The existing auditor hashes safe named members before parsing, recomputes both
-contracts, request coverage, process/work/phase accounting and every recorded
-trial gate. CI recomputes recorded arithmetic without a live machine-speed gate.
-Maximum/tail tampering is rejected. #168's committed files remain byte-for-byte
-unchanged and audit under their original per-sample startup rule. All #242
+Since #261, that forecast archive is retained privately and replaced by its
+`.reference.json` and minimal `.public.json` projection. The owner accepted its
+existing history exposure; no history rewrite took place. Original compact
+receipts, timings and source identities are unchanged. Public audits label that
+record `public-metadata`; the other 23 validation members remain `full-bytes`.
+
+Public checks recompute available request coverage, process/work/phase accounting
+and recorded p95/startup/tail arithmetic from receipts and projections. New
+per-sample fields contain only response hash, size, status/refusal and timing.
+They cannot independently verify private forecast/context linkage, raw
+per-table SQL-oracle counters or private logs. CI has no live machine-speed gate.
+Maximum/tail tampering is rejected. #168 keeps its original per-sample startup
+rule; its publication cleanup changes no measured result. All #242
 receipts/bundles are new timestamped files; reruns append new records.
+
+To reproduce the original complete audit with retained bytes:
+
+```sh
+node services/pipeline/scripts/feature-store/artifact-governance-evidence.ts audit-private \
+  docs/evidence/feature-store-242 "$PRIVATE_OBJECTSTORE"
+```
+
+The ObjectStore directory is explicit and stays out of committed references.
+Missing or corrupt private bytes fail; a hash-only record is not a full-audit
+pass. [#261 evidence](../feature-store-261/README.md) records the readbacks and parity.
 
 Validation retains 942 jsdom and 653 Node unit passes (one opt-in skip) from
 the exact Step 1 source bytes, 62 focused capacity tests, 23 CI-gate checks,

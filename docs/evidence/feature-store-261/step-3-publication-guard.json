@@ -1,0 +1,207 @@
+{
+  "schema": "published-evidence-validation-v1",
+  "issue": 261,
+  "step": 3,
+  "verdict": "pass",
+  "sourceCheckpoint": "c5de20f25e540733ea446b4634753838fe3ab1f0",
+  "pendingSources": [
+    {
+      "path": ".github/workflows/ci.yml",
+      "sha256": "29ac6367b45ba5216fdbfacda4301daebe4d120e057712f145858f2be8b4febc",
+      "byteSize": 14204
+    },
+    {
+      "path": "package.json",
+      "sha256": "4145b7c152b3d5a4aaa666f86dbc6428901d0ce57561ae204303c6faaad3b06b",
+      "byteSize": 6139
+    },
+    {
+      "path": "tests/ciGate.check.mjs",
+      "sha256": "99385f9ef0cc0e4a272715f807a1ed16ea3a9a86bc51ac3ee1b25cf1ab2594de",
+      "byteSize": 16476
+    },
+    {
+      "path": "services/pipeline/scripts/feature-store/evidence-publication-guard.ts",
+      "sha256": "b2a4f5b31c8a00342c60d843b74a3303ea041f55eabb5beacc2bc07ae96271b0",
+      "byteSize": 2479
+    },
+    {
+      "path": "services/pipeline/tests/feature-store/evidence-publication-guard.process.test.ts",
+      "sha256": "dfffe5d3aa31761e2fadc7860085ed2c595671889ed91e8577f3f2581d13d2e2",
+      "byteSize": 8103
+    },
+    {
+      "path": "services/pipeline/tests/feature-store/evidence-references.process.test.ts",
+      "sha256": "09f63b9a4079832a5620a6951d3fc328f356e4a9555f427f67ec67a58369331c",
+      "byteSize": 13386
+    },
+    {
+      "path": "services/pipeline/tests/feature-store/producer-capacity-evidence.process.test.ts",
+      "sha256": "0d006a51aceb22e643d81706b21b77602d07b01c30dcbd61cb8d96ce43885f12",
+      "byteSize": 15602
+    }
+  ],
+  "runtime": "Node 24.18.1",
+  "publicationGuard": {
+    "command": "npm run test:evidence-publication",
+    "scope": "complete tested Git tree; exact pinned policy; no affected-path or bypass arguments",
+    "aggregateRequires": "raw success outcome",
+    "speedAssertions": false
+  },
+  "candidateTreeProbe": {
+    "scope": "Disposable full candidate Git snapshot before this receipt and final documentation; no branch commit, ref or index changes",
+    "candidateSnapshotSha": "f129bf98afba9c47c4885f1c83676bddb4744ce1",
+    "inputContentSha256": "6dd243ee598cea8111b02b7af1368524e478ba05b7fafddfb2202720a7581c83",
+    "result": {
+      "schema": "published-evidence-guard-v1",
+      "checkpoint": "f129bf98afba9c47c4885f1c83676bddb4744ce1",
+      "verdict": "pass",
+      "scope": "complete-tested-Git-tree",
+      "trackedPaths": 922,
+      "compressedPaths": 30,
+      "archiveLeafMembers": 341,
+      "decodedJsonStrings": 304,
+      "decodedBase64Sources": 154,
+      "approvedFindingPaths": 8,
+      "unapprovedFindingPaths": 0
+    }
+  },
+  "tests": {
+    "step2FocusedCasesRetained": 136,
+    "step2NewCases": 37,
+    "step2ExistingCases": 99,
+    "step3NewGuardCases": 9,
+    "focusedCasesTotal": 145,
+    "step2DirectCommittedEvidenceOrPolicy": 4,
+    "step2SyntheticOrMixed": 132,
+    "nodeSuite": {
+      "passed": 853,
+      "skipped": 1,
+      "failed": 0,
+      "skipReason": "Existing opt-in live R2 contract is not enabled"
+    },
+    "browserSuite": {
+      "passed": 942,
+      "failed": 0,
+      "scope": "Earlier step 3 run; browser code/config unchanged by test reinforcement"
+    },
+    "offlineEvidenceChecks": 27,
+    "ciAndLayoutChecks": 25,
+    "importBoundaryChecks": 12,
+    "typescriptNoEmit": "pass",
+    "focusedEslint": "pass",
+    "diffCheck": "pass",
+    "sandboxObservation": "The first broad Node run refused four existing loopback-server tests with EPERM. The unrestricted rerun passed; no code or test assertions were relaxed."
+  },
+  "testReinforcement": {
+    "producerRefusalCases": 38,
+    "producerChecks": "Named assertion identity or expected capacity error; redundant observations/checksums made consistent before testing semantic safeguards",
+    "references": "Specific schema and missing-file refusals; exact two-member ObjectStore readback and archive identities; corrupt second member refused",
+    "pinnedPolicy": "An approving uncommitted policy cannot change a committed-tree verdict; the same policy passes after its disposable commit",
+    "mutations": [
+      {
+        "mutation": "required-241-source",
+        "mutatedProductionSource": "services/pipeline/scripts/feature-store/producer-capacity-evidence.ts",
+        "test": "refuses missing #241 source",
+        "detected": true,
+        "failure": {
+          "test": "refuses missing #241 source",
+          "message": "AssertionError: expected undefined to match object { code: 'ERR_ASSERTION' }"
+        }
+      },
+      {
+        "mutation": "live-host-allowlist",
+        "mutatedProductionSource": "services/pipeline/scripts/feature-store/producer-capacity-evidence.ts",
+        "test": "refuses wrong live host",
+        "detected": true,
+        "failure": {
+          "test": "refuses wrong live host",
+          "message": "AssertionError: expected 'Expected values to be strictly deep-e\u2026' to be 'producer-live-host' // Object.is equality"
+        }
+      },
+      {
+        "mutation": "all-member-identities",
+        "mutatedProductionSource": "services/pipeline/scripts/feature-store/evidence-records.ts",
+        "test": "retains exact bytes and every member",
+        "detected": true,
+        "failure": {
+          "test": "retains exact bytes and every member, then distinguishes public metadata from full private-byte verification",
+          "message": "Error: promise resolved \"[ { \u2026(5) }, { \u2026(5) } ]\" instead of rejecting"
+        }
+      }
+    ],
+    "mutationScope": "three safeguards; disposable source copies only, not a mutation score for the suite",
+    "interpretation": "Cases are regression controls, not independent empirical capacity, rights-clearance or private-value qualifications"
+  },
+  "preservedIdentities": [
+    {
+      "path": "docs/evidence/feature-store-197/tracked-payload-inventory.json",
+      "sha256": "801bc1a27d0a2527ef12a605ea0a8db42e6ff0b276a9b4e92a377f6a1a68157d",
+      "unchangedFrom": "f30b93f"
+    },
+    {
+      "path": "services/pipeline/scripts/feature-store/producer-capacity-evidence.ts",
+      "sha256": "0d7847d6ef45b51de3979830174133265d4cc40227a8e1ca62db188ba23f006c",
+      "unchangedFrom": "f30b93f"
+    },
+    {
+      "path": "services/pipeline/tests/feature-store/producer-capacity-evidence.check.mts",
+      "sha256": "b5355406e181306fb8b08964ac2726953c2dacb8891282a9bfa767dacef2fbcf",
+      "unchangedFrom": "f30b93f"
+    },
+    {
+      "path": "docs/evidence/feature-store-168/step-0-owner-20261106T013729Z.json",
+      "sha256": "7e0cf79b15020b4c91d9da89e66aadf478a8c45d7d087f71e1fee4e6f44d7c60",
+      "unchangedFrom": "f30b93f"
+    },
+    {
+      "path": "docs/evidence/feature-store-168/step-1-controls-20261106T021755Z.json",
+      "sha256": "21b1e5817f9b64685bc18fcca85378c20134d42beed1290c0c05e2006ff2d5e0",
+      "unchangedFrom": "f30b93f"
+    },
+    {
+      "path": "docs/evidence/feature-store-168/final-validation-20261106T163555Z.json",
+      "sha256": "0eb70fec22b045a257e0be791c76ffaa04ebd47078d5a3cab12b44664fd9c42d",
+      "unchangedFrom": "f30b93f"
+    },
+    {
+      "path": "docs/evidence/feature-store-168/step-1-validation-20261106T021755Z.json",
+      "sha256": "22d5f24bf853bd5b5dc8d810523bb1a6e074bb21d5729f79ea25574121e5ab9b",
+      "unchangedFrom": "f30b93f"
+    },
+    {
+      "path": "docs/evidence/feature-store-168/step-0-handler-20261106T013729Z.json",
+      "sha256": "ec8948d3bcd914a1953e2550d5a5ae3fce1cddbe1b7a6b4e43e4f3ba5ba00d0d",
+      "unchangedFrom": "f30b93f"
+    },
+    {
+      "path": "docs/evidence/feature-store-168/final-benchmark-20261106T161720Z.json",
+      "sha256": "08f849c9c077febe2eb1801cf27fcaca3b673b9355a105a039498af00407d9f6",
+      "unchangedFrom": "f30b93f"
+    },
+    {
+      "path": "docs/evidence/feature-store-242/final-benchmark-20261108T064349Z.json",
+      "sha256": "1e31f10710d6028eeb87a2753ff9538c2659ea3d550668053a91b1e654cbe6f5",
+      "unchangedFrom": "f30b93f"
+    },
+    {
+      "path": "docs/evidence/feature-store-242/final-validation-20261108T064903Z.json",
+      "sha256": "5ac7ee7c947d1037da4fd6e58bbcd1606b9d604247f1483c43b36b24fab8a511",
+      "unchangedFrom": "f30b93f"
+    }
+  ],
+  "history": "Step 1/2 inventories and private retention/parity receipts remain append-only; #169 archives/auditor/committed-evidence check unchanged",
+  "limitations": [
+    "Heuristic scan plus exact owner dispositions; no legal clearance from detection or absence",
+    "Public metadata audits cannot verify unseen response values, response/context linkage, private table-oracle counters or private logs",
+    "Three targeted mutation detections are not a suite-wide mutation score",
+    "Final branch-commit guard runs after owner approval; final pending-tree scan is recorded separately in the local handoff"
+  ],
+  "operations": {
+    "databaseLanes": false,
+    "capacityRerun": false,
+    "hostedAccess": false,
+    "branchCommit": false,
+    "push": false
+  }
+}
