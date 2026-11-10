@@ -52,7 +52,7 @@ export const scanTrackedPayloads = (root: string, checkpoint: string, policy: Pa
   }
   return {
     schema: payloadScanFormat, checkpoint, policy, limits: payloadScanLimits,
-    scannerSources: ["evidence-payload-scan.ts", "evidence-payload-inventory.ts"].map(name => {
+    scannerSources: ["evidence-payload-scan.ts", "evidence-payload-inventory.ts", "evidence-archive.ts"].map(name => {
       const source = readFileSync(new URL(name, import.meta.url));
       return { path: `services/pipeline/scripts/feature-store/${name}`,
         sha256: createHash("sha256").update(source).digest("hex"), byteSize: source.length };

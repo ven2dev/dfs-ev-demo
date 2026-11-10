@@ -109,3 +109,42 @@ to the owner. No legal permission is inferred from a scanner match or absence.
 The approved estimate is 3–4 active hours including intake, with no #169
 conversion. If projected work exceeds five hours or another data class/consumer
 appears, work stops for a scope decision.
+
+## Archive references and audit capabilities
+
+Step 2 retains the three exact archives and all 19 members in the durable
+private ObjectStore. Each object was read back and hashed; every member was also
+verified from the retained archive. `private-evidence-archive-v1` references use
+store-relative `audits/<sha256>` keys, archive/member sizes and hashes, and a
+hash-bound public projection. References contain no absolute private path.
+The shared USTAR reader is used by both the scanner and resolver; this keeps
+archive validation consistent without adding a dependency to standalone audits.
+
+`prediction-evidence-public-v1` adds only response hash/byte size,
+status/refusal and timing per sample, plus receipt identity hashes (SHA-256 and
+size of the parsed receipt's compact `JSON.stringify` encoding). It adds no
+player/game identifiers. Original compact receipts remain byte-for-byte intact;
+their existing schedules, process/work metadata, source pins and failures are
+historical public metadata. No new identifier exception is needed.
+
+Public mode validates references, exact membership, projection/receipt integrity
+and available statuses. It reuses the original versioned arithmetic to recompute
+request coverage, process provenance, 3 SQL / 2 checks / 1 GET, 2P rights counts,
+phase accounting, trial p95 and startup maxima/tails. CI disables recorded speed
+assertions while checking the arithmetic. A non-capacity validation record can
+be identity-checked publicly, but its private log contents cannot be replayed.
+Public mode cannot independently check forecast values, response/context
+linkage, private per-table SQL-oracle counters or private validation logs.
+
+An explicit `audit-private` operation receives the local ObjectStore directory
+as an argument. It hashes the archive and every member, then invokes the
+original full-record auditors, including the private response and SQL-counter
+checks. Missing or corrupt private bytes fail; public metadata is not a fallback
+for that operation. When a public archive is still present, ordinary audits
+continue to use its full bytes. Audit output labels each record `full-bytes` or
+`public-metadata` so the two capabilities cannot be confused.
+
+Unknown formats, extra projection fields, unsafe members, missing references or
+projections, and incorrect hashes/sizes fail. A hash proves identity of supplied
+bytes; it does not prove unseen forecast values. New scans and evidence records
+append to the original inventory rather than changing its measured identities.

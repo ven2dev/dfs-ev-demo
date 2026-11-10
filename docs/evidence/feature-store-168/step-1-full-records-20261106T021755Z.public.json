@@ -1,0 +1,700 @@
+{
+  "schema": "prediction-evidence-public-v1",
+  "archiveSha256": "cc1996df505186829fc164f7e55bc9173259e6aa1c8e9027c2475bd9f1aa4983",
+  "records": [
+    {
+      "member": "step-1/controls-full.json",
+      "receipts": [
+        {
+          "sha256": "7fc6e518da433f4d040f78a0a725a79a4be00c146a726c332079b37e34b95fe4",
+          "byteSize": 104583
+        }
+      ],
+      "capacity": {
+        "samples": [
+          {
+            "sha256": "103dc8f4e482c93161ac3230ddb88e3c646851b25b7b79b9c0198ff9a7059412",
+            "byteSize": 5552,
+            "status": "available",
+            "reason": null,
+            "timing": {
+              "totalMs": 122.34204200000386,
+              "spawnMs": 1.0928750000020955,
+              "bootstrapMs": 34.542499999995925,
+              "importMs": 51.028375,
+              "storeMs": 4.853583999999998,
+              "startupMs": 99.72537599999592,
+              "residualMs": 1.608958000007945,
+              "connectMs": 9.300916999999998,
+              "handlerMs": 21.007707999999994,
+              "queries": [
+                {
+                  "kind": "context",
+                  "elapsedMs": 7.605916999999991
+                },
+                {
+                  "kind": "check",
+                  "elapsedMs": 8.646291999999988
+                },
+                {
+                  "kind": "check",
+                  "elapsedMs": 2.437666000000007
+                }
+              ]
+            }
+          },
+          {
+            "sha256": "ad0aab2b1f657d6eebd46858e559ca6404c1ca661d8e3efa6de17e7feb1a7646",
+            "byteSize": 5552,
+            "status": "available",
+            "reason": null,
+            "timing": {
+              "totalMs": 22.359791999988374,
+              "spawnMs": 0,
+              "bootstrapMs": 0,
+              "importMs": 0,
+              "storeMs": 0,
+              "startupMs": 0,
+              "residualMs": 0.7434159999883718,
+              "connectMs": 0.07741599999999949,
+              "handlerMs": 21.616376000000002,
+              "queries": [
+                {
+                  "kind": "context",
+                  "elapsedMs": 8.323082999999997
+                },
+                {
+                  "kind": "check",
+                  "elapsedMs": 8.110124999999996
+                },
+                {
+                  "kind": "check",
+                  "elapsedMs": 2.8151249999999948
+                }
+              ]
+            }
+          }
+        ],
+        "warmControlSamples": [
+          {
+            "sha256": "d986a28762eaea5f6ef28ce15592b6e36fdbe945ed0d157e96dec51dfd02c256",
+            "byteSize": 5552,
+            "status": "available",
+            "reason": null,
+            "timing": {
+              "totalMs": 25.401250000009895,
+              "spawnMs": 0,
+              "bootstrapMs": 0,
+              "importMs": 0,
+              "storeMs": 0,
+              "startupMs": 0,
+              "residualMs": 0.6221670000098953,
+              "connectMs": 0.052666999999999575,
+              "handlerMs": 24.779083,
+              "queries": [
+                {
+                  "kind": "context",
+                  "elapsedMs": 9.895250000000004
+                },
+                {
+                  "kind": "check",
+                  "elapsedMs": 10.24537500000001
+                },
+                {
+                  "kind": "check",
+                  "elapsedMs": 2.5690830000000062
+                }
+              ]
+            }
+          },
+          {
+            "sha256": "bc1edebacd1b30f5f4dcf3678554a3a6e0818985ba6b041ff36dbae28c1feeb8",
+            "byteSize": 64,
+            "status": "unavailable",
+            "reason": "model-current-rights-refused",
+            "timing": {
+              "totalMs": 5.395042000003741,
+              "spawnMs": 0,
+              "bootstrapMs": 0,
+              "importMs": 0,
+              "storeMs": 0,
+              "startupMs": 0,
+              "residualMs": 0.7335840000037308,
+              "connectMs": 0.04487499999999045,
+              "handlerMs": 4.66145800000001,
+              "queries": [
+                {
+                  "kind": "context",
+                  "elapsedMs": 1.4115409999999997
+                },
+                {
+                  "kind": "check",
+                  "elapsedMs": 2.8565420000000046
+                }
+              ]
+            }
+          },
+          {
+            "sha256": "5ef750ebfeb7c6af246bc61819b56629a1fa4a61c2901e197d5b9de4d6cf9744",
+            "byteSize": 61,
+            "status": "unavailable",
+            "reason": "model-read-status-refused",
+            "timing": {
+              "totalMs": 3.172166999996989,
+              "spawnMs": 0,
+              "bootstrapMs": 0,
+              "importMs": 0,
+              "storeMs": 0,
+              "startupMs": 0,
+              "residualMs": 0.5861259999969803,
+              "connectMs": 0.04462499999999636,
+              "handlerMs": 2.5860410000000087,
+              "queries": [
+                {
+                  "kind": "context",
+                  "elapsedMs": 1.56712499999999
+                },
+                {
+                  "kind": "check",
+                  "elapsedMs": 0.7208339999999964
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "member": "step-1/full-validation.json",
+      "receipts": [
+        {
+          "sha256": "8ab7593360628e75325d8ecfa09ddca2b9acfe8686c265f2b4fe9dd6cf681b2a",
+          "byteSize": 18355
+        }
+      ]
+    },
+    {
+      "member": "step-1/history/controls-AxNvUG.json",
+      "receipts": [],
+      "capacity": {
+        "samples": [
+          {
+            "sha256": "7443cb80c838040749295b4bfd4d0912da946e9e42a73a5a37a3c04e1d689f34",
+            "byteSize": 5553,
+            "status": "available",
+            "reason": null,
+            "timing": {
+              "totalMs": 132.8327500000014,
+              "spawnMs": 1.4903340000018943,
+              "bootstrapMs": 31.813999999998487,
+              "importMs": 54.335792,
+              "storeMs": 4.704000000000008,
+              "startupMs": 102.98945899999849,
+              "residualMs": 2.02454200000291,
+              "connectMs": 12.135666999999998,
+              "handlerMs": 27.818748999999997,
+              "queries": [
+                {
+                  "kind": "context",
+                  "elapsedMs": 10.501792000000009
+                },
+                {
+                  "kind": "check",
+                  "elapsedMs": 10.676000000000002
+                },
+                {
+                  "kind": "check",
+                  "elapsedMs": 3.7300419999999974
+                }
+              ]
+            }
+          },
+          {
+            "sha256": "83a98654bd3a947812099566ba4d3a54bcc42b7f59974317388aa2c402a1b5f1",
+            "byteSize": 5551,
+            "status": "available",
+            "reason": null,
+            "timing": {
+              "totalMs": 24.63062500000524,
+              "spawnMs": 0,
+              "bootstrapMs": 0,
+              "importMs": 0,
+              "storeMs": 0,
+              "startupMs": 0,
+              "residualMs": 0.9054580000052397,
+              "connectMs": 0.07662500000000705,
+              "handlerMs": 23.725167,
+              "queries": [
+                {
+                  "kind": "context",
+                  "elapsedMs": 8.681959000000006
+                },
+                {
+                  "kind": "check",
+                  "elapsedMs": 9.138541000000004
+                },
+                {
+                  "kind": "check",
+                  "elapsedMs": 3.192208999999991
+                }
+              ]
+            }
+          }
+        ],
+        "warmControlSamples": [
+          {
+            "sha256": "a2abd07159dd02b2994556bea9105fecb3001a02b567623ce05c1093081eb116",
+            "byteSize": 5553,
+            "status": "available",
+            "reason": null,
+            "timing": {
+              "totalMs": 25.641958000007435,
+              "spawnMs": 0,
+              "bootstrapMs": 0,
+              "importMs": 0,
+              "storeMs": 0,
+              "startupMs": 0,
+              "residualMs": 0.7078740000074362,
+              "connectMs": 0.055582999999998606,
+              "handlerMs": 24.934084,
+              "queries": [
+                {
+                  "kind": "context",
+                  "elapsedMs": 10.610833
+                },
+                {
+                  "kind": "check",
+                  "elapsedMs": 8.555167000000012
+                },
+                {
+                  "kind": "check",
+                  "elapsedMs": 3.300458000000006
+                }
+              ]
+            }
+          },
+          {
+            "sha256": "bc1edebacd1b30f5f4dcf3678554a3a6e0818985ba6b041ff36dbae28c1feeb8",
+            "byteSize": 64,
+            "status": "unavailable",
+            "reason": "model-current-rights-refused",
+            "timing": {
+              "totalMs": 5.068332999988343,
+              "spawnMs": 0,
+              "bootstrapMs": 0,
+              "importMs": 0,
+              "storeMs": 0,
+              "startupMs": 0,
+              "residualMs": 0.801040999988345,
+              "connectMs": 0.04462499999999636,
+              "handlerMs": 4.267291999999998,
+              "queries": [
+                {
+                  "kind": "context",
+                  "elapsedMs": 1.2360000000000042
+                },
+                {
+                  "kind": "check",
+                  "elapsedMs": 2.634749999999997
+                }
+              ]
+            }
+          },
+          {
+            "sha256": "5ef750ebfeb7c6af246bc61819b56629a1fa4a61c2901e197d5b9de4d6cf9744",
+            "byteSize": 61,
+            "status": "unavailable",
+            "reason": "model-read-status-refused",
+            "timing": {
+              "totalMs": 4.665292000005138,
+              "spawnMs": 0,
+              "bootstrapMs": 0,
+              "importMs": 0,
+              "storeMs": 0,
+              "startupMs": 0,
+              "residualMs": 0.6047920000051192,
+              "connectMs": 0.060000000000002274,
+              "handlerMs": 4.060500000000019,
+              "queries": [
+                {
+                  "kind": "context",
+                  "elapsedMs": 2.065917000000013
+                },
+                {
+                  "kind": "check",
+                  "elapsedMs": 1.6024580000000128
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "member": "step-1/history/controls-RcJco5.json",
+      "receipts": [],
+      "capacity": {
+        "samples": [
+          {
+            "sha256": "1ac7ebd1dfc21743d4b2d3b5263e3ad12378630652b987e3351fd35302196031",
+            "byteSize": 5552,
+            "status": "available",
+            "reason": null,
+            "timing": {
+              "totalMs": 136.7082500000106,
+              "spawnMs": 2.2234999999927823,
+              "bootstrapMs": 38.69612500000221,
+              "importMs": 56.646333999999996,
+              "storeMs": 4.728583,
+              "startupMs": 113.7188330000022,
+              "residualMs": 1.5645830000083976,
+              "connectMs": 13.647790999999998,
+              "handlerMs": 21.42483399999999,
+              "queries": [
+                {
+                  "kind": "context",
+                  "elapsedMs": 8.193832999999998
+                },
+                {
+                  "kind": "check",
+                  "elapsedMs": 8.255333000000007
+                },
+                {
+                  "kind": "check",
+                  "elapsedMs": 2.408417
+                }
+              ]
+            }
+          },
+          {
+            "sha256": "e281f255498ada2bff076a44378ee3bc61f7ad6852b4e042b39b56d2893bc28f",
+            "byteSize": 5552,
+            "status": "available",
+            "reason": null,
+            "timing": {
+              "totalMs": 23.5454999999929,
+              "spawnMs": 0,
+              "bootstrapMs": 0,
+              "importMs": 0,
+              "storeMs": 0,
+              "startupMs": 0,
+              "residualMs": 0.6607079999929084,
+              "connectMs": 0.06895800000000918,
+              "handlerMs": 22.88479199999999,
+              "queries": [
+                {
+                  "kind": "context",
+                  "elapsedMs": 8.338375
+                },
+                {
+                  "kind": "check",
+                  "elapsedMs": 9.757666999999998
+                },
+                {
+                  "kind": "check",
+                  "elapsedMs": 2.62637500000001
+                }
+              ]
+            }
+          }
+        ],
+        "warmControlSamples": [
+          {
+            "sha256": "4bc80eaefae1ab997ee2a36fdd43225baf1915935c2ecdfc7dd8ba7e53be551a",
+            "byteSize": 5552,
+            "status": "available",
+            "reason": null,
+            "timing": {
+              "totalMs": 19.117708000005223,
+              "spawnMs": 0,
+              "bootstrapMs": 0,
+              "importMs": 0,
+              "storeMs": 0,
+              "startupMs": 0,
+              "residualMs": 0.5278750000052241,
+              "connectMs": 0.057583000000008155,
+              "handlerMs": 18.589833,
+              "queries": [
+                {
+                  "kind": "context",
+                  "elapsedMs": 6.674291999999994
+                },
+                {
+                  "kind": "check",
+                  "elapsedMs": 7.627415999999997
+                },
+                {
+                  "kind": "check",
+                  "elapsedMs": 2.40762500000001
+                }
+              ]
+            }
+          },
+          {
+            "sha256": "bc1edebacd1b30f5f4dcf3678554a3a6e0818985ba6b041ff36dbae28c1feeb8",
+            "byteSize": 64,
+            "status": "unavailable",
+            "reason": "model-current-rights-refused",
+            "timing": {
+              "totalMs": 5.4407910000009,
+              "spawnMs": 0,
+              "bootstrapMs": 0,
+              "importMs": 0,
+              "storeMs": 0,
+              "startupMs": 0,
+              "residualMs": 1.0279150000009025,
+              "connectMs": 0.03416599999999903,
+              "handlerMs": 4.412875999999997,
+              "queries": [
+                {
+                  "kind": "context",
+                  "elapsedMs": 1.4228750000000048
+                },
+                {
+                  "kind": "check",
+                  "elapsedMs": 2.6657080000000093
+                }
+              ]
+            }
+          },
+          {
+            "sha256": "5ef750ebfeb7c6af246bc61819b56629a1fa4a61c2901e197d5b9de4d6cf9744",
+            "byteSize": 61,
+            "status": "unavailable",
+            "reason": "model-read-status-refused",
+            "timing": {
+              "totalMs": 2.00350000000617,
+              "spawnMs": 0,
+              "bootstrapMs": 0,
+              "importMs": 0,
+              "storeMs": 0,
+              "startupMs": 0,
+              "residualMs": 0.31262500000617877,
+              "connectMs": 0.021708000000003835,
+              "handlerMs": 1.6908749999999912,
+              "queries": [
+                {
+                  "kind": "context",
+                  "elapsedMs": 0.9627499999999998
+                },
+                {
+                  "kind": "check",
+                  "elapsedMs": 0.5431659999999994
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "member": "step-1/history/controls-sudAo6.json",
+      "receipts": [],
+      "capacity": {
+        "samples": [
+          {
+            "sha256": "4bcb75787e6b1518a51239c9d7e45b85c6e39b5d5b2c87889c149985d695100d",
+            "byteSize": 5549,
+            "status": "available",
+            "reason": null,
+            "timing": {
+              "totalMs": 125.92304100000183,
+              "spawnMs": 1.2143749999959255,
+              "bootstrapMs": 35.258583000002545,
+              "importMs": 58.209332999999994,
+              "storeMs": 4.613334000000009,
+              "startupMs": 106.20408400000254,
+              "residualMs": 1.5543739999992994,
+              "connectMs": 8.122833999999997,
+              "handlerMs": 18.164582999999993,
+              "queries": [
+                {
+                  "kind": "context",
+                  "elapsedMs": 6.390124999999998
+                },
+                {
+                  "kind": "check",
+                  "elapsedMs": 7.313417000000001
+                },
+                {
+                  "kind": "check",
+                  "elapsedMs": 2.2701670000000007
+                }
+              ]
+            }
+          },
+          {
+            "sha256": "f9915ae92fe66dfe0fe52b187bc48945bf6c6e0e2ef4f1e0ef1417a4b47ff6b3",
+            "byteSize": 5549,
+            "status": "available",
+            "reason": null,
+            "timing": {
+              "totalMs": 19.068875000011758,
+              "spawnMs": 0,
+              "bootstrapMs": 0,
+              "importMs": 0,
+              "storeMs": 0,
+              "startupMs": 0,
+              "residualMs": 0.5896250000117504,
+              "connectMs": 0.05804200000000037,
+              "handlerMs": 18.479250000000008,
+              "queries": [
+                {
+                  "kind": "context",
+                  "elapsedMs": 6.936166
+                },
+                {
+                  "kind": "check",
+                  "elapsedMs": 6.988666999999992
+                },
+                {
+                  "kind": "check",
+                  "elapsedMs": 2.5876659999999987
+                }
+              ]
+            }
+          }
+        ],
+        "warmControlSamples": [
+          {
+            "sha256": "99ff827494206df0028bccc41d42fc21e24da3351443b78d2ca074b565f3d75f",
+            "byteSize": 5549,
+            "status": "available",
+            "reason": null,
+            "timing": {
+              "totalMs": 25.47158299999137,
+              "spawnMs": 0,
+              "bootstrapMs": 0,
+              "importMs": 0,
+              "storeMs": 0,
+              "startupMs": 0,
+              "residualMs": 0.5563759999913742,
+              "connectMs": 0.053334000000006654,
+              "handlerMs": 24.915206999999995,
+              "queries": [
+                {
+                  "kind": "context",
+                  "elapsedMs": 10.255583000000001
+                },
+                {
+                  "kind": "check",
+                  "elapsedMs": 10.213624999999993
+                },
+                {
+                  "kind": "check",
+                  "elapsedMs": 2.530167000000006
+                }
+              ]
+            }
+          },
+          {
+            "sha256": "bc1edebacd1b30f5f4dcf3678554a3a6e0818985ba6b041ff36dbae28c1feeb8",
+            "byteSize": 64,
+            "status": "unavailable",
+            "reason": "model-current-rights-refused",
+            "timing": {
+              "totalMs": 4.912708000003477,
+              "spawnMs": 0,
+              "bootstrapMs": 0,
+              "importMs": 0,
+              "storeMs": 0,
+              "startupMs": 0,
+              "residualMs": 0.668375000003465,
+              "connectMs": 0.027874999999994543,
+              "handlerMs": 4.244333000000012,
+              "queries": [
+                {
+                  "kind": "context",
+                  "elapsedMs": 1.4320000000000022
+                },
+                {
+                  "kind": "check",
+                  "elapsedMs": 2.4980410000000006
+                }
+              ]
+            }
+          },
+          {
+            "sha256": "5ef750ebfeb7c6af246bc61819b56629a1fa4a61c2901e197d5b9de4d6cf9744",
+            "byteSize": 61,
+            "status": "unavailable",
+            "reason": "model-read-status-refused",
+            "timing": {
+              "totalMs": 2.282375000009779,
+              "spawnMs": 0,
+              "bootstrapMs": 0,
+              "importMs": 0,
+              "storeMs": 0,
+              "startupMs": 0,
+              "residualMs": 0.3400000000097805,
+              "connectMs": 0.029749999999992838,
+              "handlerMs": 1.9423749999999984,
+              "queries": [
+                {
+                  "kind": "context",
+                  "elapsedMs": 1.0872090000000014
+                },
+                {
+                  "kind": "check",
+                  "elapsedMs": 0.639291
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "member": "step-1/history/controls-z0u2NM.json",
+      "receipts": [],
+      "capacity": {
+        "samples": [],
+        "warmControlSamples": []
+      }
+    },
+    {
+      "member": "step-1/logs/controls-final.log",
+      "receipts": []
+    },
+    {
+      "member": "step-1/logs/controls-initial-failure.log",
+      "receipts": []
+    },
+    {
+      "member": "step-1/logs/dependency-free-audit.json",
+      "receipts": []
+    },
+    {
+      "member": "step-1/logs/feature-store-full.log",
+      "receipts": []
+    },
+    {
+      "member": "step-1/logs/focused-final.log",
+      "receipts": []
+    },
+    {
+      "member": "step-1/logs/full-unit.log",
+      "receipts": []
+    },
+    {
+      "member": "step-1/logs/lint-final.log",
+      "receipts": []
+    },
+    {
+      "member": "step-1/logs/node-unit-final.log",
+      "receipts": []
+    },
+    {
+      "member": "step-1/logs/node-unit-sandbox-failure.log",
+      "receipts": []
+    },
+    {
+      "member": "step-1/logs/tsc-final.log",
+      "receipts": []
+    },
+    {
+      "member": "step-1/logs/typecheck.log",
+      "receipts": []
+    }
+  ]
+}

@@ -55,9 +55,35 @@ malformed structured inputs, unsafe/duplicate members and limit violations fail
 closed. Hash-bound, explicitly classified synthetic controls are distinct from
 noticed source excerpts; a `synthetic` marker supplies no permission.
 
-This step does not remove or privately retain any archive. Subsequent steps add
-the verified ObjectStore references, minimal projections and public/private
-audit resolution, then wire the shared scanner into an always-executed CI
-check. Public metadata checks will not claim to verify unseen forecast values;
-only a private-byte audit reproduces those original full-record verdicts.
+## Step 2: retention and two audit modes
+
+`step-2-retention.json` records exact ObjectStore retention and readback of the
+three selected archives and all 19 members (22 verified writes/readbacks).
+Objects use the owner-selected durable private store outside briefs, mode 0700;
+keys in public references are store-relative and reveal no absolute location.
+The three public archives were removed only after those readbacks and a complete
+private audit. Both #169 archives and their auditor/check remain unchanged.
+
+Each selected archive now has a versioned `.reference.json` with archive/member
+hashes/sizes and a hash-bound `.public.json` projection. All original compact
+receipts remain byte-for-byte intact. New per-sample projection fields are only
+response hash, byte size, status/refusal and timings. No player/game identifiers
+or forecast/context values were added. `step-2-audit-parity.json` records the
+public/private audit results and their different capabilities.
+
+Public CI recomputes available timings/statuses, schedules, process provenance,
+work counts and source metadata. It cannot independently recheck private
+forecast/context linkage, raw per-table SQL-oracle counters or validation logs.
+Public audit output labels a referenced record `public-metadata`; safe archives
+still produce `full-bytes` checks. The explicit private-byte mode reproduces the
+complete original verdicts and refuses absent/corrupt private objects:
+
+```sh
+node services/pipeline/scripts/feature-store/artifact-governance-evidence.ts audit-private \
+  docs/evidence/feature-store-168 "$PRIVATE_OBJECTSTORE"
+node services/pipeline/scripts/feature-store/artifact-governance-evidence.ts audit-private \
+  docs/evidence/feature-store-242 "$PRIVATE_OBJECTSTORE"
+```
+
+The next step wires the shared scanner into an always-executed CI check.
 #256 remains the qualified rights review, separate from this technical scan.

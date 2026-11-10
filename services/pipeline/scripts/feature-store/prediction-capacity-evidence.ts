@@ -57,7 +57,8 @@ const capacityRule = (full: FullCapacityBenchmark): CapacityRule => {
   assert.deepEqual(full.startupGate, CAPACITY_STARTUP_GATE, "capacity-startup-rule-mismatch");
   return "trial-p95-v2";
 };
-const verifyCapacityInputs = (full: FullCapacityBenchmark) => {
+export type CapacityResponseStatus = { status: string; reason?: string };
+const verifyCapacityInputs = (full: FullCapacityBenchmark, statuses?: CapacityResponseStatus[]) => {
   assert.equal(full.kind, "prediction-capacity-benchmark"); const rule = capacityRule(full);
   assert.equal(full.sourceUnchanged, true);
   const coverage = validateCapacityManifest(full.manifest);
@@ -85,16 +86,20 @@ const verifyCapacityInputs = (full: FullCapacityBenchmark) => {
   assert.equal(full.warmControlSamples?.length, 3);
   const [before, rights, deletion] = full.warmControlSamples!;
   assert.equal(before.verdict, "pass"); assert.deepEqual(before.work, expectedWork);
-  assert.equal(JSON.parse(before.serialized!).status, "available");
+  const responses = statuses ?? full.warmControlSamples!.map(s => JSON.parse(s.serialized!) as CapacityResponseStatus);
+  assert.equal(responses.length, 3);
+  assert.equal(responses[0].status, "available");
   assert.equal(rights.verdict, "fail"); assert.equal(deletion.verdict, "fail");
-  assert.deepEqual(JSON.parse(rights.serialized!), { status: "unavailable", reason: "model-current-rights-refused" });
-  assert.deepEqual(JSON.parse(deletion.serialized!), { status: "unavailable", reason: "model-read-status-refused" });
+  assert.deepEqual(responses[1], { status: "unavailable", reason: "model-current-rights-refused" });
+  assert.deepEqual(responses[2], { status: "unavailable", reason: "model-read-status-refused" });
   assert.equal(before.pid, rights.pid); assert.equal(before.pid, deletion.pid);
   assert.deepEqual(full.serverWork?.map(w => w.n), full.manifest.rules.n);
   for (const probe of full.serverWork!) {
     assert(probe.profiles.length > 0 && new Set(probe.profiles).size === probe.profiles.length);
     assert.equal(probe.rightsCalls, 2 * probe.profiles.length);
-    for (const counters of [probe.q1, probe.q2]) {
+    // Compact receipts retain 2P counts, but raw per-table oracle counters
+    // remain private. Only the full-byte path can independently recheck them.
+    if (!statuses) for (const counters of [probe.q1, probe.q2]) {
       assert(counters.length > 0);
       for (const r of counters) {
         assert.equal(r.inserted + r.updated + r.deleted, 0);
@@ -105,21 +110,21 @@ const verifyCapacityInputs = (full: FullCapacityBenchmark) => {
   }
   return { coverage, rule };
 };
-export const verifyCapacityControls = (full: FullCapacityBenchmark) => {
+const verifyCapacityControlsCore = (full: FullCapacityBenchmark, statuses?: CapacityResponseStatus[]) => {
   assert.equal(full.step, 1); assert.equal(full.verdict, "controls-pass-not-qualified");
-  assert.equal(full.controlsOnly, true); const { coverage } = verifyCapacityInputs(full);
+  assert.equal(full.controlsOnly, true); const { coverage } = verifyCapacityInputs(full, statuses);
   assert.equal(full.samples.length, 2); assert.deepEqual(full.trials, []);
   for (const [i, sample] of full.samples.entries()) {
     assert.equal(sample.temperature, i === 0 ? "cold" : "warm"); assert.equal(sample.verdict, "pass");
     assert.equal(sample.featureId, full.manifest.requests[0].featureId); assert.deepEqual(sample.work, expectedWork);
     assert.deepEqual(sample.queries?.map(q => q.kind), ["context", "check", "check"]);
-    assert.equal(JSON.parse(sample.serialized!).status, "available");
+    if (!statuses) assert.equal(JSON.parse(sample.serialized!).status, "available");
   }
   return { verdict: "controls-pass-not-qualified", coverage, work: expectedWork, allN: full.serverWork!.length, speedQualified: false };
 };
-export const verifyCapacityBenchmark = (full: FullCapacityBenchmark, enforceSpeed = true) => {
+const verifyCapacityBenchmarkCore = (full: FullCapacityBenchmark, enforceSpeed = true, statuses?: CapacityResponseStatus[]) => {
   assert.equal(full.step, 2); assert.equal(full.verdict, "pass");
-  const { coverage, rule } = verifyCapacityInputs(full);
+  const { coverage, rule } = verifyCapacityInputs(full, statuses);
   assert.equal(full.samples.length, 600); assert.deepEqual(full.trials.map(t => t.name), CAPACITY_ORDER);
   const coldPids = new Set<number>(), warmPids = new Set<number>();
   for (const [t, name] of CAPACITY_ORDER.entries()) {
@@ -135,10 +140,12 @@ export const verifyCapacityBenchmark = (full: FullCapacityBenchmark, enforceSpee
       assert.equal(sample.verdict, "pass"); assert(!sample.error); assert.deepEqual(sample.work, expectedWork);
       assert.deepEqual(sample.queries?.map(q => q.kind), ["context", "check", "check"]);
       assert(sample.outputBytes! > 0 && sample.pid! > 0); pids.add(sample.pid!);
-      const response = JSON.parse(sample.serialized!);
-      assert.equal(response.status, "available"); assert.equal(Buffer.byteLength(sample.serialized!), sample.outputBytes);
-      assert.equal(response.context.feature.featureId, request.featureId); assert.equal(response.forecast.sampleCount, request.n);
-      assert(!("connectionDisposition" in response));
+      if (!statuses) {
+        const response = JSON.parse(sample.serialized!);
+        assert.equal(response.status, "available"); assert.equal(Buffer.byteLength(sample.serialized!), sample.outputBytes);
+        assert.equal(response.context.feature.featureId, request.featureId); assert.equal(response.forecast.sampleCount, request.n);
+        assert(!("connectionDisposition" in response));
+      }
       capacityP95([sample.totalMs, sample.spawnMs, sample.bootstrapMs, sample.importMs, sample.storeMs,
         sample.startupMs, sample.residualMs, sample.connectMs!, sample.handlerMs!, ...sample.queries!.map(q => q.elapsedMs)]);
       assert(sample.totalMs > 0 && sample.spawnMs <= sample.bootstrapMs);
@@ -161,6 +168,15 @@ export const verifyCapacityBenchmark = (full: FullCapacityBenchmark, enforceSpee
   return { verdict: "pass", samples: 600, trials: 6, coverage, work: expectedWork,
     worstP95Ms: Math.max(...full.trials.map(t => t.p95Ms)), minimumHeadroom: Math.min(...full.trials.map(t => t.headroom)),
     allTrialsAtLeast30PercentHeadroom: full.trials.every(t => t.pass && t.headroom >= .3) };
+};
+
+// Public metadata uses the same schedule/work/phase/percentile code. Response
+// values and their linkage are checked only by the original full-byte path.
+export const verifyCapacityControls = (full: FullCapacityBenchmark) => verifyCapacityControlsCore(full);
+export const verifyCapacityBenchmark = (full: FullCapacityBenchmark, enforceSpeed = true) => verifyCapacityBenchmarkCore(full, enforceSpeed);
+export const verifyCapacityRecordedMetadata = (full: FullCapacityBenchmark, statuses: CapacityResponseStatus[], enforceSpeed = false) => {
+  assert(Array.isArray(statuses) && statuses.length === 3, "public-capacity-statuses-required");
+  return full.step === 1 ? verifyCapacityControlsCore(full, statuses) : verifyCapacityBenchmarkCore(full, enforceSpeed, statuses);
 };
 
 export const compactCapacityBenchmark = (bytes: Buffer, path: string) => {

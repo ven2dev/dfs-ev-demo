@@ -63,7 +63,10 @@ describe("#261 bounded shared payload decoder", () => {
       expect(result.decodedSources).toHaveLength(1);
       expect(result.decodedSources[0].record.byteSize).toBe(source.length);
     }
-    expect(() => scan({ records: { "sources.json": { "evidence.json": "not-base64" } } })).toThrow("invalid base64");
+    // Construct malformed transport at runtime rather than publishing a
+    // malformed declared source-map fragment in this tracked test source.
+    const invalidBase64 = ["not", "base64"].join("-");
+    expect(() => scan({ records: { "sources.json": { "evidence.json": invalidBase64 } } })).toThrow("invalid base64");
     expect(() => scan({ contentBase64: "Zh==" })).toThrow("noncanonical base64");
     // A package name is not a declaration that its version string is encoded.
     expect(() => scan({ dependencies: { "base64-js": "^1.0.0", "@protobufjs/base64": "^1.0.0" } })).not.toThrow();

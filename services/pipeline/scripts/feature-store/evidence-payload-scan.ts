@@ -1,6 +1,8 @@
 import { createHash } from "node:crypto";
 import { gunzipSync } from "node:zlib";
 import { parse as parseDelimited } from "csv-parse/sync";
+import { readEvidenceTar, safeEvidencePath } from "./evidence-archive.ts";
+export { safeEvidencePath } from "./evidence-archive.ts";
 
 export const payloadScanFormat = "published-payload-scan-v1";
 export type ScanLimits = { inputBytes: number; expandedBytes: number; containerDepth: number; jsonDepth: number;
@@ -38,49 +40,6 @@ const identifier = /00-\d{7}|20\d{2}_\d{2}_[A-Z]{2,3}_[A-Z]{2,3}/g;
 
 const check: (condition: unknown, message: string) => asserts condition = (condition, message) => {
   if (!condition) throw new Error(`payload-scan: ${message}`);
-};
-
-// No extraction, links, platform separators or ambiguous names. The same
-// member grammar is used for nested containers and decoded source-map paths.
-export const safeEvidencePath = (path: string) => path.length > 0 && !/[\\\x00-\x1f#]/.test(path) &&
-  !/^(?:\/|[a-z]:)/i.test(path) && path.split("/").every(part => part && part !== "." && part !== "..");
-
-const octal = (bytes: Buffer) => {
-  const value = bytes.toString("ascii").split("\0", 1)[0].trim();
-  check(/^[0-7]+$/.test(value), "invalid tar number");
-  const number = Number.parseInt(value, 8);
-  check(Number.isSafeInteger(number), "tar number overflow");
-  return number;
-};
-
-const readTar = (bytes: Buffer, visit: (name: string, body: Buffer) => PayloadScan): PayloadScan[] => {
-  check(bytes.length >= 1024 && bytes.length % 512 === 0, "truncated tar");
-  const members: PayloadScan[] = [], seen = new Set<string>();
-  let offset = 0;
-  while (offset + 512 <= bytes.length) {
-    const header = bytes.subarray(offset, offset + 512);
-    if (header.every(byte => byte === 0)) {
-      check(bytes.length - offset >= 1024 && bytes.subarray(offset).every(byte => byte === 0), "invalid tar end");
-      return members;
-    }
-    check(header.subarray(257, 262).toString("ascii") === "ustar", "unsupported tar header");
-    const expected = octal(header.subarray(148, 156));
-    const checksum = header.reduce((sum, byte, i) => sum + (i >= 148 && i < 156 ? 32 : byte), 0);
-    check(checksum === expected, "tar checksum mismatch");
-    const field = (start: number, end: number) => decoder.decode(header.subarray(start, end)).split("\0", 1)[0];
-    const prefix = field(345, 500), name = (prefix ? `${prefix}/` : "") + field(0, 100);
-    check(safeEvidencePath(name), "unsafe archive member");
-    check(!seen.has(name), "duplicate archive member"); seen.add(name);
-    check(header[156] === 0 || header[156] === 48, "non-regular archive member");
-    check(header.subarray(157, 257).every(byte => byte === 0), "tar link target");
-    const size = octal(header.subarray(124, 136));
-    const end = offset + 512 + size, paddedEnd = Math.ceil(end / 512) * 512;
-    check(paddedEnd <= bytes.length, "truncated tar member");
-    check(bytes.subarray(end, paddedEnd).every(byte => byte === 0), "nonzero tar padding");
-    members.push(visit(name, bytes.subarray(offset + 512, end)));
-    offset = paddedEnd;
-  }
-  throw new Error("payload-scan: missing tar end");
 };
 
 // Find balanced JSON candidates in logs/source text without repeatedly parsing
@@ -168,7 +127,7 @@ export const scanEvidencePayload = (path: string, bytes: Buffer,
     }
     if (body.subarray(257, 262).toString("ascii") === "ustar" || /\.tar$/i.test(name)) {
       record.format = "tar";
-      record.members = readTar(body, child);
+      record.members = readEvidenceTar(body, child);
       return record;
     }
     const unsupported = /\.(?:gz|tgz|zip|bz2|xz|zst|7z|rar|br)$/i.test(name) ||
