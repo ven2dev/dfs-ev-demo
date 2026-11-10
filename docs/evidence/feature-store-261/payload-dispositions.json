@@ -1,0 +1,135 @@
+{
+  "schema": "published-payload-policy-v1",
+  "decisionUrl": "https://github.com/ven2dev/dfs-ev-demo/issues/261#issuecomment-6759765086",
+  "dispositions": [
+    {
+      "path": "docs/evidence/domain-189/step-1-resolution.json",
+      "sha256": "c83968e29379794a087052c13029cd768f52e0ed49195bc11458e229792da8f0",
+      "byteSize": 9018,
+      "decision": "synthetic-control",
+      "basis": "Explicit in-memory synthetic adapter replies; probability constants, no database or real row. Exact existing example named in #261 intake."
+    },
+    {
+      "path": "docs/evidence/feature-store-138/source-inventory.json",
+      "sha256": "8b5444545354f3cfb16473ca88ddf1cc4f59fe19c54ee6f6c282e12f63c289b9",
+      "byteSize": 40967,
+      "decision": "existing-notice",
+      "basis": "Existing #197 scoped notice; no new permission or broader audience inferred."
+    },
+    {
+      "path": "docs/evidence/feature-store-138/step-3-checkpoint.json",
+      "sha256": "bddb19a80e93896fab4eac2f08e37743bd7a426170435bf79e446db8412e4d50",
+      "byteSize": 8636,
+      "decision": "existing-notice",
+      "basis": "Existing #197 scoped notice; no new permission or broader audience inferred."
+    },
+    {
+      "path": "docs/evidence/feature-store-138/step-3-participation-anomaly.json",
+      "sha256": "8f7e6ea7b6cea2d57a4f698a0a8b6d24026cee5f2589ed281023ee7a9bb42c2a",
+      "byteSize": 683,
+      "decision": "existing-notice",
+      "basis": "Existing #197 scoped notice; no new permission or broader audience inferred."
+    },
+    {
+      "path": "docs/evidence/feature-store-138/step-3-real-ingestion-initial.json",
+      "sha256": "d383c8bf3210d9be52f03b93627a457a0384a38ee8e0a92531a7649e3c3d2db3",
+      "byteSize": 22605,
+      "decision": "existing-notice",
+      "basis": "Existing #197 scoped notice; no new permission or broader audience inferred."
+    },
+    {
+      "path": "docs/evidence/feature-store-138/step-3-real-ingestion.json",
+      "sha256": "a08d54d2c8a53eb550a900a81ad32ce70d7fc9e44683fea7dcfd2f310e743db9",
+      "byteSize": 22624,
+      "decision": "existing-notice",
+      "basis": "Existing #197 scoped notice; no new permission or broader audience inferred."
+    },
+    {
+      "path": "docs/evidence/feature-store-168/final-benchmark-full-records-20261106T161720Z.tar.gz",
+      "sha256": "fd084c933d1ce975e4656105d0baae28b50668ff0fb80be846de062c4f310e47",
+      "byteSize": 211356,
+      "decision": "remove-going-forward",
+      "basis": "Owner 2026-11-09: exact private ObjectStore retention/readback before deletion; history exposure accepted; no history rewrite."
+    },
+    {
+      "path": "docs/evidence/feature-store-168/step-1-full-records-20261106T021755Z.tar.gz",
+      "sha256": "cc1996df505186829fc164f7e55bc9173259e6aa1c8e9027c2475bd9f1aa4983",
+      "byteSize": 130277,
+      "decision": "remove-going-forward",
+      "basis": "Owner 2026-11-09: exact private ObjectStore retention/readback before deletion; history exposure accepted; no history rewrite."
+    },
+    {
+      "path": "docs/evidence/feature-store-169/records-20261109T050208Z.tar.gz",
+      "sha256": "99fa7a58f3d73e41b3c7f0d08c0350ece1442e16e567c35d951adca8d4eba230",
+      "byteSize": 1617198,
+      "decision": "exact-copy-notice",
+      "basis": "Owner 2026-11-09 exact archive/source approval; narrow extension of the #138 notice. A held or removed original withdraws this exception.",
+      "original": {
+        "path": "docs/evidence/feature-store-138/step-3-real-ingestion.json",
+        "sha256": "a08d54d2c8a53eb550a900a81ad32ce70d7fc9e44683fea7dcfd2f310e743db9",
+        "byteSize": 22624
+      }
+    },
+    {
+      "path": "docs/evidence/feature-store-169/records-20261109T061738Z.tar.gz",
+      "sha256": "0a119dfed3b46860631ef912aa2db2e88c931ca76601edf87254dc3d9876fcd0",
+      "byteSize": 1619599,
+      "decision": "exact-copy-notice",
+      "basis": "Owner 2026-11-09 exact archive/source approval; narrow extension of the #138 notice. A held or removed original withdraws this exception.",
+      "original": {
+        "path": "docs/evidence/feature-store-138/step-3-real-ingestion.json",
+        "sha256": "a08d54d2c8a53eb550a900a81ad32ce70d7fc9e44683fea7dcfd2f310e743db9",
+        "byteSize": 22624
+      }
+    },
+    {
+      "path": "docs/evidence/feature-store-242/final-benchmark-full-records-20261108T064349Z.tar.gz",
+      "sha256": "3a37ddc23b7cfbd3f8420d1dbe6e3862c4c262c2b856315b4a4899db7904c778",
+      "byteSize": 213413,
+      "decision": "remove-going-forward",
+      "basis": "Owner 2026-11-09: exact private ObjectStore retention/readback before deletion; history exposure accepted; no history rewrite."
+    },
+    {
+      "path": "docs/feature-store-spike-sources.md",
+      "sha256": "a76b1dc4bfa2a4162eddbc5fbc717cec4832e6ad0b08e8117f85af3ce35af94d",
+      "byteSize": 9380,
+      "decision": "existing-notice",
+      "basis": "Already listed in #197; same participation-gap excerpt, with notice added."
+    },
+    {
+      "path": "docs/feature-store-spike.md",
+      "sha256": "3aff55d74c468a70f55baa3c1510628a54bab77cd8177ffc3f95e96d1d83e409",
+      "byteSize": 54313,
+      "decision": "existing-notice",
+      "basis": "Already listed in #197; same participation-gap and malformed-play excerpts, with scoped notice."
+    },
+    {
+      "path": "docs/predictive-data-sources.md",
+      "sha256": "340af2167fab6ebff5334b775ea96b31426893aa8f23f8c9edf69d24963beba4",
+      "byteSize": 50763,
+      "decision": "independent-example",
+      "basis": "Three NOAA weather observations keyed by schedule game; no participation, label, history or forecast row."
+    },
+    {
+      "path": "docs/predictive-feature-contract.md",
+      "sha256": "6e94a6d2dee1ac61f698a44b1da3ee34ff4b48da9d2aa232a279d49c67387863",
+      "byteSize": 55447,
+      "decision": "independent-example",
+      "basis": "Exact hash still matches #197 independentlySourcedRowExamples; the walkthrough distinguishes actual weekly stats from synthetic capture/event context."
+    },
+    {
+      "path": "docs/predictive-source-prototype.md",
+      "sha256": "ebb1abd298482ed70b2783dc0f408595b666f70daace7e28fd9d068dcc306c17",
+      "byteSize": 15958,
+      "decision": "independent-example",
+      "basis": "Target-game command/qualification examples and aggregate source counts; no row-level player values."
+    },
+    {
+      "path": "services/pipeline/tests/feature-store/fixtures/job-visibility-work-v1.json.gz",
+      "sha256": "eff4457e5f5064634d2cee03e70d1d17ccfb97303362f15caa3fba14520af8fe",
+      "byteSize": 5003909,
+      "decision": "existing-notice",
+      "basis": "Existing #197 scoped notice; no new permission or broader audience inferred."
+    }
+  ]
+}

@@ -25,3 +25,21 @@ Affected excerpts appear in these files:
 The [#197 inventory](../feature-store-197/tracked-payload-inventory.json)
 identifies the baseline versions. The [#241 combined fixture](../../../services/pipeline/tests/feature-store/fixtures/NOTICE.participation.md)
 has a separate notice.
+
+## Exact copies in #169 evidence
+
+The owner's [2026-11-09 decision](https://github.com/ven2dev/dfs-ev-demo/issues/261#issuecomment-6759765086)
+extends this notice only to the exact embedded copies of
+`docs/evidence/feature-store-138/step-3-real-ingestion.json` in the following two
+archives. The decoded source is 22,624 bytes, SHA-256
+`a08d54d2c8a53eb550a900a81ad32ce70d7fc9e44683fea7dcfd2f310e743db9`.
+Each copy is encoded in the run record's `records["sources.json"]` map.
+
+| Archive | Complete archive SHA-256 |
+| --- | --- |
+| [#169 original qualification](../feature-store-169/records-20261109T050208Z.tar.gz) | `99fa7a58f3d73e41b3c7f0d08c0350ece1442e16e567c35d951adca8d4eba230` |
+| [#169 requalification](../feature-store-169/records-20261109T061738Z.tar.gz) | `0a119dfed3b46860631ef912aa2db2e88c931ca76601edf87254dc3d9876fcd0` |
+
+This extension changes no other scope, output, audience or terms of this notice.
+A changed copy or a different archive hash is a new finding. If the original
+#138 file is ever removed or held, these copies go with it.
