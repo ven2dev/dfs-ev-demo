@@ -1,5 +1,9 @@
 # Draft: qualify #220 admission on immutable iad1 and pdx1 Previews
 
+Historical Neon draft. The active PlanetScale plan is
+[220-hosted-qualification-plan.md](220-hosted-qualification-plan.md).
+
+
 Local issue-body draft for owner review. No GitHub issue has been created.
 
 ## Description

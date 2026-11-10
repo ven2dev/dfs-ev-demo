@@ -1,23 +1,23 @@
 // Pure fixture generation. No connection, credential generation or hosted API.
 import { randomUUID } from 'node:crypto';
-import { schedule } from './plan.mjs';
-import { sampleKey, validateBinding } from '../../../apps/web/src/lib/qualification220-core.mjs';
+import { sameSubjectControl, schedule } from './plan.mjs';
+import { FIXTURE_QUOTA, sampleKey, validateBinding } from '../../../apps/web/src/lib/qualification220-core.mjs';
 export const markets=['player_pass_yds','player_pass_tds','player_pass_completions','player_pass_attempts','player_pass_interceptions','player_rush_yds','player_rush_attempts','player_reception_yds','player_receptions','player_anytime_td','player_1st_td','player_last_td'];
 export const groupKey=s=>[s.stage,s.workers,s.round,s.mode].join(':');
 export function tickets() {
-  return schedule().map(s=>({sample:sampleKey(s),group:groupKey(s),mode:s.mode,
+  return [...schedule(),...sameSubjectControl()].map(s=>({sample:sampleKey(s),group:groupKey(s),mode:s.mode,
     // 20 independent keys exercise account contention, not same-item followers.
-    resource:`event${s.index%20}/player_pass_yds`,dimensions:[`network-${s.index%20}`,`user-${s.index%20}`],owner:randomUUID()}));
+    resource:`event${s.index%20}/player_pass_yds`,dimensions:s.stage==='same-subject'?['control-network','control-user']:[`network-${s.index%20}`,`user-${s.index%20}`],owner:randomUUID()}));
 }
 export function prepareGroup(group,quota,runId) {
   if(!/^[a-f0-9-]{36}$/.test(runId??''))throw new Error('missing arm run ID');
   const activate={text:"UPDATE spike220.hosted_run SET active_group=CASE WHEN id=$2::uuid THEN $1 ELSE 'paused' END",values:[group,runId]};
-  if(!/^(warmup|warm|cold|stale|next-tick):(1|20):[0-2]:(baseline|admission|path)$/.test(group))throw new Error('invalid group');
+  if(!/^(warmup|warm|cold|stale|next-tick|same-subject):(1|20):[0-2]:(baseline|admission|path)$/.test(group))throw new Error('invalid group');
   if(group.startsWith('next-tick:'))return [activate];
   if(!Number.isSafeInteger(quota.remaining)||quota.remaining<(group.startsWith('stale:')?20:20000)||!Number.isSafeInteger(quota.used)||quota.used<0)throw new Error('insufficient fixture quota');
   // This is operator-only on an isolated test schema, between fully drained groups.
-  // Warm trials use synthetic counters. Stale trials require a real free snapshot
-  // with matching total, initialized BEFORE timing, then only age its timestamp.
+  // All trials use synthetic quota. Stale trials age the same snapshot.
+  if(group.startsWith('stale:') && (quota.remaining!==FIXTURE_QUOTA || quota.used!==0))throw new Error('stale fixture must match synthetic observation');
   return [{text:'SELECT count(*)::int AS active FROM spike220.resources WHERE lease_until>clock_timestamp()',values:[],requireZero:'active'},
     {text:'TRUNCATE spike220.resources,spike220.subjects,spike220.attempts',values:[]},
     {text:"SELECT spike220.initialize_budget($1,$2,clock_timestamp(),'fixture-period',20)",values:[quota.remaining,quota.used]},
@@ -51,7 +51,7 @@ export function initialization(binding,expiresAt,{includeFixture=true}={}) {
   const statements=[
     {text:"INSERT INTO spike220.catalog SELECT 'event'||i||'/'||market FROM generate_series(0,19) i CROSS JOIN unnest($1::text[]) market",values:[markets]},
     {text:"SELECT spike220.initialize_budget(100000,0,clock_timestamp(),'fixture-period',20)",values:[]},
-    {text:'INSERT INTO spike220.hosted_run(id,expires_at,active_group,runner,max_tickets) VALUES($1,$2,$3,$4,$5)',values:[binding.runId,expiresAt,rows[0].group,binding.neon.role,rows.length]},
+    {text:'INSERT INTO spike220.hosted_run(id,expires_at,active_group,runner,max_tickets) VALUES($1,$2,$3,$4,$5)',values:[binding.runId,expiresAt,rows[0].group,binding.database.role,rows.length]},
     {text:`INSERT INTO spike220.hosted_tickets(run_id,sample,group_name,mode,resource_keys,dimensions,owner_id)
       SELECT $1,x.sample,x."group",x.mode,ARRAY[x.resource],x.dimensions,x.owner::uuid
       FROM jsonb_to_recordset($2::jsonb) AS x(sample text,"group" text,mode text,resource text,dimensions text[],owner text)`,values:[binding.runId,JSON.stringify(rows)]},

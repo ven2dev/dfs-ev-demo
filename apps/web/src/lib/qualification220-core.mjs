@@ -2,25 +2,24 @@ import { createHash, timingSafeEqual } from 'node:crypto';
 import { performance } from 'node:perf_hooks';
 
 export const PROJECT_ID = 'prj_GLXDEeScMKPAeDAUoYIoiNknwKJd';
-export const NEON_PROJECT_ID = 'wandering-tree-67967407';
+export const REGION = 'iad1';
+export const FIXTURE_QUOTA = 100_000;
+export const syntheticQuota = async () => ({remaining:FIXTURE_QUOTA,used:0,last:0,observed:new Date().toISOString()});
 export const ROUTE = '/api/qualification220';
 const deny = () => new Response(null, {status:404,headers:{'Cache-Control':'no-store'}});
 const validSha = value => typeof value==='string' && /^[a-f0-9]{40}$/.test(value);
 const tokenDigest = token => createHash('sha256').update(token).digest();
 const requireValue = (value, message) => { if(!value)throw new Error(message); };
 
-// Fail closed until exact reviewed control-plane parity/protection receipts exist.
+// Fail closed until the owner binds the disposable candidate and Preview.
 export function validateBinding(c) {
-  requireValue(c?.projectId===PROJECT_ID && c?.production?.verified===true,'unverified Production profile');
-  requireValue(['iad1','pdx1'].includes(c.arm),'unsupported qualification arm');
-  requireValue(c.production.region==='iad1' && c.production.nodeMajor===24 && c.production.driverVersion==='1.2.0','runtime mismatch');
-  requireValue(c.neon?.projectId===NEON_PROJECT_ID && c.neon.schemaOnly===true && c.neon.verified===true,'unverified schema-only branch');
-  requireValue(/^br-/.test(c.neon.branchId) && c.neon.parentId===c.production.neonBranchId && c.neon.branchId!==c.neon.parentId,'branch mismatch');
-  requireValue(/^ep-/.test(c.neon.endpointId) && c.neon.endpointId!==c.production.neonEndpointId,'endpoint mismatch');
-  for(const k of ['neonRegion','minCu','maxCu','suspendSeconds']) requireValue(c.neon[k]===c.production[k],`compute mismatch: ${k}`);
-  requireValue(typeof c.neon.neonRegion==='string' && c.neon.minCu>0 && c.neon.maxCu>=c.neon.minCu && Number.isInteger(c.neon.suspendSeconds) && c.neon.suspendSeconds>=0,'missing compute settings');
-  requireValue(typeof c.neon.host==='string' && c.neon.host.endsWith('.neon.tech') && c.neon.host.startsWith(c.neon.endpointId+'-pooler.'),'pooled endpoint mismatch');
-  requireValue(c.neon.database===c.production.database && /^spike220_runner_[a-f0-9]{12}$/.test(c.neon.role),'database/role mismatch');
+  requireValue(c?.projectId===PROJECT_ID && c?.arm===REGION && c?.nodeMajor===24,'unsupported project, region or runtime');
+  const db=c.database;
+  requireValue(db?.provider==='planetscale' && db.verified===true && db.disposable===true && db.syntheticOnly===true,'unverified disposable database');
+  requireValue(db.region==='us-east-1' && db.sku==='PS-5' && db.topology==='single-node' && db.postgresMajor===18,'unexpected candidate configuration');
+  requireValue(/^[a-zA-Z0-9_-]+$/.test(db.clusterId??'') && /^[a-zA-Z0-9_-]+$/.test(db.branchId??''),'missing database identity');
+  requireValue(typeof db.host==='string' && /^[a-z0-9-]+\.pg\.psdb\.cloud$/.test(db.host) && db.port===6432,'pooled endpoint mismatch');
+  requireValue(/^[_a-zA-Z][_a-zA-Z0-9]{0,62}$/.test(db.name??'') && /^spike220_runner_[a-f0-9]{12}$/.test(db.role??''),'database/role mismatch');
   requireValue(c.gates?.automationBypass===true && c.gates?.branchScopedSensitive===true && c.gates?.previewProtection===true,'protection not verified');
   requireValue(/^feature\/dfsEV-220-[a-z0-9-]+$/.test(c.gitBranch) && validSha(c.reviewedSha),'unreviewed branch/SHA');
   requireValue(/^[a-f0-9-]{36}$/.test(c.runId),'invalid run ID');
@@ -39,19 +38,20 @@ export function authorize(request, env, now=Date.now()) {
     const match=/^Bearer ([a-f0-9]{64})$/.exec(request.headers.get('authorization')??'');
     if(!match || !/^[a-f0-9]{64}$/.test(env.SPIKE220_TOKEN_SHA256??'') || !timingSafeEqual(tokenDigest(match[1]),Buffer.from(env.SPIKE220_TOKEN_SHA256,'hex')))return null;
     const db=new URL(env.SPIKE220_DATABASE_URL??'');
-    if(db.protocol!==c.production.connectionProtocol || db.hostname!==c.neon.host || decodeURIComponent(db.pathname.slice(1))!==c.neon.database
-      || decodeURIComponent(db.username)!==c.neon.role || db.password.length<32 || db.port)return null;
-    if(JSON.stringify([...db.searchParams].sort())!==JSON.stringify([...c.production.connectionParams].sort()))return null;
+    if(db.protocol!=='postgresql:' || db.hostname!==c.database.host || Number(db.port)!==c.database.port
+      || decodeURIComponent(db.pathname.slice(1))!==c.database.name || decodeURIComponent(db.username)!==c.database.role
+      || !db.password || db.hash || db.search!=='?sslmode=verify-full')return null;
     return c;
   } catch {return null;}
 }
 export function validateSample(x) {
   requireValue(x && Object.keys(x).sort().join(',')==='index,mode,round,stage,workers','invalid fields');
-  requireValue(['warmup','warm','cold','stale','next-tick'].includes(x.stage) && ['baseline','admission','path'].includes(x.mode),'invalid stage/mode');
+  requireValue(['warmup','warm','cold','stale','next-tick','same-subject'].includes(x.stage) && ['baseline','admission','path'].includes(x.mode),'invalid stage/mode');
   requireValue([1,20].includes(x.workers) && Number.isInteger(x.round) && x.round>=0 && x.round<3,'invalid trial');
   const cap=x.stage==='warm'?1000:x.stage==='cold'?1:20;
   requireValue(Number.isInteger(x.index) && x.index>=0 && x.index<cap,'invalid sample index');
   requireValue(x.stage!=='cold'||(x.mode==='baseline'&&x.workers===1),'invalid cold mode');
+  requireValue(x.stage!=='same-subject'||(x.workers===20&&x.round===0&&x.mode==='admission'),'invalid same-subject control');
   requireValue(!['stale','next-tick'].includes(x.stage)||x.mode==='path','invalid stale mode');
   return x;
 }
@@ -72,9 +72,9 @@ export function createHandler({env,queryFactory,clock=()=>performance.now(),now=
     let sample;try{sample=validateSample(await readBounded(request));}catch{return deny();}
     try {
       if(!cached)cached=queryFactory(env.SPIKE220_DATABASE_URL);
-      const q=cached,key=sampleKey(sample);let row,sqlMs=0,queries=0,freeProbe=false,transportRoundTripMs=null;const queryTimings=[];
-      const run=async(text,args)=>{queries++;const t=clock();const out=await q(text,args);const elapsedMs=clock()-t;sqlMs+=elapsedMs;
-        queryTimings.push({operation:text==='SELECT 1'?'transport':text.match(/spike220\.([a-z_]+)/)?.[1]??'unknown',elapsedMs});return out;};
+      const q=cached,key=sampleKey(sample);let row,sqlMs=0,checkoutMs=0,queries=0,freeProbe=false,transportRoundTripMs=null;const queryTimings=[];
+      const run=async(text,args)=>{queries++;const t=clock();const out=await q(text,args,{fresh:sample.stage==='cold'});const elapsedMs=clock()-t;sqlMs+=elapsedMs;
+        checkoutMs+=out.checkoutMs;queryTimings.push({checkoutMs:out.checkoutMs,operation:text==='SELECT 1'?'transport':text.match(/spike220\.([a-z_]+)/)?.[1]??'unknown',elapsedMs});return out.rows;};
       if(sample.mode==='baseline') {
         [row]=await run('SELECT * FROM spike220.hosted_begin($1,$2,true)',[binding.runId,key]);
       } else if(sample.mode==='admission') {
@@ -97,17 +97,17 @@ export function createHandler({env,queryFactory,clock=()=>performance.now(),now=
         } else row={...row,outcome:['needs-init','backoff'].includes(claim.outcome)?claim.outcome:'probe-follower-stale'}; // immediate, no polling
       }
       if(!row)throw new Error('unknown sample');
-      const preProviderMs=clock()-entry,preProviderSqlMs=sqlMs,preProviderQueries=queries;
+      const preProviderMs=clock()-entry,preProviderSqlMs=sqlMs,preProviderCheckoutMs=checkoutMs,preProviderQueries=queries;
       // No paid provider call. Counted lease release is after the pre-provider boundary.
       if(row.outcome==='leader')await run('SELECT spike220.hosted_release($1,$2)',[binding.runId,key]);
       // Standalone trivial query through the identical cached driver, outside
       // the baseline boundary. Never inserted into the admission path.
       if(sample.mode==='baseline' && sample.stage!=='cold'){await run('SELECT 1',[]);transportRoundTripMs=queryTimings.at(-1).elapsedMs;}
       return Response.json({sample,arm:binding.arm,runId:binding.runId,outcome:row.outcome,freeProbe,
-        inFunctionPreProviderMs:preProviderMs,preProviderSqlMs,preProviderQueries,
+        inFunctionPreProviderMs:preProviderMs,preProviderSqlMs,preProviderCheckoutMs,preProviderQueries,
         queryTimings,transportRoundTripMs,sqlRoundTripMs:sqlMs,inFunctionTotalMs:clock()-entry,
         sqlQueries:queries,region:env.VERCEL_REGION,sha:env.VERCEL_GIT_COMMIT_SHA,
-        coldQualification:'requires independent endpoint-suspension evidence; idle time is insufficient'},
+        connectionDiagnostic:sample.stage==='cold'?'fresh-client-to-warm-pooler':null},
       {headers:{'Cache-Control':'no-store'}});
     } catch {return Response.json({error:'sample failed; do not retry ambiguous writes'}, {status:503,headers:{'Cache-Control':'no-store'}});}
   };

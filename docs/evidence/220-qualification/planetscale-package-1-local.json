@@ -1,0 +1,57 @@
+{
+  "issue": 220,
+  "scope": "Package 1 local only; harness adaptation reviewed against the standalone main merge",
+  "head": "8bd45a91d24914fac2251fe8fb9d2d13bed17734",
+  "mergeHead": "f30b93f23a30316213f07ba346e4a301550d57b0",
+  "node": "24.21.0",
+  "next": "16.4.2",
+  "pg": "8.23.1",
+  "vercelFunctions": "3.11.1",
+  "fixture": {
+    "postgres": "18.6",
+    "tmpfsMiB": 512,
+    "pgBouncer": "1.25.2",
+    "poolMode": "transaction",
+    "clientTls": "certificate verified",
+    "cleanupVerified": true
+  },
+  "checks": {
+    "node --test tests/220-hosted-harness.check.mjs": {
+      "passed": 26
+    },
+    "bash scripts/spikes/220-hosted/local-pool.sh": {
+      "passed": 16,
+      "statementTimeoutSqlstate": "57014",
+      "lockTimeoutSqlstate": "55P03"
+    },
+    "npm run typecheck": "passed",
+    "npm run lint": "passed (12 boundary checks)",
+    "npm run test:repo-layout": "passed (13 checks)",
+    "clean web-only npm ci --omit=dev": "passed; runtime pg and pool lifecycle import resolved",
+    "npm run build": {
+      "status": "passed",
+      "bundler": "Turbopack (default)",
+      "verification": "Independent review ran the command in this worktree; pass confirmed by the owner on 2026-11-10."
+    },
+    "npm run build -- --webpack": "passed; qualification route and proxy compiled"
+  },
+  "hostedRun": false,
+  "gitBlobIds": {
+    "apps/web/package.json": "15057a8b25326ced8aa9de4581dde4b8e3b3668c",
+    "package-lock.json": "8484b8fb20d6efc8456ee68a5f51c28b08946887",
+    "apps/web/src/app/api/qualification220/route.ts": "69bbc91a1b3015d1edd47706bba45f66ee866859",
+    "apps/web/src/lib/qualification220-core.mjs": "8ad6a3edef59681e9a301cce733204855588d48c",
+    "apps/web/src/lib/qualification220-pg.mjs": "fc3de24c5442a599ae2a5e6df43fd7e73192cf32",
+    "apps/web/src/proxy.ts": "27ce121d7ffd184d1a5697e0bafaad5153ecab94",
+    "apps/web/vercel.json": "c5b9c7c15667caf8927b73e1d4245e86847b1034",
+    "packages/db/proposals/220_atomic_leader_gcra.sql": "bd3fb632506af3a1f6bc8512ac2aaa42d88be579",
+    "packages/db/proposals/220_hosted_harness.sql": "a95da2498f0bbca8a3dd9dcd2d2542ef6a85622d",
+    "scripts/spikes/220-hosted/local-pool.sh": "e83c9f99c758acc45dbae3e34062f6c04093e005",
+    "scripts/spikes/220-hosted/local-db.mjs": "10c7d8ad3bc490c8449cd23aefc8c833a8f4c250",
+    "scripts/spikes/220-hosted/load.mjs": "e90f56c3022082369ca620e9537dec54a19fd9c5",
+    "scripts/spikes/220-hosted/plan.mjs": "ac1957fbfca994415e8f6fdf194ce902dd632687",
+    "scripts/spikes/220-hosted/setup.mjs": "35457abbe06a77958e3696a6566bd9f8a8798401",
+    "tests/220-hosted-harness.check.mjs": "ae0b33676bfae2e88e0df8299a8c35b6e662148d"
+  },
+  "mainMergeCommit": "118826b2940efab93cbe7139c970cd13095d4c4c"
+}
