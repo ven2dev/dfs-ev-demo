@@ -97,4 +97,3 @@ export const verifyPublicEvidenceReceipt = (receipt: Record<string, unknown>, re
   // Full forecast/context/value/linkage checks require the retained bytes.
   return { audit: "public-metadata" as const, recomputed: true, verification };
 };
-
