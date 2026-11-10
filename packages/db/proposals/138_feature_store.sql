@@ -66,14 +66,13 @@ CREATE TABLE fs138.source_snapshots (
   decoded_sha256 fs138.sha256 NOT NULL,
   header_sha256 fs138.sha256 NOT NULL,
   row_count integer NOT NULL CHECK (row_count >= 0),
-  captured_at timestamptz NOT NULL,
+  captured_at timestamptz NOT NULL, -- Host observation, separate from DB ingestion time.
   available_at timestamptz NOT NULL,
   ingested_at timestamptz NOT NULL,
   evidence_basis text NOT NULL CHECK (evidence_basis IN ('prospective', 'retrospective')),
   deleted_at timestamptz,
   source_manifest jsonb NOT NULL DEFAULT '{}' CHECK (jsonb_typeof(source_manifest) = 'object'),
-  UNIQUE (profile_id, sha256),
-  CHECK (captured_at <= ingested_at)
+  UNIQUE (profile_id, sha256)
 );
 CREATE INDEX snapshot_as_of ON fs138.source_snapshots (profile_id, available_at DESC, ingested_at DESC);
 
@@ -207,24 +206,28 @@ GRANT UPDATE (status, counts, error_code, finished_at) ON fs138.job_runs TO fs13
 -- Simple normalized evidence view. Cutoffs are parameters of the application
 -- selector, not session state or reader locks. Unknown normalizer versions are
 -- excluded explicitly by each versioned job.
-CREATE VIEW fs138.normalized_evidence AS
+CREATE VIEW fs138.normalized_job_evidence AS
 WITH normalized AS (
   SELECT 'stats'::text AS feed, n.player_id || '/' || n.game_id AS natural_key,
-    n.snapshot_id, n.normalizer_version, to_jsonb(n) - ARRAY['snapshot_id','normalizer_version','job_id'] AS data
+    n.snapshot_id, n.normalizer_version, n.job_id AS normalizer_job_id, to_jsonb(n) - ARRAY['snapshot_id','normalizer_version','job_id'] AS data
     FROM fs138.norm_player_game_stats n
   UNION ALL
-  SELECT 'schedule', n.game_id, n.snapshot_id, n.normalizer_version,
+  SELECT 'schedule', n.game_id, n.snapshot_id, n.normalizer_version, n.job_id,
     to_jsonb(n) - ARRAY['snapshot_id','normalizer_version','job_id'] FROM fs138.norm_schedule n
   UNION ALL
-  SELECT 'roster', n.player_id || '/' || n.season || '/' || n.week || '/' || n.team, n.snapshot_id, n.normalizer_version,
+  SELECT 'roster', n.player_id || '/' || n.season || '/' || n.week || '/' || n.team, n.snapshot_id, n.normalizer_version, n.job_id,
     to_jsonb(n) - ARRAY['snapshot_id','normalizer_version','job_id'] FROM fs138.norm_identity n
   UNION ALL
-  SELECT 'participation', n.player_id || '/' || n.game_id, n.snapshot_id, n.normalizer_version,
+  SELECT 'participation', n.player_id || '/' || n.game_id, n.snapshot_id, n.normalizer_version, n.job_id,
     to_jsonb(n) - ARRAY['snapshot_id','normalizer_version','job_id'] FROM fs138.norm_participation n
 )
-SELECT n.*, s.profile_id, s.available_at, s.ingested_at
+SELECT n.*, s.profile_id, s.available_at, s.ingested_at, s.job_id AS source_job_id
 FROM normalized n JOIN fs138.source_snapshots s USING (snapshot_id);
-GRANT SELECT ON fs138.normalized_evidence TO fs138_pipeline_writer, fs138_reader;
+-- Preserve the legacy projection; trusted selectors use both job identities.
+CREATE VIEW fs138.normalized_evidence AS
+SELECT feed,natural_key,snapshot_id,normalizer_version,data,profile_id,available_at,ingested_at
+FROM fs138.normalized_job_evidence;
+GRANT SELECT ON fs138.normalized_job_evidence,fs138.normalized_evidence TO fs138_pipeline_writer, fs138_reader;
 
 -- STEP 4: typed season jobs; mutable proposal only.
 CREATE INDEX identity_player_week ON fs138.norm_identity (player_id, season, week, team);
@@ -310,136 +313,8 @@ REVOKE ALL ON FUNCTION fs138.stamp_derived_time() FROM PUBLIC;
 -- natural keys AFTER snapshot eligibility. All field access stays typed.
 -- Snapshot-level lineage is bounded to the seasons the typed job queries.
 -- Derive scope from normalized rows, rather than trusting manifest season tags.
-CREATE FUNCTION fs138.qb_job_snapshot_ids(p_season integer,p_checkpoint timestamptz,
- p_purpose text,p_normalizer text) RETURNS TABLE(snapshot_id uuid)
-LANGUAGE sql STABLE AS $$
- WITH scoped AS (
-  SELECT snapshot_id FROM fs138.norm_schedule WHERE normalizer_version=p_normalizer
-   AND season BETWEEN CASE WHEN p_purpose='labels' THEN p_season ELSE 2021 END AND p_season
-  UNION SELECT snapshot_id FROM fs138.norm_identity WHERE normalizer_version=p_normalizer
-   AND season BETWEEN CASE WHEN p_purpose='labels' THEN p_season ELSE 2021 END AND p_season
-  UNION SELECT snapshot_id FROM fs138.norm_player_game_stats WHERE normalizer_version=p_normalizer
-   AND substring(game_id from '^([0-9]{4})_')::integer BETWEEN CASE WHEN p_purpose='labels' THEN p_season ELSE 2021 END AND p_season
-  UNION SELECT snapshot_id FROM fs138.norm_participation WHERE normalizer_version=p_normalizer
-   AND substring(game_id from '^([0-9]{4})_')::integer BETWEEN CASE WHEN p_purpose='labels' THEN p_season ELSE 2021 END AND p_season
- ) SELECT s.snapshot_id FROM scoped JOIN fs138.source_snapshots s USING(snapshot_id)
- JOIN fs138.job_runs j ON j.job_id=s.job_id
- WHERE s.ingested_at<=p_checkpoint AND s.deleted_at IS NULL AND j.status='succeeded'
- AND p_purpose IN('features','labels');
-$$;
-REVOKE ALL ON FUNCTION fs138.qb_job_snapshot_ids(integer,timestamptz,text,text) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION fs138.qb_job_snapshot_ids(integer,timestamptz,text,text) TO fs138_pipeline_writer;
-
-CREATE FUNCTION fs138.qb_job_context(p_season integer, p_checkpoint timestamptz,
-  p_mode text, p_purpose text, p_normalizer text)
-RETURNS TABLE(player_id text, game_id text, season integer, cutoff timestamptz,
-  context_game_id text, context_kickoff timestamptz, discovery_kickoff timestamptz,
-  yards integer, reasons text[], target_reasons text[])
--- SECURITY INVOKER, with explicitly qualified relations. No SET clause: this
--- set-returning SQL function stays inlinable so each call can plan from its
--- season/mode/purpose instead of reusing a poor generic function-body plan.
-LANGUAGE sql STABLE AS $$
-WITH snapshots AS MATERIALIZED (
-  SELECT s.* FROM fs138.source_snapshots s JOIN fs138.job_runs j ON j.job_id=s.job_id
-  WHERE s.ingested_at <= p_checkpoint AND s.deleted_at IS NULL AND j.status='succeeded'
-    AND p_mode IN ('strict-point-in-time-v1','retrospective-reconstruction-v1')
-    AND p_purpose IN ('features','labels')
-    AND s.snapshot_id IN(SELECT snapshot_id FROM fs138.qb_job_snapshot_ids(p_season,p_checkpoint,p_purpose,p_normalizer))
-), discovery_schedule AS MATERIALIZED (
-  SELECT DISTINCT ON(n.game_id) n.*,
-    count(*) OVER(PARTITION BY n.game_id,s.available_at,s.ingested_at) AS heads
-  FROM fs138.norm_schedule n JOIN snapshots s USING(snapshot_id)
-  WHERE n.normalizer_version=p_normalizer
-  ORDER BY n.game_id,s.available_at DESC,s.ingested_at DESC,n.snapshot_id
-), discovery_roster AS (
-  SELECT DISTINCT ON(n.player_id,n.season,n.week,n.team) n.*
-  FROM fs138.norm_identity n JOIN snapshots s USING(snapshot_id) WHERE n.normalizer_version=p_normalizer
-  ORDER BY n.player_id,n.season,n.week,n.team,s.available_at DESC,s.ingested_at DESC,n.snapshot_id
-), discovery_stats AS (
-  SELECT DISTINCT ON(n.player_id,n.game_id) n.*
-  FROM fs138.norm_player_game_stats n JOIN snapshots s USING(snapshot_id) WHERE n.normalizer_version=p_normalizer
-  ORDER BY n.player_id,n.game_id,s.available_at DESC,s.ingested_at DESC,n.snapshot_id
-), population AS MATERIALIZED (
-  SELECT n.player_id,s.game_id FROM discovery_roster n JOIN discovery_schedule s
-    ON n.season=s.season AND n.week=s.week AND n.team IN(s.home_team,s.away_team)
-  UNION SELECT player_id,game_id FROM discovery_stats
-), targets AS MATERIALIZED (
-  SELECT p.*,coalesce(s.season,substring(p.game_id from '^([0-9]{4})_')::integer) AS season,
-    s.kickoff-interval '1 hour' AS cutoff,s.heads AS discovery_heads
-  FROM population p LEFT JOIN discovery_schedule s USING(game_id)
-  WHERE coalesce(s.season,substring(p.game_id from '^([0-9]{4})_')::integer)=p_season
-), requests AS MATERIALIZED (
-  SELECT t.*,h.game_id AS context_game_id,d.kickoff AS discovery_kickoff,
-    CASE WHEN p_purpose='labels' THEN p_checkpoint ELSE t.cutoff END AS eligibility_clock
-  FROM targets t JOIN population h ON h.player_id=t.player_id
-    AND (p_purpose='features' OR h.game_id=t.game_id)
-  LEFT JOIN discovery_schedule d ON d.game_id=h.game_id
-), schedules AS MATERIALIZED (
-  SELECT DISTINCT ON(r.player_id,r.game_id,r.context_game_id)
-    r.player_id,r.game_id,r.context_game_id,n.season,n.week,n.kickoff,n.home_team,n.away_team,
-    n.state='usable' AND n.game_type='REG' AS usable,n.state='ambiguous' AS ambiguous,
-    n.home_score IS NOT NULL AND n.away_score IS NOT NULL AS completed,
-    count(*) OVER(PARTITION BY r.player_id,r.game_id,r.context_game_id,s.available_at,s.ingested_at) AS heads
-  FROM requests r JOIN fs138.norm_schedule n ON n.game_id=r.context_game_id JOIN snapshots s USING(snapshot_id)
-  WHERE n.normalizer_version=p_normalizer AND (p_mode='retrospective-reconstruction-v1'
-    OR (s.available_at<=r.eligibility_clock AND s.ingested_at<=r.eligibility_clock))
-  ORDER BY r.player_id,r.game_id,r.context_game_id,s.available_at DESC,s.ingested_at DESC,n.snapshot_id
-), stats AS MATERIALIZED (
-  SELECT DISTINCT ON(r.player_id,r.game_id,r.context_game_id)
-    r.player_id,r.game_id,r.context_game_id,n.team,n.passing_yards AS yards,
-    n.state='usable' AS usable,n.state='ambiguous' AS ambiguous,
-    count(*) OVER(PARTITION BY r.player_id,r.game_id,r.context_game_id,s.available_at,s.ingested_at) AS heads
-  FROM requests r JOIN fs138.norm_player_game_stats n ON n.player_id=r.player_id AND n.game_id=r.context_game_id
-    JOIN snapshots s USING(snapshot_id)
-  WHERE n.normalizer_version=p_normalizer AND (p_mode='retrospective-reconstruction-v1'
-    OR (s.available_at<=r.eligibility_clock AND s.ingested_at<=r.eligibility_clock))
-  ORDER BY r.player_id,r.game_id,r.context_game_id,s.available_at DESC,s.ingested_at DESC,n.snapshot_id
-), identity_heads AS (
-  SELECT DISTINCT ON(r.player_id,r.game_id,r.context_game_id,n.team)
-    r.player_id,r.game_id,r.context_game_id,n.team,n.state,n.position,
-    count(*) OVER(PARTITION BY r.player_id,r.game_id,r.context_game_id,n.team,s.available_at,s.ingested_at) AS heads
-  FROM requests r JOIN schedules g USING(player_id,game_id,context_game_id)
-    JOIN fs138.norm_identity n ON n.player_id=r.player_id AND n.season=g.season AND n.week=g.week
-      AND n.team IN(g.home_team,g.away_team) JOIN snapshots s USING(snapshot_id)
-  WHERE n.normalizer_version=p_normalizer AND (p_mode='retrospective-reconstruction-v1'
-    OR (s.available_at<=r.eligibility_clock AND s.ingested_at<=r.eligibility_clock))
-  ORDER BY r.player_id,r.game_id,r.context_game_id,n.team,s.available_at DESC,s.ingested_at DESC,n.snapshot_id
-), identities AS MATERIALIZED (
-  SELECT player_id,game_id,context_game_id,min(team) AS team,sum(heads) AS heads,
-    bool_and(state='usable' AND position='QB') AS usable,bool_or(state='ambiguous') AS ambiguous
-  FROM identity_heads GROUP BY player_id,game_id,context_game_id
-), participation AS MATERIALIZED (
-  SELECT DISTINCT ON(r.player_id,r.game_id,r.context_game_id)
-    r.player_id,r.game_id,r.context_game_id,n.state='usable' AND n.offense_play_count>0 AS usable,n.state='ambiguous' AS ambiguous,
-    count(*) OVER(PARTITION BY r.player_id,r.game_id,r.context_game_id,s.available_at,s.ingested_at) AS heads
-  FROM requests r JOIN fs138.norm_participation n ON n.player_id=r.player_id AND n.game_id=r.context_game_id
-    JOIN snapshots s USING(snapshot_id)
-  WHERE n.normalizer_version=p_normalizer AND (p_mode='retrospective-reconstruction-v1'
-    OR (s.available_at<=r.eligibility_clock AND s.ingested_at<=r.eligibility_clock))
-  ORDER BY r.player_id,r.game_id,r.context_game_id,s.available_at DESC,s.ingested_at DESC,n.snapshot_id
-)
-SELECT r.player_id,r.game_id,r.season,r.cutoff,r.context_game_id,g.kickoff,r.discovery_kickoff,st.yards,
-  array_remove(ARRAY[
-    CASE WHEN g.heads IS NULL THEN 'schedule-missing' WHEN g.heads<>1 OR g.ambiguous THEN 'schedule-ambiguous' WHEN NOT g.usable THEN 'schedule-refused' END,
-    CASE WHEN NOT coalesce(g.completed,false) THEN 'completion-unavailable' END,
-    CASE WHEN st.heads IS NULL THEN 'stats-missing' WHEN st.heads<>1 OR st.ambiguous THEN 'stats-ambiguous' WHEN NOT st.usable THEN 'stats-refused' END,
-    CASE WHEN i.heads IS NULL THEN 'identity-missing' WHEN i.heads<>1 OR i.ambiguous THEN 'identity-ambiguous' WHEN NOT i.usable THEN 'identity-refused' END,
-    CASE WHEN st.team IS NOT NULL AND (st.team NOT IN(g.home_team,g.away_team) OR st.team<>i.team) THEN 'identity-team-conflict' END,
-    CASE WHEN p.heads IS NULL THEN 'positive-offense-participation-missing' WHEN p.heads<>1 OR p.ambiguous THEN 'participation-ambiguous' WHEN NOT p.usable THEN 'participation-refused' END
-  ],NULL),
-  array_remove(ARRAY[
-    CASE WHEN r.cutoff IS NULL THEN 'target-schedule-missing' WHEN r.discovery_heads<>1 THEN 'target-schedule-ambiguous' END,
-    CASE WHEN g.heads IS NULL THEN 'target-schedule-missing' WHEN g.heads<>1 OR g.ambiguous THEN 'target-schedule-ambiguous'
-      WHEN NOT g.usable THEN 'target-schedule-refused' WHEN g.kickoff-interval '1 hour'<>r.cutoff THEN 'target-schedule-changed' END,
-    CASE WHEN i.heads IS NULL THEN 'target-identity-missing' WHEN i.heads<>1 OR i.ambiguous THEN 'target-identity-ambiguous' WHEN NOT i.usable THEN 'target-identity-refused' END
-  ],NULL)
-FROM requests r LEFT JOIN schedules g USING(player_id,game_id,context_game_id)
-  LEFT JOIN stats st USING(player_id,game_id,context_game_id)
-  LEFT JOIN identities i USING(player_id,game_id,context_game_id)
-  LEFT JOIN participation p USING(player_id,game_id,context_game_id);
-$$;
-REVOKE ALL ON FUNCTION fs138.qb_job_context(integer,timestamptz,text,text,text) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION fs138.qb_job_context(integer,timestamptz,text,text,text) TO fs138_pipeline_writer;
+-- Producer input/context definitions live in 241_job_visibility.sql, after
+-- the shared completion relation. Keep one canonical implementation.
 
 -- Standard bulk-load statistics maintenance prevents generic cardinality guesses
 -- from choosing quadratic nested loops. This grant does not permit row mutation.

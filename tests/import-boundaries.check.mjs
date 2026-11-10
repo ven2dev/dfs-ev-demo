@@ -135,3 +135,17 @@ test("pipeline runtime refuses tooling while consumer tests and disposable harne
   for (const source of ["@dfs-ev/db-tooling/test-support/../tests/harness.ts", "../../../packages/db/tooling/tests/harness.ts"])
     await refuses("services/pipeline/src/boundary-probe.ts", `import "${source}";`, source.startsWith(".") ? "import/no-relative-packages" : "no-restricted-imports");
 });
+
+test("only the normalizer can import the verified wire reader", async () => {
+  const directory = "services/pipeline/src/featureStore/";
+  const source = "./verifiedWireAccess.ts";
+  for (const code of [...forms(source), `import { readVerifiedWire as read } from "${source}";`,
+    `import * as internal from "${source}";`]) {
+    await refuses(directory + "boundary-probe.ts", code, "import/no-restricted-paths");
+  }
+  await refuses(directory + "objectStore.ts", `import { readVerifiedWire as read } from "${source}";`, "no-restricted-imports");
+  await refuses(directory + "objectStore.ts", `const access = import("${source}");`, "no-restricted-syntax");
+  await refuses(directory + "normalize.ts", `import { rememberVerifiedWire } from "${source}";`, "no-restricted-imports");
+  assert.deepEqual(await lint(directory + "normalize.ts", `import { readVerifiedWire } from "${source}";`), []);
+  assert.deepEqual(await lint(directory + "objectStore.ts", `import { rememberVerifiedWire } from "${source}";`), []);
+});

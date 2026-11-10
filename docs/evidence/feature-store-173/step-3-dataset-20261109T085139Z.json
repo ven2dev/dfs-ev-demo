@@ -1,0 +1,773 @@
+{
+  "schema": "fs173-dataset-qualification-v1",
+  "issue": 173,
+  "step": 3,
+  "checkpoint": "286f4d05d5d1eb34ec085a1a772f7e21afb40a27",
+  "sourceCommit": "43a3802ab745944d077e1198170e701b291249ee",
+  "datasetVerdict": "pass",
+  "predictionQualification": "step-3-prediction-20261109T084110Z.json",
+  "predictionRerun": false,
+  "startedAt": "2026-11-09T08:50:37.761112+00:00",
+  "finishedAt": "2026-11-09T08:51:39.185783+00:00",
+  "runtime": "v24.18.1",
+  "boundary": "three alternating fresh-process cold and warm builds; cold includes Node startup, new restricted connection, ObjectStore open, full join/write/hash; OS/DB caches not flushed",
+  "deadlineMs": 30000,
+  "targetMs": 21000,
+  "trials": [
+    {
+      "round": 1,
+      "mode": "cold",
+      "measuredMs": 472.5904999999984,
+      "headroom": 0.9842469833333334,
+      "processId": 38937,
+      "work": {
+        "statements": 8,
+        "rightsQueries": 2,
+        "pointInTimeJoins": 1,
+        "perRowQueries": 0,
+        "objectWrites": 1,
+        "sourceByteReads": 0
+      },
+      "rowCount": 2504,
+      "fileSha256": "9097544533dbee8869e0569e9bfe4966e854913d9a28698f31cb439d5a52f047",
+      "contentSha256": "a4de10aaefec7ec33d1c913fc255ee3527108f9d1f53e22afb79b82a9f9c607d"
+    },
+    {
+      "round": 1,
+      "mode": "warm",
+      "measuredMs": 360.9256250000035,
+      "headroom": 0.9879691458333332,
+      "processId": 38512,
+      "work": {
+        "statements": 8,
+        "rightsQueries": 2,
+        "pointInTimeJoins": 1,
+        "perRowQueries": 0,
+        "objectWrites": 1,
+        "sourceByteReads": 0
+      },
+      "rowCount": 2504,
+      "fileSha256": "9097544533dbee8869e0569e9bfe4966e854913d9a28698f31cb439d5a52f047",
+      "contentSha256": "a4de10aaefec7ec33d1c913fc255ee3527108f9d1f53e22afb79b82a9f9c607d"
+    },
+    {
+      "round": 2,
+      "mode": "cold",
+      "measuredMs": 451.2832500000004,
+      "headroom": 0.9849572249999999,
+      "processId": 38939,
+      "work": {
+        "statements": 8,
+        "rightsQueries": 2,
+        "pointInTimeJoins": 1,
+        "perRowQueries": 0,
+        "objectWrites": 1,
+        "sourceByteReads": 0
+      },
+      "rowCount": 2504,
+      "fileSha256": "9097544533dbee8869e0569e9bfe4966e854913d9a28698f31cb439d5a52f047",
+      "contentSha256": "a4de10aaefec7ec33d1c913fc255ee3527108f9d1f53e22afb79b82a9f9c607d"
+    },
+    {
+      "round": 2,
+      "mode": "warm",
+      "measuredMs": 344.166833999996,
+      "headroom": 0.9885277722000001,
+      "processId": 38512,
+      "work": {
+        "statements": 8,
+        "rightsQueries": 2,
+        "pointInTimeJoins": 1,
+        "perRowQueries": 0,
+        "objectWrites": 1,
+        "sourceByteReads": 0
+      },
+      "rowCount": 2504,
+      "fileSha256": "9097544533dbee8869e0569e9bfe4966e854913d9a28698f31cb439d5a52f047",
+      "contentSha256": "a4de10aaefec7ec33d1c913fc255ee3527108f9d1f53e22afb79b82a9f9c607d"
+    },
+    {
+      "round": 3,
+      "mode": "cold",
+      "measuredMs": 438.9046659999949,
+      "headroom": 0.9853698444666669,
+      "processId": 38954,
+      "work": {
+        "statements": 8,
+        "rightsQueries": 2,
+        "pointInTimeJoins": 1,
+        "perRowQueries": 0,
+        "objectWrites": 1,
+        "sourceByteReads": 0
+      },
+      "rowCount": 2504,
+      "fileSha256": "9097544533dbee8869e0569e9bfe4966e854913d9a28698f31cb439d5a52f047",
+      "contentSha256": "a4de10aaefec7ec33d1c913fc255ee3527108f9d1f53e22afb79b82a9f9c607d"
+    },
+    {
+      "round": 3,
+      "mode": "warm",
+      "measuredMs": 342.2430000000022,
+      "headroom": 0.9885919,
+      "processId": 38512,
+      "work": {
+        "statements": 8,
+        "rightsQueries": 2,
+        "pointInTimeJoins": 1,
+        "perRowQueries": 0,
+        "objectWrites": 1,
+        "sourceByteReads": 0
+      },
+      "rowCount": 2504,
+      "fileSha256": "9097544533dbee8869e0569e9bfe4966e854913d9a28698f31cb439d5a52f047",
+      "contentSha256": "a4de10aaefec7ec33d1c913fc255ee3527108f9d1f53e22afb79b82a9f9c607d"
+    }
+  ],
+  "verification": {
+    "verdict": "pass",
+    "trials": 6,
+    "coldProcesses": 3,
+    "warmProcesses": 1,
+    "outputFilesVerified": 38,
+    "sourceFilesVerified": 48,
+    "rightsChecksPerTrial": 2,
+    "exactBytesAndNaturalHashVerified": true,
+    "coverage": [
+      {
+        "season": 2022,
+        "rows": 595,
+        "strata": {
+          "2-4": 62,
+          "5-8": 67,
+          "9-16": 466
+        }
+      },
+      {
+        "season": 2023,
+        "rows": 632,
+        "strata": {
+          "2-4": 50,
+          "5-8": 81,
+          "9-16": 501
+        }
+      },
+      {
+        "season": 2024,
+        "rows": 644,
+        "strata": {
+          "2-4": 25,
+          "5-8": 51,
+          "9-16": 568
+        }
+      },
+      {
+        "season": 2025,
+        "rows": 633,
+        "strata": {
+          "2-4": 39,
+          "5-8": 34,
+          "9-16": 560
+        }
+      }
+    ],
+    "maximumMs": 472.5904999999984,
+    "minimumHeadroom": 0.9842469833333334,
+    "legacyCompactProjectionMatches": true,
+    "routingRefusalChecks": 6
+  },
+  "artifact": {
+    "objectKey": "datasets/9097544533dbee8869e0569e9bfe4966e854913d9a28698f31cb439d5a52f047",
+    "fileSha256": "9097544533dbee8869e0569e9bfe4966e854913d9a28698f31cb439d5a52f047",
+    "contentSha256": "a4de10aaefec7ec33d1c913fc255ee3527108f9d1f53e22afb79b82a9f9c607d",
+    "byteSize": 3527908,
+    "rowCount": 2504,
+    "storageRoot": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-164/codex-briefs/173-step3-dataset-20261109T085021Z/dataset-objects-G5NZfL/"
+  },
+  "environment": {
+    "tier": "large",
+    "lane": "lane-3",
+    "diskAdmission": {
+      "project": "dfs-ev-demo-test-lane-3",
+      "tier": "large",
+      "capacityBytes": 2147483648,
+      "requiredFreeBytes": 637534208,
+      "availableBytes": 2099044352,
+      "retainedWalBytes": 16777216
+    },
+    "mount": {
+      "/var/lib/postgresql": "rw,size=2g"
+    },
+    "postgresArguments": [
+      "postgres"
+    ],
+    "observedPostgres": {
+      "observedAt": "2026-11-09T08:50:37.755Z",
+      "lane": "lane-3",
+      "tier": "large",
+      "database": "dfs_ev_test",
+      "role": "dfs_ev_test",
+      "server_port": 5432,
+      "version": "PostgreSQL 18.6 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+      "settings": [
+        {
+          "name": "TimeZone",
+          "setting": "UTC",
+          "unit": null,
+          "source": "configuration file",
+          "boot_val": "GMT",
+          "reset_val": "UTC"
+        },
+        {
+          "name": "block_size",
+          "setting": "8192",
+          "unit": null,
+          "source": "default",
+          "boot_val": "8192",
+          "reset_val": "8192"
+        },
+        {
+          "name": "checkpoint_completion_target",
+          "setting": "0.9",
+          "unit": null,
+          "source": "default",
+          "boot_val": "0.9",
+          "reset_val": "0.9"
+        },
+        {
+          "name": "checkpoint_timeout",
+          "setting": "300",
+          "unit": "s",
+          "source": "default",
+          "boot_val": "300",
+          "reset_val": "300"
+        },
+        {
+          "name": "effective_cache_size",
+          "setting": "524288",
+          "unit": "8kB",
+          "source": "default",
+          "boot_val": "524288",
+          "reset_val": "524288"
+        },
+        {
+          "name": "fsync",
+          "setting": "on",
+          "unit": null,
+          "source": "default",
+          "boot_val": "on",
+          "reset_val": "on"
+        },
+        {
+          "name": "full_page_writes",
+          "setting": "on",
+          "unit": null,
+          "source": "default",
+          "boot_val": "on",
+          "reset_val": "on"
+        },
+        {
+          "name": "idle_in_transaction_session_timeout",
+          "setting": "0",
+          "unit": "ms",
+          "source": "default",
+          "boot_val": "0",
+          "reset_val": "0"
+        },
+        {
+          "name": "jit",
+          "setting": "on",
+          "unit": null,
+          "source": "default",
+          "boot_val": "on",
+          "reset_val": "on"
+        },
+        {
+          "name": "lock_timeout",
+          "setting": "0",
+          "unit": "ms",
+          "source": "default",
+          "boot_val": "0",
+          "reset_val": "0"
+        },
+        {
+          "name": "maintenance_work_mem",
+          "setting": "65536",
+          "unit": "kB",
+          "source": "default",
+          "boot_val": "65536",
+          "reset_val": "65536"
+        },
+        {
+          "name": "max_parallel_workers_per_gather",
+          "setting": "2",
+          "unit": null,
+          "source": "default",
+          "boot_val": "2",
+          "reset_val": "2"
+        },
+        {
+          "name": "max_wal_size",
+          "setting": "1024",
+          "unit": "MB",
+          "source": "configuration file",
+          "boot_val": "1024",
+          "reset_val": "1024"
+        },
+        {
+          "name": "max_worker_processes",
+          "setting": "8",
+          "unit": null,
+          "source": "default",
+          "boot_val": "8",
+          "reset_val": "8"
+        },
+        {
+          "name": "min_wal_size",
+          "setting": "80",
+          "unit": "MB",
+          "source": "configuration file",
+          "boot_val": "80",
+          "reset_val": "80"
+        },
+        {
+          "name": "server_version",
+          "setting": "18.6",
+          "unit": null,
+          "source": "default",
+          "boot_val": "18.6",
+          "reset_val": "18.6"
+        },
+        {
+          "name": "shared_buffers",
+          "setting": "16384",
+          "unit": "8kB",
+          "source": "configuration file",
+          "boot_val": "16384",
+          "reset_val": "16384"
+        },
+        {
+          "name": "statement_timeout",
+          "setting": "15000",
+          "unit": "ms",
+          "source": "client",
+          "boot_val": "0",
+          "reset_val": "15000"
+        },
+        {
+          "name": "synchronous_commit",
+          "setting": "on",
+          "unit": null,
+          "source": "default",
+          "boot_val": "on",
+          "reset_val": "on"
+        },
+        {
+          "name": "temp_file_limit",
+          "setting": "-1",
+          "unit": "kB",
+          "source": "default",
+          "boot_val": "-1",
+          "reset_val": "-1"
+        },
+        {
+          "name": "track_commit_timestamp",
+          "setting": "off",
+          "unit": null,
+          "source": "default",
+          "boot_val": "off",
+          "reset_val": "off"
+        },
+        {
+          "name": "wal_level",
+          "setting": "replica",
+          "unit": null,
+          "source": "default",
+          "boot_val": "replica",
+          "reset_val": "replica"
+        },
+        {
+          "name": "work_mem",
+          "setting": "4096",
+          "unit": "kB",
+          "source": "default",
+          "boot_val": "4096",
+          "reset_val": "4096"
+        }
+      ]
+    },
+    "configurationHashes": {
+      "compose.test.yml": "c930cb6f2cc7c624e579ed9ca6cf93c88c1d37c2b435b2b5a83d30d97922ef70",
+      "compose.feature-store-spike.yml": "035f93c5e49def485c5ac0c632d11bf5234ba27234ee5f2637ba05ed98b383e8"
+    }
+  },
+  "cache": "OS/file/database caches unflushed and warmed by setup; cold is fresh application process/connection, not cold host storage; warm still checks current rights and status",
+  "output": {
+    "directory": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-164/codex-briefs/173-step3-dataset-20261109T085021Z",
+    "manifestSha256": "120777f13a81c9b852443a417e8aa4cd6e80968c6ea87d81afac9c951b128256",
+    "manifestByteSize": 7600,
+    "scope": "All regular files after workload and teardown, before evidence packaging; excludes this manifest itself to avoid a self-referential hash",
+    "files": [
+      {
+        "path": "check-lane-unused.log",
+        "byteSize": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "dataset-diagnostics/dataset-2026-11-09T08-50-37.888Z.json",
+        "byteSize": 138309,
+        "sha256": "8c422acc6e2362d438fe6b7b12fde6d627b3c05fe4d310a6ec382765b49323b4"
+      },
+      {
+        "path": "dataset-driver-original.ts",
+        "byteSize": 15336,
+        "sha256": "991cd6e8f9e1c245fcefd2462e78689635816825dedc2348fd4060d55609f87a"
+      },
+      {
+        "path": "dataset-driver.diff",
+        "byteSize": 13598,
+        "sha256": "3e77ee1fc2446dbc10ee33343b15867002700481cf17bf524c4081880f10737c"
+      },
+      {
+        "path": "dataset-driver.mts",
+        "byteSize": 12543,
+        "sha256": "059d49e35565debf65fc61e159f3452410f747d451739d8c9a98e9b104e4d0a4"
+      },
+      {
+        "path": "dataset-environment.json",
+        "byteSize": 5216,
+        "sha256": "a796831f5309c556e06d98539e2d27dd0b43e02cbfbdc362106a2754e4e34402"
+      },
+      {
+        "path": "dataset-objects-G5NZfL/datasets/9097544533dbee8869e0569e9bfe4966e854913d9a28698f31cb439d5a52f047",
+        "byteSize": 3527908,
+        "sha256": "9097544533dbee8869e0569e9bfe4966e854913d9a28698f31cb439d5a52f047"
+      },
+      {
+        "path": "dataset-objects-G5NZfL/raw/0f064dede2896107868d784ede7a92cbe239852f7274c12c4589bcfd5e129b4a",
+        "byteSize": 1241515,
+        "sha256": "0f064dede2896107868d784ede7a92cbe239852f7274c12c4589bcfd5e129b4a"
+      },
+      {
+        "path": "dataset-objects-G5NZfL/raw/1433f1f239784dde7fcb35349d211a9b83abfc0156337b72ec4f923abf715bd3",
+        "byteSize": 14612235,
+        "sha256": "1433f1f239784dde7fcb35349d211a9b83abfc0156337b72ec4f923abf715bd3"
+      },
+      {
+        "path": "dataset-objects-G5NZfL/raw/1b6eff730fb10a61ad7681c293000d6653fb583259d771d40d8d025fe8fca36a",
+        "byteSize": 1254611,
+        "sha256": "1b6eff730fb10a61ad7681c293000d6653fb583259d771d40d8d025fe8fca36a"
+      },
+      {
+        "path": "dataset-objects-G5NZfL/raw/330b9e00241091958d1667e6df02f57d4a7049530865aacbb7859b4db114cd72",
+        "byteSize": 699786,
+        "sha256": "330b9e00241091958d1667e6df02f57d4a7049530865aacbb7859b4db114cd72"
+      },
+      {
+        "path": "dataset-objects-G5NZfL/raw/37eae0a8c388d0974c6df9a1f9a1d01f09f63a21440d3b03d7f208c1438c51e4",
+        "byteSize": 22245804,
+        "sha256": "37eae0a8c388d0974c6df9a1f9a1d01f09f63a21440d3b03d7f208c1438c51e4"
+      },
+      {
+        "path": "dataset-objects-G5NZfL/raw/59069adfee7b0f464befba8a5e8be331e523633cc6a7ab403d37bcbcdfbe66ac",
+        "byteSize": 49094943,
+        "sha256": "59069adfee7b0f464befba8a5e8be331e523633cc6a7ab403d37bcbcdfbe66ac"
+      },
+      {
+        "path": "dataset-objects-G5NZfL/raw/61fc9a44706522218a4448001706e3fec65ebbb97c1d9c5746ceef364989125d",
+        "byteSize": 1244175,
+        "sha256": "61fc9a44706522218a4448001706e3fec65ebbb97c1d9c5746ceef364989125d"
+      },
+      {
+        "path": "dataset-objects-G5NZfL/raw/6c2258cf5d90cb918dfca093b20dba2e062b1eca54f5d2d348f15a0045d86113",
+        "byteSize": 1237909,
+        "sha256": "6c2258cf5d90cb918dfca093b20dba2e062b1eca54f5d2d348f15a0045d86113"
+      },
+      {
+        "path": "dataset-objects-G5NZfL/raw/88adfe0fba5cbedd260d7928ad373476d4fb168d0213cb52ef1163ed5d3056b7",
+        "byteSize": 15242660,
+        "sha256": "88adfe0fba5cbedd260d7928ad373476d4fb168d0213cb52ef1163ed5d3056b7"
+      },
+      {
+        "path": "dataset-objects-G5NZfL/raw/962ea33bc96c7b5d298c28b5d8d8b64309ee2ddb450806bf3634fd10c0386dbd",
+        "byteSize": 515250,
+        "sha256": "962ea33bc96c7b5d298c28b5d8d8b64309ee2ddb450806bf3634fd10c0386dbd"
+      },
+      {
+        "path": "dataset-objects-G5NZfL/raw/ad01aeb4045ee19a4f086ff38b52b14c8f427d3401e529c3078a4545921650a9",
+        "byteSize": 49967956,
+        "sha256": "ad01aeb4045ee19a4f086ff38b52b14c8f427d3401e529c3078a4545921650a9"
+      },
+      {
+        "path": "dataset-objects-G5NZfL/raw/b1f436a98b2a7759eb4ed1181e072a35c2666f9aeb356a49c943d28d6be6b0b9",
+        "byteSize": 49688308,
+        "sha256": "b1f436a98b2a7759eb4ed1181e072a35c2666f9aeb356a49c943d28d6be6b0b9"
+      },
+      {
+        "path": "dataset-objects-G5NZfL/raw/b58e79cd91ea078396c91f9c06452da0b9d650fa42203ee580e1df06e306e785",
+        "byteSize": 22498246,
+        "sha256": "b58e79cd91ea078396c91f9c06452da0b9d650fa42203ee580e1df06e306e785"
+      },
+      {
+        "path": "dataset-objects-G5NZfL/raw/bd6a50de334473c10f8058afa948fd0c6adc8a8b081da41c500cc0aa069c5312",
+        "byteSize": 14790824,
+        "sha256": "bd6a50de334473c10f8058afa948fd0c6adc8a8b081da41c500cc0aa069c5312"
+      },
+      {
+        "path": "dataset-objects-G5NZfL/raw/c7401e321bdb369443f3280b9acd74ba6e16d82e710383bf1c01acabfebeac0b",
+        "byteSize": 1262421,
+        "sha256": "c7401e321bdb369443f3280b9acd74ba6e16d82e710383bf1c01acabfebeac0b"
+      },
+      {
+        "path": "dataset-objects-G5NZfL/raw/f3fbe6bb1b56a0f51c4b6d5793f8bc3b46da2d54c070572144b8771912eeaaec",
+        "byteSize": 708144,
+        "sha256": "f3fbe6bb1b56a0f51c4b6d5793f8bc3b46da2d54c070572144b8771912eeaaec"
+      },
+      {
+        "path": "dataset-preflight.log",
+        "byteSize": 184,
+        "sha256": "8798ce0bc74256effa580ec060f231ec3522bd62e1a9634ba51fd278154824ad"
+      },
+      {
+        "path": "dataset-qualification.log",
+        "byteSize": 2390,
+        "sha256": "01d75970e905ae32faf0aac9a0fa943bd7e68a51e79e5a7f73aab345b03bb2e4"
+      },
+      {
+        "path": "dataset-receipt.json",
+        "byteSize": 23882,
+        "sha256": "0bc4a97101d44bc1f205cadb8ab8d4b1ba48dfc8a285ac2954a13afabe16314f"
+      },
+      {
+        "path": "dataset-settings.log",
+        "byteSize": 4205,
+        "sha256": "52f581131f66321725c68aa66eb5268fe6bd53dd705c73c26030a0459cc62de7"
+      },
+      {
+        "path": "derive-url.log",
+        "byteSize": 65,
+        "sha256": "a79fb4d1db28e89319e8f1ccc1cb9cc836035ec0dcb33af9e21aaebe703221bd"
+      },
+      {
+        "path": "driver-adaptation.json",
+        "byteSize": 978,
+        "sha256": "46295fed2f5661fbbd3c0623eb64ae601d3562bd4dbcb1cdc64f21326f454d4d"
+      },
+      {
+        "path": "lane-down.log",
+        "byteSize": 323,
+        "sha256": "806996c82dda6e07d80fdd657ddadfde2ee682bb195b4d8c74cc13b3a1f3ee3d"
+      },
+      {
+        "path": "lane-inspect.log",
+        "byteSize": 10894,
+        "sha256": "d4c543028043eda7c3673e2631cdba3b01e8c37c025988f8dc719bc91817e89f"
+      },
+      {
+        "path": "lane-up.log",
+        "byteSize": 534,
+        "sha256": "14cc47f76286f926a7316ebd19077ef0cce1296ca28020983e5117b5a0037d84"
+      },
+      {
+        "path": "orchestration.json",
+        "byteSize": 11451,
+        "sha256": "b31ec69eb6bf1b09f40312f5e5990811e52bbd4e84e4d410fafd9b86369fd88b"
+      },
+      {
+        "path": "orchestrator.py",
+        "byteSize": 13170,
+        "sha256": "cbb4b143d4674cf897954d693f7f853de400158c2016fa7149366bc41090a6c2"
+      },
+      {
+        "path": "pending-documentation.diff",
+        "byteSize": 19115,
+        "sha256": "26891a4a5fa582e602e708e47f34758449e2e22e8712579ccfcb0d8a81fba97d"
+      },
+      {
+        "path": "settings-observer.mts",
+        "byteSize": 1713,
+        "sha256": "01b965de26fe7383d7932ea8879648e68ab3c20989840cc37d5552118212fb63"
+      },
+      {
+        "path": "verify-lane-containers.log",
+        "byteSize": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "verify-lane-networks.log",
+        "byteSize": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    ]
+  },
+  "legacyMetadata": "The reused driver retains its historical issue 138/step 5 identifiers and step-5-local-dataset-rights-deletion-pass label. This #173 wrapper qualifies only the six dataset builds; the omitted historical deletion/rebuild probes were not rerun.",
+  "retention": "All six attempts kept; no failure/retry/replacement. Exact dataset and pinned raw bytes remain in ObjectStore; the mirror contains detailed measurement records, not a new full dataset/raw-fixture copy.",
+  "teardown": {
+    "verified": true,
+    "completedAt": "2026-11-09T08:51:39.185783+00:00",
+    "remainingContainers": 0,
+    "remainingNetworks": 0,
+    "defaultLane": "untouched",
+    "allClearGiven": true
+  },
+  "storage": {
+    "storageRoot": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-164/codex-briefs/173-dataset-evidence-20261109T085021Z",
+    "bundle": {
+      "path": "step-3-dataset-records-20261109T085139Z.tar.gz",
+      "objectKey": "audits/5b9413ff07e6eb44cfd94c3cd788df96c1217d914893e583b2afb395e3dd3228",
+      "sha256": "5b9413ff07e6eb44cfd94c3cd788df96c1217d914893e583b2afb395e3dd3228",
+      "byteSize": 56651
+    },
+    "members": [
+      {
+        "member": "dataset/full-record.json",
+        "objectKey": "audits/8c422acc6e2362d438fe6b7b12fde6d627b3c05fe4d310a6ec382765b49323b4",
+        "sha256": "8c422acc6e2362d438fe6b7b12fde6d627b3c05fe4d310a6ec382765b49323b4",
+        "byteSize": 138309
+      },
+      {
+        "member": "dataset/receipt.json",
+        "objectKey": "audits/0bc4a97101d44bc1f205cadb8ab8d4b1ba48dfc8a285ac2954a13afabe16314f",
+        "sha256": "0bc4a97101d44bc1f205cadb8ab8d4b1ba48dfc8a285ac2954a13afabe16314f",
+        "byteSize": 23882
+      },
+      {
+        "member": "verification.json",
+        "objectKey": "audits/4fcc492dc498ca5f7584ebfa0da59d3b209c13131b34abf0a53b1f94ad23f304",
+        "sha256": "4fcc492dc498ca5f7584ebfa0da59d3b209c13131b34abf0a53b1f94ad23f304",
+        "byteSize": 11799
+      },
+      {
+        "member": "output-files.json",
+        "objectKey": "audits/120777f13a81c9b852443a417e8aa4cd6e80968c6ea87d81afac9c951b128256",
+        "sha256": "120777f13a81c9b852443a417e8aa4cd6e80968c6ea87d81afac9c951b128256",
+        "byteSize": 7600
+      },
+      {
+        "member": "routing-checks.json",
+        "objectKey": "audits/e4b7de8f45e0c32859789818a8df12a04e20f48609e5f01492cca51e72958191",
+        "sha256": "e4b7de8f45e0c32859789818a8df12a04e20f48609e5f01492cca51e72958191",
+        "byteSize": 733
+      },
+      {
+        "member": "run/check-lane-unused.log",
+        "objectKey": "audits/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "byteSize": 0
+      },
+      {
+        "member": "run/dataset-driver-original.ts",
+        "objectKey": "audits/991cd6e8f9e1c245fcefd2462e78689635816825dedc2348fd4060d55609f87a",
+        "sha256": "991cd6e8f9e1c245fcefd2462e78689635816825dedc2348fd4060d55609f87a",
+        "byteSize": 15336
+      },
+      {
+        "member": "run/dataset-driver.diff",
+        "objectKey": "audits/3e77ee1fc2446dbc10ee33343b15867002700481cf17bf524c4081880f10737c",
+        "sha256": "3e77ee1fc2446dbc10ee33343b15867002700481cf17bf524c4081880f10737c",
+        "byteSize": 13598
+      },
+      {
+        "member": "run/dataset-driver.mts",
+        "objectKey": "audits/059d49e35565debf65fc61e159f3452410f747d451739d8c9a98e9b104e4d0a4",
+        "sha256": "059d49e35565debf65fc61e159f3452410f747d451739d8c9a98e9b104e4d0a4",
+        "byteSize": 12543
+      },
+      {
+        "member": "run/dataset-environment.json",
+        "objectKey": "audits/a796831f5309c556e06d98539e2d27dd0b43e02cbfbdc362106a2754e4e34402",
+        "sha256": "a796831f5309c556e06d98539e2d27dd0b43e02cbfbdc362106a2754e4e34402",
+        "byteSize": 5216
+      },
+      {
+        "member": "run/dataset-preflight.log",
+        "objectKey": "audits/8798ce0bc74256effa580ec060f231ec3522bd62e1a9634ba51fd278154824ad",
+        "sha256": "8798ce0bc74256effa580ec060f231ec3522bd62e1a9634ba51fd278154824ad",
+        "byteSize": 184
+      },
+      {
+        "member": "run/dataset-qualification.log",
+        "objectKey": "audits/01d75970e905ae32faf0aac9a0fa943bd7e68a51e79e5a7f73aab345b03bb2e4",
+        "sha256": "01d75970e905ae32faf0aac9a0fa943bd7e68a51e79e5a7f73aab345b03bb2e4",
+        "byteSize": 2390
+      },
+      {
+        "member": "run/dataset-settings.log",
+        "objectKey": "audits/52f581131f66321725c68aa66eb5268fe6bd53dd705c73c26030a0459cc62de7",
+        "sha256": "52f581131f66321725c68aa66eb5268fe6bd53dd705c73c26030a0459cc62de7",
+        "byteSize": 4205
+      },
+      {
+        "member": "run/derive-url.log",
+        "objectKey": "audits/a79fb4d1db28e89319e8f1ccc1cb9cc836035ec0dcb33af9e21aaebe703221bd",
+        "sha256": "a79fb4d1db28e89319e8f1ccc1cb9cc836035ec0dcb33af9e21aaebe703221bd",
+        "byteSize": 65
+      },
+      {
+        "member": "run/driver-adaptation.json",
+        "objectKey": "audits/46295fed2f5661fbbd3c0623eb64ae601d3562bd4dbcb1cdc64f21326f454d4d",
+        "sha256": "46295fed2f5661fbbd3c0623eb64ae601d3562bd4dbcb1cdc64f21326f454d4d",
+        "byteSize": 978
+      },
+      {
+        "member": "run/lane-down.log",
+        "objectKey": "audits/806996c82dda6e07d80fdd657ddadfde2ee682bb195b4d8c74cc13b3a1f3ee3d",
+        "sha256": "806996c82dda6e07d80fdd657ddadfde2ee682bb195b4d8c74cc13b3a1f3ee3d",
+        "byteSize": 323
+      },
+      {
+        "member": "run/lane-inspect.log",
+        "objectKey": "audits/d4c543028043eda7c3673e2631cdba3b01e8c37c025988f8dc719bc91817e89f",
+        "sha256": "d4c543028043eda7c3673e2631cdba3b01e8c37c025988f8dc719bc91817e89f",
+        "byteSize": 10894
+      },
+      {
+        "member": "run/lane-up.log",
+        "objectKey": "audits/14cc47f76286f926a7316ebd19077ef0cce1296ca28020983e5117b5a0037d84",
+        "sha256": "14cc47f76286f926a7316ebd19077ef0cce1296ca28020983e5117b5a0037d84",
+        "byteSize": 534
+      },
+      {
+        "member": "run/orchestration.json",
+        "objectKey": "audits/b31ec69eb6bf1b09f40312f5e5990811e52bbd4e84e4d410fafd9b86369fd88b",
+        "sha256": "b31ec69eb6bf1b09f40312f5e5990811e52bbd4e84e4d410fafd9b86369fd88b",
+        "byteSize": 11451
+      },
+      {
+        "member": "run/orchestrator.py",
+        "objectKey": "audits/cbb4b143d4674cf897954d693f7f853de400158c2016fa7149366bc41090a6c2",
+        "sha256": "cbb4b143d4674cf897954d693f7f853de400158c2016fa7149366bc41090a6c2",
+        "byteSize": 13170
+      },
+      {
+        "member": "run/pending-documentation.diff",
+        "objectKey": "audits/26891a4a5fa582e602e708e47f34758449e2e22e8712579ccfcb0d8a81fba97d",
+        "sha256": "26891a4a5fa582e602e708e47f34758449e2e22e8712579ccfcb0d8a81fba97d",
+        "byteSize": 19115
+      },
+      {
+        "member": "run/settings-observer.mts",
+        "objectKey": "audits/01b965de26fe7383d7932ea8879648e68ab3c20989840cc37d5552118212fb63",
+        "sha256": "01b965de26fe7383d7932ea8879648e68ab3c20989840cc37d5552118212fb63",
+        "byteSize": 1713
+      },
+      {
+        "member": "run/verify-lane-containers.log",
+        "objectKey": "audits/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "byteSize": 0
+      },
+      {
+        "member": "run/verify-lane-networks.log",
+        "objectKey": "audits/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "byteSize": 0
+      },
+      {
+        "member": "scripts/package-dataset.mts",
+        "objectKey": "audits/10d32c8e7add6ca411791ef78a5dbd81c2eddd28ac48e1c9106cbe1d6121fab9",
+        "sha256": "10d32c8e7add6ca411791ef78a5dbd81c2eddd28ac48e1c9106cbe1d6121fab9",
+        "byteSize": 11759
+      }
+    ]
+  }
+}

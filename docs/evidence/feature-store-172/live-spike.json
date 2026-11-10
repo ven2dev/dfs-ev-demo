@@ -1,0 +1,46 @@
+{
+  "issue": 172,
+  "timestamp": "2026-11-06T16:24:22.000Z",
+  "baseCommit": "17e07d624b212573e067a291ddf83ee0b0b7e225",
+  "sdkVersion": "3.1163.0",
+  "bucket": "edgetrace-fs-test",
+  "accessKeyIdLast4": "6e22",
+  "client": {
+    "region": "auto",
+    "endpoint": "account R2 endpoint",
+    "forcePathStyle": true,
+    "maxAttempts": 1,
+    "requestChecksumCalculation": "WHEN_REQUIRED",
+    "responseChecksumValidation": "WHEN_REQUIRED"
+  },
+  "dashboard": {
+    "used": true,
+    "bucketLocks": false,
+    "lifecycle": "Default Multipart Abort Rule only",
+    "storageClass": "Standard"
+  },
+  "counts": {
+    "A": 15,
+    "B": 2,
+    "delete": 1
+  },
+  "settings": {
+    "lifecycle": {
+      "status": 403
+    },
+    "lock": {
+      "status": 403
+    }
+  },
+  "cleanup": true,
+  "putStatuses": [
+    200,
+    412,
+    412,
+    412,
+    412
+  ],
+  "sha256": "12b5823f1488e6e94539885656eb98aa41bda6eaecd83f2c3a8b1f51f57053ac",
+  "byteSize": 36,
+  "bytesVerified": true
+}

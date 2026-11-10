@@ -1,0 +1,5267 @@
+{
+  "issue": 241,
+  "step": 4,
+  "kind": "point-in-time-completion-benchmark",
+  "verdict": "pass",
+  "cohorts": [
+    {
+      "block": 1,
+      "temperature": "cold",
+      "samples": 100,
+      "baselineSamples": 100,
+      "p95Ms": 20.12370799999917,
+      "baselineP95Ms": 18.95762499999546,
+      "headroom": 0.9329209733333361,
+      "setupP95Ms": 6.743249999999534,
+      "aggregateSetupShare": 0.31240172065848454
+    },
+    {
+      "block": 1,
+      "temperature": "warm",
+      "samples": 100,
+      "baselineSamples": 100,
+      "p95Ms": 6.32712500001071,
+      "baselineP95Ms": 6.167625000001863,
+      "headroom": 0.9789095833332976,
+      "setupP95Ms": 0,
+      "aggregateSetupShare": 0
+    },
+    {
+      "block": 2,
+      "temperature": "cold",
+      "samples": 100,
+      "baselineSamples": 100,
+      "p95Ms": 19.72233299999789,
+      "baselineP95Ms": 19.227499999993597,
+      "headroom": 0.9342588900000071,
+      "setupP95Ms": 6.057666999986395,
+      "aggregateSetupShare": 0.2953819155923017
+    },
+    {
+      "block": 2,
+      "temperature": "warm",
+      "samples": 100,
+      "baselineSamples": 100,
+      "p95Ms": 6.310708000004524,
+      "baselineP95Ms": 5.99008399999002,
+      "headroom": 0.9789643066666516,
+      "setupP95Ms": 0,
+      "aggregateSetupShare": 0
+    },
+    {
+      "block": 3,
+      "temperature": "cold",
+      "samples": 100,
+      "baselineSamples": 100,
+      "p95Ms": 22.516042000002926,
+      "baselineP95Ms": 19.39854199999536,
+      "headroom": 0.9249465266666569,
+      "setupP95Ms": 7.3443330000009155,
+      "aggregateSetupShare": 0.28526527345251496
+    },
+    {
+      "block": 3,
+      "temperature": "warm",
+      "samples": 100,
+      "baselineSamples": 100,
+      "p95Ms": 6.587750000006054,
+      "baselineP95Ms": 6.5981250000040745,
+      "headroom": 0.9780408333333132,
+      "setupP95Ms": 0,
+      "aggregateSetupShare": 0
+    }
+  ],
+  "runtime": "v24.18.1",
+  "recordedAt": "2026-11-08T01:03:05.818Z",
+  "sourceHashes": {
+    "packages/db/proposals/138_feature_store.sql": "183007219f71c27ed98138bbc3a1c10d86782e3660d20fda225f314bfb89c97a",
+    "packages/db/proposals/138_dataset_governance.sql": "69d8b44a1ef81ccf52e8c59f93d10192e51a19c865dbba2610a4af32f41285e7",
+    "packages/db/proposals/241_job_visibility.sql": "13c7cedb65a2dcce133d8e1daff07bcd8f27f7330dca097c5390df66b6d3007a",
+    "packages/db/proposals/163_empirical_authorize.sql": "c6db3f6f041a1f8280b573e9f21e2e8e04a206119df8c6410a71d897f5059804",
+    "packages/db/proposals/163_empirical_history.sql": "f6c43d4a16504e4b9ce8e60a4adaa027712323276937dced6867b4c44859d0e2",
+    "packages/db/proposals/163_empirical_reader.sql": "1e8acb629e2f5ca7a7f7709752d214a22fe76330e8a86dada18f2ee3c32bf012",
+    "packages/db/proposals/163_effective_rights.sql": "31d3aaf993c74e2d4d616599af463702cb3e597107b58194cfe78fed5d507d0e",
+    "services/pipeline/src/featureStore/asOf.ts": "3f8eed34d9dc4583db3906976e65bdf66fb028e0ea648dbd63fea2dedc9e4ce7",
+    "services/pipeline/src/featureStore/derived.ts": "9044cf04c9d39e788aa1943373ffc2ca8d74df8244ead12165e618bc502e7310",
+    "services/pipeline/src/featureStore/datasets.ts": "9dcd5576742d9caa7ca2cd3bdd8b95629a2d87d9c9ae85d9e783ee9f3e4171b9",
+    "services/pipeline/src/featureStore/empiricalAdapter.ts": "8bddf06f546033ba1714224ec26a8b60c623e5fd8d0d4af54a0ff9658f65187b",
+    "services/pipeline/src/featureStore/jobs.ts": "311da636b18602fdd945d8bf0d686d52d085cc7f5147c664c0090de91e107994",
+    "services/pipeline/src/featureStore/localObjectStore.ts": "66176be60146f0a73ceab9a004b5951dcfd227b88ba9bc521e7f23b466bf5fd1",
+    "services/pipeline/src/featureStore/objectStore.ts": "e467ee210821416ca595349dee4eaaa415c4f1e0d305155d6591fce8283bb3ae",
+    "services/pipeline/scripts/feature-store/harness.ts": "2fa87332d950277941acfd1a43a51e39f9d986b0a695f4bdaec36373a36520d9",
+    "services/pipeline/scripts/feature-store/job-visibility-benchmark.ts": "401a9844e80313a5e4b97cdfbf2d72ff1d50f019dbbdf4df3875918ff94ae51e",
+    "services/pipeline/scripts/feature-store/job-visibility-evidence.ts": "68474956c4b5211121a5f1cc4611ba14f2f88115782228716c339a8424c951d5",
+    "services/pipeline/scripts/feature-store/artifact-governance-evidence.ts": "2f508bc7207551c5e6b5188ac492e931f028249533a16b4d6e78235313af3f42",
+    "services/pipeline/tests/feature-store/job-visibility-work-fixture.ts": "c0333e5741264f5ff32163d7f65ec86ca11bc75c26e480a6e12d74b9dded3584",
+    "services/pipeline/tests/feature-store/fixtures/job-visibility-ci-slice-v1.json": "f7dec229c38bd286c51c1af7b545fc33f6532c75c9bfaa18e5de7127d7eac908",
+    "services/pipeline/tests/feature-store/fixtures/job-visibility-work-v1.manifest.json": "3d7763a4645ca3c55b2159016dd2eab72123e420db778a9e4eeda7a8d30779cc",
+    "services/pipeline/tests/feature-store/fixtures/job-visibility-work-v1.json.gz": "eff4457e5f5064634d2cee03e70d1d17ccfb97303362f15caa3fba14520af8fe",
+    "packages/domain/src/projection/empirical.ts": "7cfa979e6aa08da4297cada5443c7058b200fef5ff0f95ef9ca4cd8073405c5d",
+    "packages/domain/src/projection/baseline.ts": "3841f802ddde52dc46b923b59f9677a032fb782a55789c5865f984edc4bd8ea8",
+    "compose.test.yml": "44798ea481282096048bf44d02c33cf338eed4520165559dc1115e3e769e40b7",
+    "compose.feature-store-spike.yml": "65abd96dd3849676b69485c0c0186fd100b31aa5545177dfe82a022c1884b8e8",
+    "package-lock.json": "d523d8720a932f9dc573446785ab3e97b5a342fe98567b92541a2f5407e573dd"
+  },
+  "sourceBlobIds": {
+    "packages/db/proposals/138_feature_store.sql": "2da976de20e6be3a7bc8cdf65fc51124bfd175e7",
+    "packages/db/proposals/138_dataset_governance.sql": "68131cf08c62aa194339ee0329ecbf7f8c12189f",
+    "packages/db/proposals/241_job_visibility.sql": "a993e3b5d8e4add22c5013eb34551fa14dcc90ec",
+    "packages/db/proposals/163_empirical_authorize.sql": "aa892576b261d4404d3861b23d00fb7692f28184",
+    "packages/db/proposals/163_empirical_history.sql": "fda289cfc29641b764c5bf053b147b710ea99573",
+    "packages/db/proposals/163_empirical_reader.sql": "4e9dd3782ceb884e65da49db9253eadd877c0f24",
+    "packages/db/proposals/163_effective_rights.sql": "4f4901d8eb69ffca985d749e2d08dfcb83e92212",
+    "services/pipeline/src/featureStore/asOf.ts": "7b70cdbced4fa4b83f2f675641ef6150fc956f12",
+    "services/pipeline/src/featureStore/derived.ts": "ab99abf6d79dcb3241f7eae14a072731e7a9dbe3",
+    "services/pipeline/src/featureStore/datasets.ts": "d0421c54f595f971cbd93bfb8f46385650350468",
+    "services/pipeline/src/featureStore/empiricalAdapter.ts": "dbdde5fa7b35489b84eea443f2fa8927735cb06d",
+    "services/pipeline/src/featureStore/jobs.ts": "e5db86aa5f51215df8bf49b97b4595aa5ceeda8b",
+    "services/pipeline/src/featureStore/localObjectStore.ts": "f2bf259faa6aca4fa2967ae6fc710664919c977e",
+    "services/pipeline/src/featureStore/objectStore.ts": "0ee0d73a30866b58e6a2d2bc95ba77251c692d02",
+    "services/pipeline/scripts/feature-store/harness.ts": "de9f17121ae264a7436df7105347e4c3f0d5f195",
+    "services/pipeline/scripts/feature-store/job-visibility-benchmark.ts": "7f1a2d0d925c9768254a493946d920c716a97b08",
+    "services/pipeline/scripts/feature-store/job-visibility-evidence.ts": "9f1a62daa3a6e9b3dd7aa7907d4559dd744bdaf7",
+    "services/pipeline/scripts/feature-store/artifact-governance-evidence.ts": "4918f9fca5615fa176af9cbe3d921867df492ebd",
+    "services/pipeline/tests/feature-store/job-visibility-work-fixture.ts": "b9d81352c702b7d0d4459bdcacce8f4203eec440",
+    "services/pipeline/tests/feature-store/fixtures/job-visibility-ci-slice-v1.json": "76638b543237b3b9b10a69806b6128c7df912f98",
+    "services/pipeline/tests/feature-store/fixtures/job-visibility-work-v1.manifest.json": "a11b869258d26a233b75a309bb689ee258cd3861",
+    "services/pipeline/tests/feature-store/fixtures/job-visibility-work-v1.json.gz": "faec950141d0d1aae2854b939a0f78f21995398b",
+    "packages/domain/src/projection/empirical.ts": "15e5c6f3ddcce591f5dc4bed425113da7fdd06fe",
+    "packages/domain/src/projection/baseline.ts": "e90f2f18c551b2a866013b7a9f6f23963508b4fb",
+    "compose.test.yml": "ab874ba42f4ffb24cd5c71d23205fc6d962e4046",
+    "compose.feature-store-spike.yml": "790b90f846221e5e769aa56c619d375230f8a87b",
+    "package-lock.json": "dd1c6c6e9dbde3ef05cd6ca1755777ea0b131f35"
+  },
+  "sourceUnchanged": true,
+  "baseCommit": "441aaf96941e31f7a7f67a5edce906c79cc74ed1",
+  "baselineCommit": "dc0050a6a9f071c149098047d1428757245829cd",
+  "baselineSqlHashes": {
+    "dataset": "656081e25e0db75abea5842604aad64e20e0484627d2f4666f6bc52469a3aaf3",
+    "authorize": "5b2940582548aea025c08133dbb356bcb8055de85e57738a16c09d511d3e37a3"
+  },
+  "fixture": {
+    "naturalKeys": 9381,
+    "retrospectiveRows": 2504,
+    "strictRows": 0,
+    "contentSha256": "a4de10aaefec7ec33d1c913fc255ee3527108f9d1f53e22afb79b82a9f9c607d",
+    "wireFiles": 16
+  },
+  "requests": {
+    "values": [
+      {
+        "featureId": "205caaf8-20d6-4454-9296-a88640d0f868",
+        "n": 2
+      },
+      {
+        "featureId": "ab56ea1e-9c84-41b6-a275-91c836be68a0",
+        "n": 3
+      },
+      {
+        "featureId": "90a7bf9c-5cd2-43e8-9b3c-d0b9fd7264be",
+        "n": 4
+      },
+      {
+        "featureId": "2adea3ea-d007-4b2b-b189-24e7b3b954dd",
+        "n": 5
+      },
+      {
+        "featureId": "f7a92043-9f80-42c3-9234-fcd1b0fe3ce1",
+        "n": 6
+      },
+      {
+        "featureId": "8343b5bd-1946-4450-abbe-15b56bf5956d",
+        "n": 7
+      },
+      {
+        "featureId": "c89d5dfb-9c3a-4473-922e-a7b55c73bf91",
+        "n": 8
+      },
+      {
+        "featureId": "b33821a1-4976-4b50-b2a4-20e7f68c31c1",
+        "n": 9
+      },
+      {
+        "featureId": "1b3ac30e-677b-4441-b8ba-51e2e3dfd3bf",
+        "n": 10
+      },
+      {
+        "featureId": "d059cc85-86e6-4518-96b5-f93ad5971f90",
+        "n": 11
+      },
+      {
+        "featureId": "5f5acdaf-684a-4778-8ddf-6e0adbe8d919",
+        "n": 12
+      },
+      {
+        "featureId": "97ce05ee-c8a3-4b6f-863f-e80e58faa071",
+        "n": 13
+      },
+      {
+        "featureId": "4d651392-00f5-4cdf-ac80-28c3aa2e1fc0",
+        "n": 14
+      },
+      {
+        "featureId": "f4cf8db2-5100-4580-b437-9d89779079c9",
+        "n": 15
+      },
+      {
+        "featureId": "6fc3baeb-f572-4fa2-b214-1286fe3675d1",
+        "n": 16
+      }
+    ],
+    "sha256": "26308e1ffe969d56458e779857c405d738d02da4ba74cef4ba2ed3a26a775a0e"
+  },
+  "disk": [
+    {
+      "gate": "producer-preparation:before",
+      "at": "2026-11-08 01:03:06.552695+00",
+      "wal_bytes": "218103808",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 12662463
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 257138688,
+      "availableBytes": 1890344960
+    },
+    {
+      "gate": "producer-preparation:in-flight",
+      "at": "2026-11-08 01:03:07.601573+00",
+      "wal_bytes": "218103808",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 18183871
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 262660096,
+      "availableBytes": 1884823552
+    },
+    {
+      "gate": "producer-preparation:in-flight",
+      "at": "2026-11-08 01:03:08.602022+00",
+      "wal_bytes": "218103808",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 34944703
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 279420928,
+      "availableBytes": 1868062720
+    },
+    {
+      "gate": "producer-preparation:in-flight",
+      "at": "2026-11-08 01:03:09.601951+00",
+      "wal_bytes": "218103808",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 48701967
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 293154816,
+      "availableBytes": 1854328832
+    },
+    {
+      "gate": "producer-preparation:in-flight",
+      "at": "2026-11-08 01:03:10.603352+00",
+      "wal_bytes": "218103808",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 59646479
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 304119808,
+      "availableBytes": 1843363840
+    },
+    {
+      "gate": "producer-preparation:in-flight",
+      "at": "2026-11-08 01:03:11.603975+00",
+      "wal_bytes": "218103808",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 68805135
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 313278464,
+      "availableBytes": 1834205184
+    },
+    {
+      "gate": "producer-preparation:in-flight",
+      "at": "2026-11-08 01:03:12.605837+00",
+      "wal_bytes": "218103808",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 76939791
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 321454080,
+      "availableBytes": 1826029568
+    },
+    {
+      "gate": "producer-preparation:in-flight",
+      "at": "2026-11-08 01:03:13.606511+00",
+      "wal_bytes": "218103808",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 88916495
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 333389824,
+      "availableBytes": 1814093824
+    },
+    {
+      "gate": "producer-preparation:in-flight",
+      "at": "2026-11-08 01:03:14.607648+00",
+      "wal_bytes": "218103808",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 92078607
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 338821120,
+      "availableBytes": 1808662528
+    },
+    {
+      "gate": "producer-preparation:in-flight",
+      "at": "2026-11-08 01:03:15.608721+00",
+      "wal_bytes": "218103808",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 98517519
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 343490560,
+      "availableBytes": 1803993088
+    },
+    {
+      "gate": "producer-preparation:in-flight",
+      "at": "2026-11-08 01:03:16.609601+00",
+      "wal_bytes": "218103808",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 105431567
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 349904896,
+      "availableBytes": 1797578752
+    },
+    {
+      "gate": "producer-preparation:in-flight",
+      "at": "2026-11-08 01:03:17.613559+00",
+      "wal_bytes": "218103808",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 111829519
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 357179392,
+      "availableBytes": 1790304256
+    },
+    {
+      "gate": "producer-preparation:in-flight",
+      "at": "2026-11-08 01:03:18.610975+00",
+      "wal_bytes": "218103808",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 121430543
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 365903872,
+      "availableBytes": 1781579776
+    },
+    {
+      "gate": "producer-preparation:in-flight",
+      "at": "2026-11-08 01:03:19.611617+00",
+      "wal_bytes": "218103808",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 123953679
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 368435200,
+      "availableBytes": 1779048448
+    },
+    {
+      "gate": "producer-preparation:in-flight",
+      "at": "2026-11-08 01:03:20.612653+00",
+      "wal_bytes": "218103808",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 132391439
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 378331136,
+      "availableBytes": 1769152512
+    },
+    {
+      "gate": "producer-preparation:in-flight",
+      "at": "2026-11-08 01:03:21.612996+00",
+      "wal_bytes": "218103808",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 135012879
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 381698048,
+      "availableBytes": 1765785600
+    },
+    {
+      "gate": "producer-preparation:after",
+      "at": "2026-11-08 01:03:22.056973+00",
+      "wal_bytes": "218103808",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 135053839
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 381739008,
+      "availableBytes": 1765744640
+    },
+    {
+      "gate": "producer-0:before",
+      "at": "2026-11-08 01:03:22.117354+00",
+      "wal_bytes": "218103808",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 135053839
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 381739008,
+      "availableBytes": 1765744640
+    },
+    {
+      "gate": "producer-0:in-flight",
+      "at": "2026-11-08 01:03:23.172691+00",
+      "wal_bytes": "218103808",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 135053839
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 381739008,
+      "availableBytes": 1765744640
+    },
+    {
+      "gate": "producer-0:in-flight",
+      "at": "2026-11-08 01:03:24.173704+00",
+      "wal_bytes": "218103808",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 135053839
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 381739008,
+      "availableBytes": 1765744640
+    },
+    {
+      "gate": "producer-0:in-flight",
+      "at": "2026-11-08 01:03:25.173604+00",
+      "wal_bytes": "218103808",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 135053839
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 381739008,
+      "availableBytes": 1765744640
+    },
+    {
+      "gate": "producer-0:in-flight",
+      "at": "2026-11-08 01:03:26.173908+00",
+      "wal_bytes": "218103808",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 135053839
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 381739008,
+      "availableBytes": 1765744640
+    },
+    {
+      "gate": "producer-0:in-flight",
+      "at": "2026-11-08 01:03:27.175598+00",
+      "wal_bytes": "218103808",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 135053839
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 381739008,
+      "availableBytes": 1765744640
+    },
+    {
+      "gate": "producer-0:in-flight",
+      "at": "2026-11-08 01:03:28.17675+00",
+      "wal_bytes": "218103808",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 135053839
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 381739008,
+      "availableBytes": 1765744640
+    },
+    {
+      "gate": "producer-0:in-flight",
+      "at": "2026-11-08 01:03:29.178344+00",
+      "wal_bytes": "218103808",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 135053839
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 381739008,
+      "availableBytes": 1765744640
+    },
+    {
+      "gate": "producer-0:in-flight",
+      "at": "2026-11-08 01:03:30.179595+00",
+      "wal_bytes": "218103808",
+      "temp_files": [
+        {
+          "name": "pgsql_tmp13488.22",
+          "size": 3080192,
+          "modification": "2026-11-08T01:03:30+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.21",
+          "size": 3235840,
+          "modification": "2026-11-08T01:03:30+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.20",
+          "size": 4734976,
+          "modification": "2026-11-08T01:03:30+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.19",
+          "size": 5332992,
+          "modification": "2026-11-08T01:03:29+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.18",
+          "size": 5275648,
+          "modification": "2026-11-08T01:03:29+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.15",
+          "size": 0,
+          "modification": "2026-11-08T01:03:29+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.14",
+          "size": 5292032,
+          "modification": "2026-11-08T01:03:29+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.13",
+          "size": 15463198,
+          "modification": "2026-11-08T01:03:29+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.12",
+          "size": 15982592,
+          "modification": "2026-11-08T01:03:29+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.9",
+          "size": 10756350,
+          "modification": "2026-11-08T01:03:29+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.8",
+          "size": 9306112,
+          "modification": "2026-11-08T01:03:29+00:00"
+        }
+      ],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 135053839
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 461230080,
+      "availableBytes": 1686253568
+    },
+    {
+      "gate": "producer-0:in-flight",
+      "at": "2026-11-08 01:03:31.180359+00",
+      "wal_bytes": "218103808",
+      "temp_files": [
+        {
+          "name": "pgsql_tmp13488.25",
+          "size": 3137536,
+          "modification": "2026-11-08T01:03:31+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.24",
+          "size": 4349952,
+          "modification": "2026-11-08T01:03:30+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.23",
+          "size": 7495680,
+          "modification": "2026-11-08T01:03:30+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.22",
+          "size": 11984896,
+          "modification": "2026-11-08T01:03:30+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.19",
+          "size": 5332992,
+          "modification": "2026-11-08T01:03:29+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.18",
+          "size": 5275648,
+          "modification": "2026-11-08T01:03:29+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.15",
+          "size": 0,
+          "modification": "2026-11-08T01:03:29+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.14",
+          "size": 5292032,
+          "modification": "2026-11-08T01:03:29+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.13",
+          "size": 15463198,
+          "modification": "2026-11-08T01:03:29+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.12",
+          "size": 15982592,
+          "modification": "2026-11-08T01:03:29+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.9",
+          "size": 10756350,
+          "modification": "2026-11-08T01:03:29+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.8",
+          "size": 9306112,
+          "modification": "2026-11-08T01:03:29+00:00"
+        }
+      ],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 135053839
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 478294016,
+      "availableBytes": 1669189632
+    },
+    {
+      "gate": "producer-0:in-flight",
+      "at": "2026-11-08 01:03:32.181053+00",
+      "wal_bytes": "218103808",
+      "temp_files": [
+        {
+          "name": "pgsql_tmp13488.33",
+          "size": 6447104,
+          "modification": "2026-11-08T01:03:32+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.32",
+          "size": 8429568,
+          "modification": "2026-11-08T01:03:32+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.31",
+          "size": 7536640,
+          "modification": "2026-11-08T01:03:31+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.30",
+          "size": 6914048,
+          "modification": "2026-11-08T01:03:31+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.28",
+          "size": 7913472,
+          "modification": "2026-11-08T01:03:31+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.27",
+          "size": 22793832,
+          "modification": "2026-11-08T01:03:31+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.26",
+          "size": 5111808,
+          "modification": "2026-11-08T01:03:31+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.25",
+          "size": 5308416,
+          "modification": "2026-11-08T01:03:31+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.23",
+          "size": 7495680,
+          "modification": "2026-11-08T01:03:30+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.22",
+          "size": 11984896,
+          "modification": "2026-11-08T01:03:30+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.19",
+          "size": 5332992,
+          "modification": "2026-11-08T01:03:29+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.18",
+          "size": 5275648,
+          "modification": "2026-11-08T01:03:29+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.13",
+          "size": 15463198,
+          "modification": "2026-11-08T01:03:29+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.12",
+          "size": 15982592,
+          "modification": "2026-11-08T01:03:29+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.9",
+          "size": 10756350,
+          "modification": "2026-11-08T01:03:29+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.8",
+          "size": 9306112,
+          "modification": "2026-11-08T01:03:29+00:00"
+        }
+      ],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 138215951
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 538304512,
+      "availableBytes": 1609179136
+    },
+    {
+      "gate": "producer-0:after",
+      "at": "2026-11-08 01:03:33.120552+00",
+      "wal_bytes": "218103808",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 144622095
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 392577024,
+      "availableBytes": 1754906624
+    },
+    {
+      "gate": "producer-1:before",
+      "at": "2026-11-08 01:03:33.177068+00",
+      "wal_bytes": "218103808",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 144622095
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 392577024,
+      "availableBytes": 1754906624
+    },
+    {
+      "gate": "producer-1:in-flight",
+      "at": "2026-11-08 01:03:34.221555+00",
+      "wal_bytes": "218103808",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 144622095
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 392577024,
+      "availableBytes": 1754906624
+    },
+    {
+      "gate": "producer-1:in-flight",
+      "at": "2026-11-08 01:03:35.222375+00",
+      "wal_bytes": "218103808",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 144622095
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 392577024,
+      "availableBytes": 1754906624
+    },
+    {
+      "gate": "producer-1:in-flight",
+      "at": "2026-11-08 01:03:36.223485+00",
+      "wal_bytes": "218103808",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 144622095
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 392577024,
+      "availableBytes": 1754906624
+    },
+    {
+      "gate": "producer-1:in-flight",
+      "at": "2026-11-08 01:03:37.224773+00",
+      "wal_bytes": "218103808",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 144622095
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 392577024,
+      "availableBytes": 1754906624
+    },
+    {
+      "gate": "producer-1:in-flight",
+      "at": "2026-11-08 01:03:38.225183+00",
+      "wal_bytes": "218103808",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 144622095
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 392577024,
+      "availableBytes": 1754906624
+    },
+    {
+      "gate": "producer-1:in-flight",
+      "at": "2026-11-08 01:03:39.226232+00",
+      "wal_bytes": "218103808",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 144622095
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 392577024,
+      "availableBytes": 1754906624
+    },
+    {
+      "gate": "producer-1:in-flight",
+      "at": "2026-11-08 01:03:40.227632+00",
+      "wal_bytes": "218103808",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 144622095
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 392577024,
+      "availableBytes": 1754906624
+    },
+    {
+      "gate": "producer-1:in-flight",
+      "at": "2026-11-08 01:03:41.227923+00",
+      "wal_bytes": "218103808",
+      "temp_files": [
+        {
+          "name": "pgsql_tmp13488.48",
+          "size": 3080192,
+          "modification": "2026-11-08T01:03:41+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.47",
+          "size": 4333568,
+          "modification": "2026-11-08T01:03:41+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.46",
+          "size": 4734976,
+          "modification": "2026-11-08T01:03:41+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.45",
+          "size": 5332992,
+          "modification": "2026-11-08T01:03:40+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.44",
+          "size": 5275648,
+          "modification": "2026-11-08T01:03:40+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.41",
+          "size": 0,
+          "modification": "2026-11-08T01:03:40+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.40",
+          "size": 5292032,
+          "modification": "2026-11-08T01:03:40+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.39",
+          "size": 15463198,
+          "modification": "2026-11-08T01:03:40+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.38",
+          "size": 15982592,
+          "modification": "2026-11-08T01:03:40+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.35",
+          "size": 10756350,
+          "modification": "2026-11-08T01:03:40+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.34",
+          "size": 9306112,
+          "modification": "2026-11-08T01:03:40+00:00"
+        }
+      ],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 144622095
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 473116672,
+      "availableBytes": 1674366976
+    },
+    {
+      "gate": "producer-1:in-flight",
+      "at": "2026-11-08 01:03:42.229945+00",
+      "wal_bytes": "218103808",
+      "temp_files": [
+        {
+          "name": "pgsql_tmp13488.51",
+          "size": 5308416,
+          "modification": "2026-11-08T01:03:42+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.50",
+          "size": 4349952,
+          "modification": "2026-11-08T01:03:41+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.49",
+          "size": 7495680,
+          "modification": "2026-11-08T01:03:41+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.48",
+          "size": 11984896,
+          "modification": "2026-11-08T01:03:41+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.45",
+          "size": 5332992,
+          "modification": "2026-11-08T01:03:40+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.44",
+          "size": 5275648,
+          "modification": "2026-11-08T01:03:40+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.41",
+          "size": 0,
+          "modification": "2026-11-08T01:03:40+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.40",
+          "size": 5292032,
+          "modification": "2026-11-08T01:03:40+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.39",
+          "size": 15463198,
+          "modification": "2026-11-08T01:03:40+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.38",
+          "size": 15982592,
+          "modification": "2026-11-08T01:03:40+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.35",
+          "size": 10756350,
+          "modification": "2026-11-08T01:03:40+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.34",
+          "size": 9306112,
+          "modification": "2026-11-08T01:03:40+00:00"
+        }
+      ],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 144622095
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 493780992,
+      "availableBytes": 1653702656
+    },
+    {
+      "gate": "producer-1:in-flight",
+      "at": "2026-11-08 01:03:43.231434+00",
+      "wal_bytes": "218103808",
+      "temp_files": [
+        {
+          "name": "pgsql_tmp13488.59",
+          "size": 6725632,
+          "modification": "2026-11-08T01:03:43+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.58",
+          "size": 8814592,
+          "modification": "2026-11-08T01:03:43+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.57",
+          "size": 7536640,
+          "modification": "2026-11-08T01:03:42+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.56",
+          "size": 6914048,
+          "modification": "2026-11-08T01:03:42+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.54",
+          "size": 7913472,
+          "modification": "2026-11-08T01:03:42+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.53",
+          "size": 22793832,
+          "modification": "2026-11-08T01:03:42+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.52",
+          "size": 5111808,
+          "modification": "2026-11-08T01:03:42+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.51",
+          "size": 5308416,
+          "modification": "2026-11-08T01:03:42+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.49",
+          "size": 7495680,
+          "modification": "2026-11-08T01:03:41+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.48",
+          "size": 11984896,
+          "modification": "2026-11-08T01:03:41+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.45",
+          "size": 5332992,
+          "modification": "2026-11-08T01:03:40+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.44",
+          "size": 5275648,
+          "modification": "2026-11-08T01:03:40+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.39",
+          "size": 15463198,
+          "modification": "2026-11-08T01:03:40+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.38",
+          "size": 15982592,
+          "modification": "2026-11-08T01:03:40+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.35",
+          "size": 10756350,
+          "modification": "2026-11-08T01:03:40+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.34",
+          "size": 9306112,
+          "modification": "2026-11-08T01:03:40+00:00"
+        }
+      ],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 147931663
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 550764544,
+      "availableBytes": 1596719104
+    },
+    {
+      "gate": "producer-1:after",
+      "at": "2026-11-08 01:03:44.152507+00",
+      "wal_bytes": "234881024",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 153969167
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 418701312,
+      "availableBytes": 1728782336
+    },
+    {
+      "gate": "producer-2:before",
+      "at": "2026-11-08 01:03:44.21156+00",
+      "wal_bytes": "234881024",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 153969167
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 418701312,
+      "availableBytes": 1728782336
+    },
+    {
+      "gate": "producer-2:in-flight",
+      "at": "2026-11-08 01:03:45.256685+00",
+      "wal_bytes": "234881024",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 153969167
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 418701312,
+      "availableBytes": 1728782336
+    },
+    {
+      "gate": "producer-2:in-flight",
+      "at": "2026-11-08 01:03:46.257857+00",
+      "wal_bytes": "234881024",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 153969167
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 418701312,
+      "availableBytes": 1728782336
+    },
+    {
+      "gate": "producer-2:in-flight",
+      "at": "2026-11-08 01:03:47.258084+00",
+      "wal_bytes": "234881024",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 153969167
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 418865152,
+      "availableBytes": 1728618496
+    },
+    {
+      "gate": "producer-2:in-flight",
+      "at": "2026-11-08 01:03:48.259182+00",
+      "wal_bytes": "234881024",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 153969167
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 419790848,
+      "availableBytes": 1727692800
+    },
+    {
+      "gate": "producer-2:in-flight",
+      "at": "2026-11-08 01:03:49.260204+00",
+      "wal_bytes": "234881024",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 153969167
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 419946496,
+      "availableBytes": 1727537152
+    },
+    {
+      "gate": "producer-2:in-flight",
+      "at": "2026-11-08 01:03:50.26138+00",
+      "wal_bytes": "234881024",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 153969167
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 419946496,
+      "availableBytes": 1727537152
+    },
+    {
+      "gate": "producer-2:in-flight",
+      "at": "2026-11-08 01:03:51.262021+00",
+      "wal_bytes": "234881024",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 153969167
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 419946496,
+      "availableBytes": 1727537152
+    },
+    {
+      "gate": "producer-2:in-flight",
+      "at": "2026-11-08 01:03:52.26336+00",
+      "wal_bytes": "234881024",
+      "temp_files": [
+        {
+          "name": "pgsql_tmp13488.74",
+          "size": 3080192,
+          "modification": "2026-11-08T01:03:52+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.73",
+          "size": 4448256,
+          "modification": "2026-11-08T01:03:52+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.72",
+          "size": 4734976,
+          "modification": "2026-11-08T01:03:52+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.71",
+          "size": 5332992,
+          "modification": "2026-11-08T01:03:52+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.70",
+          "size": 5275648,
+          "modification": "2026-11-08T01:03:51+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.67",
+          "size": 0,
+          "modification": "2026-11-08T01:03:51+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.66",
+          "size": 5292032,
+          "modification": "2026-11-08T01:03:51+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.65",
+          "size": 15463198,
+          "modification": "2026-11-08T01:03:52+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.64",
+          "size": 15982592,
+          "modification": "2026-11-08T01:03:51+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.61",
+          "size": 10756350,
+          "modification": "2026-11-08T01:03:51+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.60",
+          "size": 9306112,
+          "modification": "2026-11-08T01:03:51+00:00"
+        }
+      ],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 153969167
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 500633600,
+      "availableBytes": 1646850048
+    },
+    {
+      "gate": "producer-2:in-flight",
+      "at": "2026-11-08 01:03:53.263632+00",
+      "wal_bytes": "234881024",
+      "temp_files": [
+        {
+          "name": "pgsql_tmp13488.77",
+          "size": 5308416,
+          "modification": "2026-11-08T01:03:53+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.76",
+          "size": 4349952,
+          "modification": "2026-11-08T01:03:52+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.75",
+          "size": 7495680,
+          "modification": "2026-11-08T01:03:52+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.74",
+          "size": 11984896,
+          "modification": "2026-11-08T01:03:52+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.71",
+          "size": 5332992,
+          "modification": "2026-11-08T01:03:52+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.70",
+          "size": 5275648,
+          "modification": "2026-11-08T01:03:51+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.67",
+          "size": 0,
+          "modification": "2026-11-08T01:03:51+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.66",
+          "size": 5292032,
+          "modification": "2026-11-08T01:03:51+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.65",
+          "size": 15463198,
+          "modification": "2026-11-08T01:03:52+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.64",
+          "size": 15982592,
+          "modification": "2026-11-08T01:03:51+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.61",
+          "size": 10756350,
+          "modification": "2026-11-08T01:03:51+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.60",
+          "size": 9306112,
+          "modification": "2026-11-08T01:03:51+00:00"
+        }
+      ],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 153969167
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 520884224,
+      "availableBytes": 1626599424
+    },
+    {
+      "gate": "producer-2:in-flight",
+      "at": "2026-11-08 01:03:54.264237+00",
+      "wal_bytes": "234881024",
+      "temp_files": [
+        {
+          "name": "pgsql_tmp13488.85",
+          "size": 6742016,
+          "modification": "2026-11-08T01:03:54+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.84",
+          "size": 8847360,
+          "modification": "2026-11-08T01:03:54+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.83",
+          "size": 7536640,
+          "modification": "2026-11-08T01:03:53+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.82",
+          "size": 6914048,
+          "modification": "2026-11-08T01:03:53+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.80",
+          "size": 7913472,
+          "modification": "2026-11-08T01:03:53+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.79",
+          "size": 22793832,
+          "modification": "2026-11-08T01:03:53+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.78",
+          "size": 5111808,
+          "modification": "2026-11-08T01:03:53+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.77",
+          "size": 5308416,
+          "modification": "2026-11-08T01:03:53+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.75",
+          "size": 7495680,
+          "modification": "2026-11-08T01:03:52+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.74",
+          "size": 11984896,
+          "modification": "2026-11-08T01:03:52+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.71",
+          "size": 5332992,
+          "modification": "2026-11-08T01:03:52+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.70",
+          "size": 5275648,
+          "modification": "2026-11-08T01:03:51+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.65",
+          "size": 15463198,
+          "modification": "2026-11-08T01:03:52+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.64",
+          "size": 15982592,
+          "modification": "2026-11-08T01:03:51+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.61",
+          "size": 10756350,
+          "modification": "2026-11-08T01:03:51+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.60",
+          "size": 9306112,
+          "modification": "2026-11-08T01:03:51+00:00"
+        }
+      ],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 157491727
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 578682880,
+      "availableBytes": 1568800768
+    },
+    {
+      "gate": "producer-2:after",
+      "at": "2026-11-08 01:03:55.20274+00",
+      "wal_bytes": "234881024",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 163611151
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 429588480,
+      "availableBytes": 1717895168
+    },
+    {
+      "gate": "producer-3:before",
+      "at": "2026-11-08 01:03:55.253532+00",
+      "wal_bytes": "234881024",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 163611151
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 429588480,
+      "availableBytes": 1717895168
+    },
+    {
+      "gate": "producer-3:in-flight",
+      "at": "2026-11-08 01:03:56.299254+00",
+      "wal_bytes": "234881024",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 163611151
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 429588480,
+      "availableBytes": 1717895168
+    },
+    {
+      "gate": "producer-3:in-flight",
+      "at": "2026-11-08 01:03:57.300092+00",
+      "wal_bytes": "234881024",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 163611151
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 429588480,
+      "availableBytes": 1717895168
+    },
+    {
+      "gate": "producer-3:in-flight",
+      "at": "2026-11-08 01:03:58.301206+00",
+      "wal_bytes": "234881024",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 163611151
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 429588480,
+      "availableBytes": 1717895168
+    },
+    {
+      "gate": "producer-3:in-flight",
+      "at": "2026-11-08 01:03:59.302107+00",
+      "wal_bytes": "234881024",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 163611151
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 429588480,
+      "availableBytes": 1717895168
+    },
+    {
+      "gate": "producer-3:in-flight",
+      "at": "2026-11-08 01:04:00.303576+00",
+      "wal_bytes": "234881024",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 163611151
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 429588480,
+      "availableBytes": 1717895168
+    },
+    {
+      "gate": "producer-3:in-flight",
+      "at": "2026-11-08 01:04:01.304343+00",
+      "wal_bytes": "234881024",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 163611151
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 429588480,
+      "availableBytes": 1717895168
+    },
+    {
+      "gate": "producer-3:in-flight",
+      "at": "2026-11-08 01:04:02.305505+00",
+      "wal_bytes": "234881024",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 163611151
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 435732480,
+      "availableBytes": 1711751168
+    },
+    {
+      "gate": "producer-3:in-flight",
+      "at": "2026-11-08 01:04:03.306258+00",
+      "wal_bytes": "234881024",
+      "temp_files": [
+        {
+          "name": "pgsql_tmp13488.100",
+          "size": 3080192,
+          "modification": "2026-11-08T01:04:03+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.99",
+          "size": 4890624,
+          "modification": "2026-11-08T01:04:03+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.98",
+          "size": 4734976,
+          "modification": "2026-11-08T01:04:03+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.97",
+          "size": 5332992,
+          "modification": "2026-11-08T01:04:03+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.96",
+          "size": 5275648,
+          "modification": "2026-11-08T01:04:02+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.93",
+          "size": 0,
+          "modification": "2026-11-08T01:04:02+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.92",
+          "size": 5292032,
+          "modification": "2026-11-08T01:04:02+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.91",
+          "size": 15463198,
+          "modification": "2026-11-08T01:04:03+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.90",
+          "size": 15982592,
+          "modification": "2026-11-08T01:04:02+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.87",
+          "size": 10756350,
+          "modification": "2026-11-08T01:04:02+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.86",
+          "size": 9306112,
+          "modification": "2026-11-08T01:04:02+00:00"
+        }
+      ],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 163611151
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 510758912,
+      "availableBytes": 1636724736
+    },
+    {
+      "gate": "producer-3:in-flight",
+      "at": "2026-11-08 01:04:04.307211+00",
+      "wal_bytes": "234881024",
+      "temp_files": [
+        {
+          "name": "pgsql_tmp13488.103",
+          "size": 5308416,
+          "modification": "2026-11-08T01:04:04+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.102",
+          "size": 4349952,
+          "modification": "2026-11-08T01:04:03+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.101",
+          "size": 7495680,
+          "modification": "2026-11-08T01:04:03+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.100",
+          "size": 11984896,
+          "modification": "2026-11-08T01:04:03+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.97",
+          "size": 5332992,
+          "modification": "2026-11-08T01:04:03+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.96",
+          "size": 5275648,
+          "modification": "2026-11-08T01:04:02+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.93",
+          "size": 0,
+          "modification": "2026-11-08T01:04:02+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.92",
+          "size": 5292032,
+          "modification": "2026-11-08T01:04:02+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.91",
+          "size": 15463198,
+          "modification": "2026-11-08T01:04:03+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.90",
+          "size": 15982592,
+          "modification": "2026-11-08T01:04:02+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.87",
+          "size": 10756350,
+          "modification": "2026-11-08T01:04:02+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.86",
+          "size": 9306112,
+          "modification": "2026-11-08T01:04:02+00:00"
+        }
+      ],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 163611151
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 532074496,
+      "availableBytes": 1615409152
+    },
+    {
+      "gate": "producer-3:in-flight",
+      "at": "2026-11-08 01:04:05.308051+00",
+      "wal_bytes": "235634688",
+      "temp_files": [
+        {
+          "name": "pgsql_tmp13488.111",
+          "size": 6742016,
+          "modification": "2026-11-08T01:04:05+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.110",
+          "size": 8847360,
+          "modification": "2026-11-08T01:04:05+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.109",
+          "size": 7536640,
+          "modification": "2026-11-08T01:04:04+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.108",
+          "size": 6914048,
+          "modification": "2026-11-08T01:04:04+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.106",
+          "size": 7913472,
+          "modification": "2026-11-08T01:04:04+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.105",
+          "size": 22793832,
+          "modification": "2026-11-08T01:04:04+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.104",
+          "size": 5111808,
+          "modification": "2026-11-08T01:04:04+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.103",
+          "size": 5308416,
+          "modification": "2026-11-08T01:04:04+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.101",
+          "size": 7495680,
+          "modification": "2026-11-08T01:04:03+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.100",
+          "size": 11984896,
+          "modification": "2026-11-08T01:04:03+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.97",
+          "size": 5332992,
+          "modification": "2026-11-08T01:04:03+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.96",
+          "size": 5275648,
+          "modification": "2026-11-08T01:04:02+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.91",
+          "size": 15463198,
+          "modification": "2026-11-08T01:04:03+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.90",
+          "size": 15982592,
+          "modification": "2026-11-08T01:04:02+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.87",
+          "size": 10756350,
+          "modification": "2026-11-08T01:04:02+00:00"
+        },
+        {
+          "name": "pgsql_tmp13488.86",
+          "size": 9306112,
+          "modification": "2026-11-08T01:04:02+00:00"
+        }
+      ],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 167723535
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 605462528,
+      "availableBytes": 1542021120
+    },
+    {
+      "gate": "producer-3:after",
+      "at": "2026-11-08 01:04:06.239413+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_eb87e8a42fa9d2b28424",
+          "bytes": 172802575
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 456261632,
+      "availableBytes": 1691222016
+    },
+    {
+      "gate": "dataset-preparation:before",
+      "at": "2026-11-08 01:04:06.913675+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_5c0bf5df744334c9173b",
+          "bytes": 12662463
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 290693120,
+      "availableBytes": 1856790528
+    },
+    {
+      "gate": "dataset-preparation:in-flight",
+      "at": "2026-11-08 01:04:07.967735+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_5c0bf5df744334c9173b",
+          "bytes": 18183871
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 296214528,
+      "availableBytes": 1851269120
+    },
+    {
+      "gate": "dataset-preparation:in-flight",
+      "at": "2026-11-08 01:04:08.969058+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_5c0bf5df744334c9173b",
+          "bytes": 34944703
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 315695104,
+      "availableBytes": 1831788544
+    },
+    {
+      "gate": "dataset-preparation:in-flight",
+      "at": "2026-11-08 01:04:09.968882+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_5c0bf5df744334c9173b",
+          "bytes": 51536399
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 329535488,
+      "availableBytes": 1817948160
+    },
+    {
+      "gate": "dataset-preparation:in-flight",
+      "at": "2026-11-08 01:04:10.970687+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_5c0bf5df744334c9173b",
+          "bytes": 59646479
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 337723392,
+      "availableBytes": 1809760256
+    },
+    {
+      "gate": "dataset-preparation:in-flight",
+      "at": "2026-11-08 01:04:11.971121+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_5c0bf5df744334c9173b",
+          "bytes": 68829711
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 346873856,
+      "availableBytes": 1800609792
+    },
+    {
+      "gate": "dataset-preparation:in-flight",
+      "at": "2026-11-08 01:04:12.971956+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_5c0bf5df744334c9173b",
+          "bytes": 79675919
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 357703680,
+      "availableBytes": 1789779968
+    },
+    {
+      "gate": "dataset-preparation:in-flight",
+      "at": "2026-11-08 01:04:13.973613+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_5c0bf5df744334c9173b",
+          "bytes": 88891919
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 366919680,
+      "availableBytes": 1780563968
+    },
+    {
+      "gate": "dataset-preparation:in-flight",
+      "at": "2026-11-08 01:04:14.974422+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_5c0bf5df744334c9173b",
+          "bytes": 95642127
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 373669888,
+      "availableBytes": 1773813760
+    },
+    {
+      "gate": "dataset-preparation:in-flight",
+      "at": "2026-11-08 01:04:15.975542+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_5c0bf5df744334c9173b",
+          "bytes": 102990351
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 381018112,
+      "availableBytes": 1766465536
+    },
+    {
+      "gate": "dataset-preparation:in-flight",
+      "at": "2026-11-08 01:04:16.975825+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_5c0bf5df744334c9173b",
+          "bytes": 105406991
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 395526144,
+      "availableBytes": 1751957504
+    },
+    {
+      "gate": "dataset-preparation:in-flight",
+      "at": "2026-11-08 01:04:17.977828+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_5c0bf5df744334c9173b",
+          "bytes": 113992207
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 392019968,
+      "availableBytes": 1755463680
+    },
+    {
+      "gate": "dataset-preparation:in-flight",
+      "at": "2026-11-08 01:04:18.978337+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_5c0bf5df744334c9173b",
+          "bytes": 121422351
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 399450112,
+      "availableBytes": 1748033536
+    },
+    {
+      "gate": "dataset-preparation:in-flight",
+      "at": "2026-11-08 01:04:19.979345+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_5c0bf5df744334c9173b",
+          "bytes": 123978255
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 402006016,
+      "availableBytes": 1745477632
+    },
+    {
+      "gate": "dataset-preparation:in-flight",
+      "at": "2026-11-08 01:04:20.980807+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_5c0bf5df744334c9173b",
+          "bytes": 132375055
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 412573696,
+      "availableBytes": 1734909952
+    },
+    {
+      "gate": "dataset-preparation:in-flight",
+      "at": "2026-11-08 01:04:21.981306+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_5c0bf5df744334c9173b",
+          "bytes": 134996495
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 415588352,
+      "availableBytes": 1731895296
+    },
+    {
+      "gate": "dataset-preparation:after",
+      "at": "2026-11-08 01:04:22.131595+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_5c0bf5df744334c9173b",
+          "bytes": 135037455
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 415596544,
+      "availableBytes": 1731887104
+    },
+    {
+      "gate": "dataset-sample",
+      "at": "2026-11-08 01:04:22.654101+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_5c0bf5df744334c9173b",
+          "bytes": 136124095
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 416702464,
+      "availableBytes": 1730781184
+    },
+    {
+      "gate": "dataset-sample",
+      "at": "2026-11-08 01:04:23.188271+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_5c0bf5df744334c9173b",
+          "bytes": 136951487
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 417529856,
+      "availableBytes": 1729953792
+    },
+    {
+      "gate": "dataset-sample",
+      "at": "2026-11-08 01:04:23.751187+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_5c0bf5df744334c9173b",
+          "bytes": 137975487
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 418562048,
+      "availableBytes": 1728921600
+    },
+    {
+      "gate": "dataset-sample",
+      "at": "2026-11-08 01:04:24.2335+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_5c0bf5df744334c9173b",
+          "bytes": 138532543
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 419127296,
+      "availableBytes": 1728356352
+    },
+    {
+      "gate": "dataset-sample",
+      "at": "2026-11-08 01:04:24.712347+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_5c0bf5df744334c9173b",
+          "bytes": 139548351
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 420282368,
+      "availableBytes": 1727201280
+    },
+    {
+      "gate": "dataset-sample",
+      "at": "2026-11-08 01:04:25.233752+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_5c0bf5df744334c9173b",
+          "bytes": 140654271
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 421502976,
+      "availableBytes": 1725980672
+    },
+    {
+      "gate": "dataset-sample",
+      "at": "2026-11-08 01:04:25.763694+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_5c0bf5df744334c9173b",
+          "bytes": 141203135
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 422051840,
+      "availableBytes": 1725431808
+    },
+    {
+      "gate": "dataset-sample",
+      "at": "2026-11-08 01:04:26.246976+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_5c0bf5df744334c9173b",
+          "bytes": 141743807
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 422666240,
+      "availableBytes": 1724817408
+    },
+    {
+      "gate": "dataset-sample",
+      "at": "2026-11-08 01:04:26.724093+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_5c0bf5df744334c9173b",
+          "bytes": 142563007
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 423485440,
+      "availableBytes": 1723998208
+    },
+    {
+      "gate": "dataset-sample",
+      "at": "2026-11-08 01:04:27.252296+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_5c0bf5df744334c9173b",
+          "bytes": 143693503
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 424615936,
+      "availableBytes": 1722867712
+    },
+    {
+      "gate": "dataset-sample",
+      "at": "2026-11-08 01:04:27.791259+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_5c0bf5df744334c9173b",
+          "bytes": 145200831
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 426123264,
+      "availableBytes": 1721360384
+    },
+    {
+      "gate": "dataset-sample",
+      "at": "2026-11-08 01:04:28.27653+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_5c0bf5df744334c9173b",
+          "bytes": 145995455
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 426917888,
+      "availableBytes": 1720565760
+    },
+    {
+      "gate": "reader-preparation:before",
+      "at": "2026-11-08 01:04:28.955437+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_9827ae820e54f6d0bb2a",
+          "bytes": 12662463
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 290693120,
+      "availableBytes": 1856790528
+    },
+    {
+      "gate": "reader-preparation:in-flight",
+      "at": "2026-11-08 01:04:30.00749+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_9827ae820e54f6d0bb2a",
+          "bytes": 22247103
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 301449216,
+      "availableBytes": 1846034432
+    },
+    {
+      "gate": "reader-preparation:in-flight",
+      "at": "2026-11-08 01:04:31.008129+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_9827ae820e54f6d0bb2a",
+          "bytes": 40031935
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 318062592,
+      "availableBytes": 1829421056
+    },
+    {
+      "gate": "reader-preparation:in-flight",
+      "at": "2026-11-08 01:04:32.008177+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_9827ae820e54f6d0bb2a",
+          "bytes": 51582655
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 329621504,
+      "availableBytes": 1817862144
+    },
+    {
+      "gate": "reader-preparation:in-flight",
+      "at": "2026-11-08 01:04:33.00901+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_9827ae820e54f6d0bb2a",
+          "bytes": 59782847
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 337813504,
+      "availableBytes": 1809670144
+    },
+    {
+      "gate": "reader-preparation:in-flight",
+      "at": "2026-11-08 01:04:34.015024+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_9827ae820e54f6d0bb2a",
+          "bytes": 68900543
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 346931200,
+      "availableBytes": 1800552448
+    },
+    {
+      "gate": "reader-preparation:in-flight",
+      "at": "2026-11-08 01:04:35.014031+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_9827ae820e54f6d0bb2a",
+          "bytes": 79722175
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 357752832,
+      "availableBytes": 1789730816
+    },
+    {
+      "gate": "reader-preparation:in-flight",
+      "at": "2026-11-08 01:04:36.015647+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_9827ae820e54f6d0bb2a",
+          "bytes": 88938175
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 366977024,
+      "availableBytes": 1780506624
+    },
+    {
+      "gate": "reader-preparation:in-flight",
+      "at": "2026-11-08 01:04:37.01582+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_9827ae820e54f6d0bb2a",
+          "bytes": 95688383
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 373760000,
+      "availableBytes": 1773723648
+    },
+    {
+      "gate": "reader-preparation:in-flight",
+      "at": "2026-11-08 01:04:38.017186+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_9827ae820e54f6d0bb2a",
+          "bytes": 103012031
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 381042688,
+      "availableBytes": 1766440960
+    },
+    {
+      "gate": "reader-preparation:in-flight",
+      "at": "2026-11-08 01:04:39.018393+00",
+      "wal_bytes": "251658240",
+      "temp_files": [
+        {
+          "name": "pgsql_tmp15132.5",
+          "size": 11778744,
+          "modification": "2026-11-08T01:04:38+00:00"
+        }
+      ],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_9827ae820e54f6d0bb2a",
+          "bytes": 107427519
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 385949696,
+      "availableBytes": 1761533952
+    },
+    {
+      "gate": "reader-preparation:in-flight",
+      "at": "2026-11-08 01:04:40.019028+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_9827ae820e54f6d0bb2a",
+          "bytes": 113926671
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 391954432,
+      "availableBytes": 1755529216
+    },
+    {
+      "gate": "reader-preparation:in-flight",
+      "at": "2026-11-08 01:04:41.01895+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_9827ae820e54f6d0bb2a",
+          "bytes": 121307663
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 399335424,
+      "availableBytes": 1748148224
+    },
+    {
+      "gate": "reader-preparation:in-flight",
+      "at": "2026-11-08 01:04:42.02027+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_9827ae820e54f6d0bb2a",
+          "bytes": 123789839
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 401817600,
+      "availableBytes": 1745666048
+    },
+    {
+      "gate": "reader-preparation:in-flight",
+      "at": "2026-11-08 01:04:43.021382+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_9827ae820e54f6d0bb2a",
+          "bytes": 132186639
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 412254208,
+      "availableBytes": 1735229440
+    },
+    {
+      "gate": "reader-preparation:in-flight",
+      "at": "2026-11-08 01:04:44.022103+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_9827ae820e54f6d0bb2a",
+          "bytes": 134717967
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 415244288,
+      "availableBytes": 1732239360
+    },
+    {
+      "gate": "reader-preparation:after",
+      "at": "2026-11-08 01:04:44.105452+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_9827ae820e54f6d0bb2a",
+          "bytes": 134717967
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 415244288,
+      "availableBytes": 1732239360
+    },
+    {
+      "gate": "reader-cohort",
+      "at": "2026-11-08 01:04:48.690635+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_9827ae820e54f6d0bb2a",
+          "bytes": 134903487
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 415440896,
+      "availableBytes": 1732042752
+    },
+    {
+      "gate": "reader-cohort",
+      "at": "2026-11-08 01:04:50.243197+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_9827ae820e54f6d0bb2a",
+          "bytes": 134903487
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 415440896,
+      "availableBytes": 1732042752
+    },
+    {
+      "gate": "reader-cohort",
+      "at": "2026-11-08 01:04:54.772356+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_9827ae820e54f6d0bb2a",
+          "bytes": 134903487
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 415449088,
+      "availableBytes": 1732034560
+    },
+    {
+      "gate": "reader-cohort",
+      "at": "2026-11-08 01:04:56.34911+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_9827ae820e54f6d0bb2a",
+          "bytes": 134903487
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 415449088,
+      "availableBytes": 1732034560
+    },
+    {
+      "gate": "reader-cohort",
+      "at": "2026-11-08 01:05:01.002374+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_9827ae820e54f6d0bb2a",
+          "bytes": 134903487
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 415449088,
+      "availableBytes": 1732034560
+    },
+    {
+      "gate": "reader-cohort",
+      "at": "2026-11-08 01:05:02.626769+00",
+      "wal_bytes": "251658240",
+      "temp_files": [],
+      "databases": [
+        {
+          "name": "postgres",
+          "bytes": 7861951
+        },
+        {
+          "name": "dfs_ev_test",
+          "bytes": 7861951
+        },
+        {
+          "name": "template1",
+          "bytes": 7935679
+        },
+        {
+          "name": "template0",
+          "bytes": 7701007
+        },
+        {
+          "name": "dfs_ev_test_9827ae820e54f6d0bb2a",
+          "bytes": 134903487
+        }
+      ],
+      "max_wal_size": "1GB",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "mountBytes": 2147483648,
+      "usedBytes": 415449088,
+      "availableBytes": 1732034560
+    }
+  ],
+  "deliveries": [
+    {
+      "block": 1,
+      "position": 0,
+      "arm": "baseline",
+      "sql": 3,
+      "checks": 2,
+      "gets": 1,
+      "fileSha256": "6eaa209d299971300c7628f2045c0715a0c96233488a8ef84df7972c1c1bfd60"
+    },
+    {
+      "block": 1,
+      "position": 1,
+      "arm": "candidate",
+      "sql": 3,
+      "checks": 2,
+      "gets": 1,
+      "fileSha256": "6eaa209d299971300c7628f2045c0715a0c96233488a8ef84df7972c1c1bfd60"
+    },
+    {
+      "block": 1,
+      "position": 2,
+      "arm": "candidate",
+      "sql": 3,
+      "checks": 2,
+      "gets": 1,
+      "fileSha256": "6eaa209d299971300c7628f2045c0715a0c96233488a8ef84df7972c1c1bfd60"
+    },
+    {
+      "block": 1,
+      "position": 3,
+      "arm": "baseline",
+      "sql": 3,
+      "checks": 2,
+      "gets": 1,
+      "fileSha256": "6eaa209d299971300c7628f2045c0715a0c96233488a8ef84df7972c1c1bfd60"
+    },
+    {
+      "block": 2,
+      "position": 0,
+      "arm": "baseline",
+      "sql": 3,
+      "checks": 2,
+      "gets": 1,
+      "fileSha256": "6eaa209d299971300c7628f2045c0715a0c96233488a8ef84df7972c1c1bfd60"
+    },
+    {
+      "block": 2,
+      "position": 1,
+      "arm": "candidate",
+      "sql": 3,
+      "checks": 2,
+      "gets": 1,
+      "fileSha256": "6eaa209d299971300c7628f2045c0715a0c96233488a8ef84df7972c1c1bfd60"
+    },
+    {
+      "block": 2,
+      "position": 2,
+      "arm": "candidate",
+      "sql": 3,
+      "checks": 2,
+      "gets": 1,
+      "fileSha256": "6eaa209d299971300c7628f2045c0715a0c96233488a8ef84df7972c1c1bfd60"
+    },
+    {
+      "block": 2,
+      "position": 3,
+      "arm": "baseline",
+      "sql": 3,
+      "checks": 2,
+      "gets": 1,
+      "fileSha256": "6eaa209d299971300c7628f2045c0715a0c96233488a8ef84df7972c1c1bfd60"
+    },
+    {
+      "block": 3,
+      "position": 0,
+      "arm": "baseline",
+      "sql": 3,
+      "checks": 2,
+      "gets": 1,
+      "fileSha256": "6eaa209d299971300c7628f2045c0715a0c96233488a8ef84df7972c1c1bfd60"
+    },
+    {
+      "block": 3,
+      "position": 1,
+      "arm": "candidate",
+      "sql": 3,
+      "checks": 2,
+      "gets": 1,
+      "fileSha256": "6eaa209d299971300c7628f2045c0715a0c96233488a8ef84df7972c1c1bfd60"
+    },
+    {
+      "block": 3,
+      "position": 2,
+      "arm": "candidate",
+      "sql": 3,
+      "checks": 2,
+      "gets": 1,
+      "fileSha256": "6eaa209d299971300c7628f2045c0715a0c96233488a8ef84df7972c1c1bfd60"
+    },
+    {
+      "block": 3,
+      "position": 3,
+      "arm": "baseline",
+      "sql": 3,
+      "checks": 2,
+      "gets": 1,
+      "fileSha256": "6eaa209d299971300c7628f2045c0715a0c96233488a8ef84df7972c1c1bfd60"
+    }
+  ],
+  "machine": {
+    "arch": "arm64",
+    "platform": "darwin",
+    "release": "27.2.0"
+  },
+  "actualMountBytes": 2147483648,
+  "targets": {
+    "producerMs": 84000,
+    "datasetMs": 21000,
+    "readerP95Ms": 210
+  },
+  "deadlines": {
+    "producerMs": 120000,
+    "datasetMs": 30000,
+    "readerMs": 300
+  },
+  "baselinePolicy": "Producer fixed version only, four samples. Dataset baseline substitutes main's selection SQL in the unchanged outer builder; #163 baseline substitutes main's authorization SQL in the unchanged adapter. No baseline producer execution.",
+  "boundary": "Producer through COMMIT; dataset through pre-delivery check; #163 through completed serialized response, including connect for cold and excluding teardown. Setup and observer boundary queries excluded; in-flight observer cost included.",
+  "cacheState": "Same Node process, no result cache; warm checks current rights/status twice per call. Cold means a fresh connection, not process. OS and PostgreSQL caches unflushed. Fresh scratch DB per gate; no hosted claim.",
+  "limitations": [
+    "668.225666 ms spike query remains unexplained and retained by owner decision.",
+    "The producer comparison-side 53100 is retained, never rerun or counted as success.",
+    "finished_at precedes COMMIT: same knownAsOf may change across that accepted visibility gap.",
+    "Disk sampled each second and gate boundaries; not exact allocation peaks."
+  ],
+  "startedSample": {
+    "gate": "reader",
+    "block": 3,
+    "temperature": "warm",
+    "position": 99,
+    "arm": "baseline"
+  },
+  "lastQuery": {
+    "gate": "reader",
+    "arm": "baseline",
+    "text": "-- #163 query 1 and query 3: one batched current rights/status check each.\n-- Exact pinned selection is distinct from current freshness and current rights.\nWITH clock AS MATERIALIZED(SELECT clock_timestamp() AS now),\nfeature AS MATERIALIZED(\n SELECT f.feature_id,f.job_id,f.player_id,f.game_id,f.season,f.stat,f.cutoff,\n  f.checkpoint,f.computed_at,f.feature_version,f.history_policy,f.evidence_mode,\n  f.state,f.reasons,f.flags,f.sample_size,j.status AS job_status\n FROM fs138.feature_values f JOIN fs138.job_runs j USING(job_id) WHERE f.feature_id=$1::uuid\n), eligibility AS(\n SELECT CASE\n  WHEN $2::timestamptz>now THEN 'future-knowledge-as-of'\n  WHEN NOT EXISTS(SELECT 1 FROM feature) THEN 'feature-missing'\n  WHEN EXISTS(SELECT 1 FROM feature WHERE feature_version<>$3 OR history_policy<>$4 OR evidence_mode<>$5) THEN 'unsupported-version'\n  WHEN EXISTS(SELECT 1 FROM feature WHERE computed_at>$2::timestamptz OR checkpoint>$2::timestamptz) THEN 'feature-after-as-of'\n  WHEN EXISTS(SELECT 1 FROM feature WHERE sample_size<2) THEN 'insufficient-history'\n  WHEN EXISTS(SELECT 1 FROM feature WHERE sample_size>16) THEN 'history-limit-exceeded'\n  WHEN EXISTS(SELECT 1 FROM feature WHERE state<>'usable' OR job_status<>'succeeded' OR stat<>'passing_yards' OR cutoff IS NULL) THEN 'feature-unavailable'\n END AS reason FROM clock\n), lineage AS MATERIALIZED(\n SELECT i.snapshot_id,s.profile_id,s.deleted_at,s.available_at::text,s.ingested_at::text,\n  s.evidence_basis,j.status AS job_status\n FROM feature f JOIN fs138.feature_inputs i USING(feature_id)\n LEFT JOIN fs138.source_snapshots s USING(snapshot_id)\n LEFT JOIN fs138.job_runs j ON j.job_id=s.job_id\n), profiles AS(SELECT DISTINCT profile_id FROM lineage WHERE profile_id IS NOT NULL),\ndecisions AS MATERIALIZED(\n SELECT p.profile_id,r.decision_id,r.allowed_uses FROM profiles p CROSS JOIN clock\n LEFT JOIN LATERAL fs138.effective_rights(p.profile_id,now,now) r ON true\n), inputs AS(\n SELECT coalesce(array_agg(snapshot_id ORDER BY snapshot_id),'{}') AS ids FROM lineage\n), head AS MATERIALIZED(\n SELECT n.feature_id,n.state FROM feature f JOIN fs138.feature_values n\n  ON (n.player_id,n.game_id,n.stat,n.feature_version,n.history_policy,n.evidence_mode)\n   =(f.player_id,f.game_id,f.stat,f.feature_version,f.history_policy,f.evidence_mode)\n JOIN fs138.job_runs j ON j.job_id=n.job_id CROSS JOIN clock\n WHERE j.status='succeeded' AND n.computed_at<=now AND n.checkpoint<=now\n ORDER BY n.checkpoint DESC,n.computed_at DESC,n.feature_id DESC LIMIT 1\n)\nSELECT now::text AS checked_at,eligibility.reason AS selection_reason,\n eligibility.reason IS NULL AND cardinality(ids)>0\n AND NOT EXISTS(SELECT 1 FROM lineage WHERE profile_id IS NULL OR deleted_at IS NOT NULL OR job_status IS DISTINCT FROM 'succeeded')\n AND NOT EXISTS(SELECT 1 FROM decisions WHERE decision_id IS NULL OR NOT('research'=ANY(allowed_uses)))\n AND ($6::uuid[] IS NULL OR ids=$6::uuid[]) AS allowed,\n (SELECT row_to_json(metadata) FROM(\n  SELECT f.feature_id,f.job_id,f.player_id,f.game_id,f.season,f.stat,\n   f.cutoff::text,f.checkpoint::text,f.computed_at::text,\n   f.feature_version,f.history_policy,f.evidence_mode,f.state,f.reasons,f.flags,f.sample_size,f.job_status,\n   coalesce(h.feature_id<>f.feature_id,false) AS superseded,\n   coalesce(h.feature_id<>f.feature_id AND h.state='unavailable',false) AS stale\n  FROM feature f LEFT JOIN head h ON true\n ) metadata) AS feature,\n ids AS snapshot_ids,\n coalesce((SELECT jsonb_agg(to_jsonb(l)-'deleted_at'-'job_status' ORDER BY snapshot_id) FROM lineage l),'[]') AS lineage,\n coalesce((SELECT jsonb_agg(jsonb_build_object('profileId',profile_id,'decisionId',decision_id) ORDER BY profile_id) FROM decisions),'[]') AS decisions\nFROM clock CROSS JOIN inputs CROSS JOIN eligibility;\n",
+    "values": [
+      "d059cc85-86e6-4518-96b5-f93ad5971f90",
+      "2026-11-08 01:04:44.104667+00",
+      "qb-passing-yards-feature-v1",
+      "prior-eligible-reg-max16-min2-cutoff1h-v1",
+      "retrospective-reconstruction-v1",
+      [
+        "29ac513a-bc92-488f-970c-baf091345f49",
+        "594651a8-213f-4e1e-ae62-3c2f943c8121",
+        "70247211-830d-4d8d-93ea-8c430c8d7d97",
+        "9596365c-71f5-4a3c-ab71-f3b13890a4e4"
+      ]
+    ]
+  },
+  "sampleCount": 1216,
+  "producer": [
+    {
+      "ms": 10944.31625,
+      "sql": 8,
+      "headroom": 0.9087973645833334
+    },
+    {
+      "ms": 10929.503625000001,
+      "sql": 8,
+      "headroom": 0.908920803125
+    },
+    {
+      "ms": 10946.627249999998,
+      "sql": 8,
+      "headroom": 0.90877810625
+    },
+    {
+      "ms": 10938.936041,
+      "sql": 8,
+      "headroom": 0.9088421996583333
+    }
+  ],
+  "dataset": [
+    {
+      "block": 1,
+      "arm": "baseline",
+      "ms": 450.320000000007,
+      "sql": 8,
+      "checks": 2
+    },
+    {
+      "block": 1,
+      "arm": "candidate",
+      "ms": 472.984375,
+      "sql": 8,
+      "checks": 2
+    },
+    {
+      "block": 1,
+      "arm": "candidate",
+      "ms": 504.939584000007,
+      "sql": 8,
+      "checks": 2
+    },
+    {
+      "block": 1,
+      "arm": "baseline",
+      "ms": 428.4936250000028,
+      "sql": 8,
+      "checks": 2
+    },
+    {
+      "block": 2,
+      "arm": "baseline",
+      "ms": 418.9532499999914,
+      "sql": 8,
+      "checks": 2
+    },
+    {
+      "block": 2,
+      "arm": "candidate",
+      "ms": 467.1462080000056,
+      "sql": 8,
+      "checks": 2
+    },
+    {
+      "block": 2,
+      "arm": "candidate",
+      "ms": 474.515916999997,
+      "sql": 8,
+      "checks": 2
+    },
+    {
+      "block": 2,
+      "arm": "baseline",
+      "ms": 428.88616699998965,
+      "sql": 8,
+      "checks": 2
+    },
+    {
+      "block": 3,
+      "arm": "baseline",
+      "ms": 421.0587920000107,
+      "sql": 8,
+      "checks": 2
+    },
+    {
+      "block": 3,
+      "arm": "candidate",
+      "ms": 474.8107500000042,
+      "sql": 8,
+      "checks": 2
+    },
+    {
+      "block": 3,
+      "arm": "candidate",
+      "ms": 482.49695800000336,
+      "sql": 8,
+      "checks": 2
+    },
+    {
+      "block": 3,
+      "arm": "baseline",
+      "ms": 425.0816669999913,
+      "sql": 8,
+      "checks": 2
+    }
+  ],
+  "schemaVersion": 2,
+  "fullRecord": {
+    "path": "step-4-final-full-records-20261108T011159Z.tar.gz#final-speed/full.json",
+    "sha256": "e8841fa90f31d6030ed8792676821fe32c29ed7ae1b24117a3df8fe97a76e981",
+    "byteSize": 590344,
+    "retention": "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
+  }
+}

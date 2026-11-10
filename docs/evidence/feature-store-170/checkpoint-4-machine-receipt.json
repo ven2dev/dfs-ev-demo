@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "issue": 170,
+  "status": "range-verified",
+  "code": {
+    "gitSha": "47e7ffe8d130d53c105f98fd92b3dd276a8324f5",
+    "contentSha256": "894b8240645e760a4fea75aad8e4a4ba45926361fa11ffee4abf2d82d1849270"
+  },
+  "range": {
+    "startAfter": null,
+    "endInclusive": "raw/ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "lastListedKey": "raw/f3fbe6bb1b56a0f51c4b6d5793f8bc3b46da2d54c070572144b8771912eeaaec",
+    "nextStartAfter": null
+  },
+  "counts": {
+    "listed": 16,
+    "snapshotReferences": 16,
+    "withdrawnReferences": 0,
+    "verifiedObjects": 16,
+    "verifiedReferences": 16,
+    "verifiedWireBytes": 246304787
+  },
+  "peakRssBytes": 255131648,
+  "inputSha256": "59e07c0cc03a1bb6c5a9b4e672e7aaadf13195cdefc5b110ce9ad1c0acc2664a",
+  "initial": {
+    "checkedAt": "2026-11-08 01:20:37.389013+00",
+    "checkedAtEpochMicros": "1794100837389013",
+    "snapshotReferences": 16,
+    "removalRecords": 0,
+    "stateSha256": "1387c54a14cd022ac9b10a7392097b13b8188d42dcc1b4c5e548b8ea16731ce4"
+  },
+  "final": {
+    "checkedAt": "2026-11-08 01:20:37.659894+00",
+    "checkedAtEpochMicros": "1794100837659894",
+    "snapshotReferences": 16,
+    "removalRecords": 0,
+    "stateSha256": "1387c54a14cd022ac9b10a7392097b13b8188d42dcc1b4c5e548b8ea16731ce4"
+  },
+  "policy": {
+    "inventoryLimit": 32,
+    "snapshotLimit": 32,
+    "wireByteLimit": 268435456,
+    "maxObjectBytes": 67108864,
+    "requiredUse": "research"
+  }
+}

@@ -2,14 +2,14 @@ import { Client,type ClientConfig } from "pg";
 import { buildDataset,type DatasetSpec } from "../../src/featureStore/datasets.ts";
 import type { CodeIdentity } from "../../src/featureStore/derived.ts";
 import { openLocalObjectStore } from "../../src/featureStore/localObjectStore.ts";
-import { assertNoApplicationCredentials } from "@dfs-ev/db-tooling/test-support/target";
+import { assertNoApplicationCredentials, getTestDatabaseLane } from "@dfs-ev/db-tooling/test-support/target";
 assertNoApplicationCredentials(process.env);
 const chunks:Buffer[]=[];
 for await(const chunk of process.stdin)chunks.push(Buffer.from(chunk));
 const {config,spec,code,storageRoot}=JSON.parse(Buffer.concat(chunks).toString('utf8')) as {
  config:ClientConfig;spec:DatasetSpec;code:CodeIdentity;storageRoot:string;
 };
-if(!['127.0.0.1','::1'].includes(String(config.host))||config.port!==54329||
+if(!['127.0.0.1','::1'].includes(String(config.host))||config.port!==getTestDatabaseLane(process.env.DB_TEST_LANE).port||
  !/^dfs_ev_test_[a-f0-9]+$/.test(String(config.database))||!/^fs138_job_[a-f0-9]+$/.test(String(config.user))||
  config.password!=='fs138_throwaway'||config.ssl!==false)throw new Error('dataset-cold-target-refused');
 const client=new Client(config);let statements=0;let rightsQueries=0;

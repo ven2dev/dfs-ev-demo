@@ -26,3 +26,20 @@ process.exit(process.argv.includes("up") ? 7 : 0);
     assert.ok(calls[1].includes("--volumes"));
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
+
+test("disk admission uses measured tier thresholds and refuses an unverified WAL mount", async () => {
+  const { requireDatabaseDiskBudget } = await import("../../scripts/db/db-test-disk.mjs");
+  const output = (capacity, free, walMount = "/var/lib/postgresql") => [
+    `tmpfs ${capacity * 1024} ${(capacity - free) * 1024} ${free * 1024} 50% /var/lib/postgresql`,
+    `tmpfs ${capacity * 1024} ${(capacity - free) * 1024} ${free * 1024} 50% ${walMount}`,
+    "98304 /var/lib/postgresql/18/docker/pg_wal",
+  ].join("\n");
+  for (const [tier, capacity, required] of [["standard", 512, 272], ["large", 2048, 608]]) {
+    const options = { tier, project: "dfs-ev-demo-test-lane-2" };
+    assert.equal(requireDatabaseDiskBudget(output(capacity, required), options).requiredFreeBytes, required * 1024 ** 2);
+    assert.throws(() => requireDatabaseDiskBudget(output(capacity, required - 1), options),
+      new RegExp(`requires ${required} MiB free, available ${required - 1}\\.0 MiB, retained WAL 96\\.0 MiB.*Exclusive lane ownership`));
+    assert.throws(() => requireDatabaseDiskBudget(output(capacity, required, "/unbudgeted"), options), /data and WAL tmpfs/);
+    assert.throws(() => requireDatabaseDiskBudget(output(capacity + 1, required), options), /verify the .* tmpfs/);
+  }
+});

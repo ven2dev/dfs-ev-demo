@@ -1,5 +1,6 @@
 import { defineConfig } from "vitest/config";
 import tsconfigPaths from "vite-tsconfig-paths";
+import { processTestGlob, processTestTimeout } from "./vitest.process.config.mts";
 
 // Separate config + separate process from vitest.config.ts's jsdom/RTL
 // run -- confirmed by spike that ssr.resolve.conditions leaks into the
@@ -12,7 +13,22 @@ export default defineConfig({
   test: {
     environment: "node",
     globals: true,
-    include: ["apps/web/src/lib/*.server.test.ts", "services/pipeline/tests/feature-store/**/*.test.ts", "packages/domain/tests/projection/**/*.test.ts", "packages/db/tooling/tests/unit/**/*.test.ts"],
+    projects: [
+      {
+        test: {
+          name: "node-unit",
+          include: ["apps/web/src/lib/*.server.test.ts", "services/pipeline/tests/feature-store/**/*.test.ts", "packages/domain/tests/projection/**/*.test.ts", "packages/db/tooling/tests/unit/**/*.test.ts"],
+          exclude: [processTestGlob],
+        },
+      },
+      {
+        test: {
+          name: "node-process",
+          include: ["services/pipeline/tests/feature-store/**/*.process.test.ts"],
+          testTimeout: processTestTimeout,
+        },
+      },
+    ],
   },
   ssr: {
     resolve: {

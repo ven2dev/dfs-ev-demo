@@ -91,9 +91,8 @@ export const runDerivedJob = async (client: Pick<Client, "query">, kind: "featur
       SELECT coalesce($1::timestamptz,now) AS checkpoint,now FROM clock
     ) SELECT checkpoint::text,checkpoint<=now AS valid,
       coalesce((SELECT jsonb_agg(jsonb_build_object('snapshot_id',s.snapshot_id,'sha256',s.sha256) ORDER BY s.snapshot_id)
-        FROM fs138.source_snapshots s JOIN fs138.job_runs j ON j.job_id=s.job_id
-        WHERE s.ingested_at<=checkpoint AND s.deleted_at IS NULL AND j.status='succeeded'
-          AND s.snapshot_id IN(SELECT snapshot_id FROM fs138.qb_job_snapshot_ids($2,checkpoint,$3,$4))),'[]') AS inputs FROM selected`, [request.checkpoint ?? null,request.season,kind,NORMALIZER_VERSION])).rows[0];
+        FROM fs138.source_snapshots s
+        JOIN LATERAL fs138.qb_job_snapshot_ids($2,selected.checkpoint,$3,$4) eligible USING(snapshot_id)),'[]') AS inputs FROM selected`, [request.checkpoint ?? null,request.season,kind,NORMALIZER_VERSION])).rows[0];
   if (!plan.valid) throw new Error("future-checkpoint-refused");
   const snapshotIds = plan.inputs.map((input) => input.snapshot_id);
   const policy = { kind,season: request.season,mode: request.mode,checkpoint: plan.checkpoint,
@@ -135,7 +134,9 @@ const readLastValidDerived = async (client: Pick<Client,"query">,kind:"features"
     ? {table:"feature_values",id:"feature_id",clock:"computed_at",cutoff:"checkpoint",version:"feature_version",value:"history",versionValue:FEATURE_VERSION}
     : {table:"outcome_labels",id:"label_id",clock:"known_at",cutoff:"label_cutoff",version:"label_version",value:"value",versionValue:LABEL_VERSION};
   const result = await client.query(`WITH visible AS (
-    SELECT * FROM fs138.${names.table} WHERE player_id=$1 AND game_id=$2 AND evidence_mode=$3
+    SELECT d.* FROM fs138.${names.table} d
+    JOIN fs138.completed_jobs_at($4::timestamptz) j USING(job_id)
+    WHERE player_id=$1 AND game_id=$2 AND evidence_mode=$3
       AND ${names.version}=$5 AND ${names.clock}<=$4::timestamptz
   ), head AS (SELECT * FROM visible ORDER BY ${names.cutoff} DESC,${names.clock} DESC,${names.id} DESC LIMIT 1),
   valid AS (SELECT * FROM visible WHERE state='usable' ORDER BY ${names.cutoff} DESC,${names.clock} DESC,${names.id} DESC LIMIT 1)

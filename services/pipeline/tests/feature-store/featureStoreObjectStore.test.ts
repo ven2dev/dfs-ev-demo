@@ -3,7 +3,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { openLocalObjectStore } from "../../src/featureStore/localObjectStore.ts";
-import { objectKey, parseObjectKey } from "../../src/featureStore/objectStore.ts";
+import { objectKey, parseObjectKey, VerifiedWire } from "../../src/featureStore/objectStore.ts";
+
+import { checkObjectStore } from "../support/checkObjectStore.ts";
 
 const roots: string[] = [];
 const fixture = async (maxObjectBytes?: number) => {
@@ -16,19 +18,7 @@ afterEach(async () => { await Promise.all(roots.splice(0).map((root) => rm(root,
 describe("#138 local ObjectStore", () => {
   it("preserves binary wire bytes, metadata, namespace listing and idempotent deletion", async () => {
     const { store } = await fixture();
-    const bytes = Buffer.from([0x1f, 0x8b, 0x00, 0xff, 0x80, 0x0a]);
-    const key = objectKey("raw", bytes);
-    const written = await store.putIfAbsent(key, bytes);
-    expect(written).toEqual({ created: true, object: { key, sha256: key.slice(4), byteSize: 6 } });
-    expect(await store.get(key)).toEqual(bytes);
-    expect(await store.head(key)).toEqual(written.object);
-    expect(await store.list("raw")).toEqual([written.object]);
-    expect(await store.list("datasets")).toEqual([]);
-    await store.delete(key);
-    await store.delete(key);
-    expect(await store.head(key)).toBeNull();
-    expect(await store.list("raw")).toEqual([]);
-    await expect(store.get(key)).rejects.toMatchObject({ code: "ENOENT" });
+    await checkObjectStore(store, [Buffer.from([0x1f, 0x8b, 0x00, 0xff, 0x80, 0x0a]), Buffer.from("second"), Buffer.from("third")]);
   });
 
   it("has exactly one winner for concurrent create-once writes and survives reopening", async () => {
@@ -49,6 +39,7 @@ describe("#138 local ObjectStore", () => {
     await expect(store.putIfAbsent(key, Buffer.from("wrong"))).rejects.toThrow("object-digest-mismatch");
     expect(await store.list("raw")).toEqual([]);
     await writeFile(join(root, key), "bad!", { mode: 0o600 });
+    await expect(store.getVerified(key, 4)).rejects.toThrow("object-digest-mismatch");
     await expect(store.putIfAbsent(key, bytes)).rejects.toThrow("object-existing-integrity-failed");
     expect(await readFile(join(root, key), "utf8")).toBe("bad!");
     expect(await readdir(join(root, "raw"))).toEqual([key.slice(4)]);
@@ -101,4 +92,15 @@ describe("#138 local ObjectStore", () => {
     await pending;
     expect(await store.get(key)).toEqual(Buffer.from("original"));
   });
+});
+
+it("detaches mutable aliases before creating the verified wire", () => {
+  const bytes = Buffer.from(new ArrayBuffer(4));
+  bytes.write("wire");
+  const key = objectKey("raw", bytes);
+  const alias = bytes.subarray();
+  const verified = VerifiedWire.verify(key, bytes);
+  expect(alias.byteLength).toBe(0);
+  expect(verified.byteSize).toBe(4);
+  expect(verified.wireSha256).toBe(parseObjectKey(key).sha256);
 });

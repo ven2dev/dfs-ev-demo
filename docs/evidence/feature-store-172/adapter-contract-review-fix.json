@@ -1,0 +1,29 @@
+{
+  "issue": 172,
+  "timestamp": "2026-11-06T21:32:12.832Z",
+  "candidateBaseCommit": "f9757c88f63b148436cc0a2aa52ec3f071f5dac4",
+  "candidateState": "Uncommitted review fixes identified by blob IDs",
+  "blobs": {
+    "services/pipeline/src/featureStore/r2ObjectStore.ts": "d87be636dafdf0026386a6701aa92900fa650d37",
+    "services/pipeline/tests/support/r2TestConfig.ts": "e7d27d953f6d4596e53c6a9d82bc763249216543",
+    "services/pipeline/tests/feature-store/featureStoreObjectStore.test.ts": "c9e2803d673128f41a7aee1f986f835f17e99bd0"
+  },
+  "accessKeyIdLast4": "6e22",
+  "command": "npm run test:r2:live",
+  "sdkVersion": "3.1163.0",
+  "httpHandlerVersion": "4.14.2",
+  "nodeVersion": "v24.18.1",
+  "connectionTimeoutMs": 2000,
+  "requestTimeoutMs": 4000,
+  "throwOnRequestTimeout": true,
+  "live": {
+    "runsPassed": 1,
+    "contractCases": 1,
+    "fileTestsPassed": 8,
+    "classA": 16,
+    "classB": 5,
+    "delete": 7,
+    "allNamespacesEmpty": true
+  },
+  "supersedes": "adapter-contract.json"
+}

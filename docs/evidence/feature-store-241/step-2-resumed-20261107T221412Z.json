@@ -1,0 +1,494 @@
+{
+  "issue": 241,
+  "step": 2,
+  "kind": "dataset-and-direct-reader-validation",
+  "recordedAt": "2026-11-07T22:14:12.815Z",
+  "verdict": "pass",
+  "runtime": "v24.18.1",
+  "baseCommit": "53970ca3432f1b4d3ed06029bf431af433d222d7",
+  "sourceIdentity": {
+    "packages/db/proposals/163_empirical_authorize.sql": {
+      "sha256": "c6db3f6f041a1f8280b573e9f21e2e8e04a206119df8c6410a71d897f5059804",
+      "blobId": "aa892576b261d4404d3861b23d00fb7692f28184"
+    },
+    "packages/db/proposals/163_empirical_reader.sql": {
+      "sha256": "1e8acb629e2f5ca7a7f7709752d214a22fe76330e8a86dada18f2ee3c32bf012",
+      "blobId": "4e9dd3782ceb884e65da49db9253eadd877c0f24"
+    },
+    "packages/db/proposals/241_job_visibility.sql": {
+      "sha256": "39ff3f47edb4de424246bcd222d4ab742fe5db632079fe46210d7166720c4448",
+      "blobId": "3946ddf51d0ca83c939991082258214fec050de5"
+    },
+    "services/pipeline/src/featureStore/datasets.ts": {
+      "sha256": "9dcd5576742d9caa7ca2cd3bdd8b95629a2d87d9c9ae85d9e783ee9f3e4171b9",
+      "blobId": "d0421c54f595f971cbd93bfb8f46385650350468"
+    },
+    "services/pipeline/tests/feature-store/empirical-adapter.check.mts": {
+      "sha256": "dad3f3fafe3eb37dd362bb3c323db73bd0224fdbef9d3db171e4ba0e79f077bf",
+      "blobId": "3d38329d5b76504dd67eafae497a99fcbbf07eb4"
+    },
+    "services/pipeline/tests/feature-store/job-visibility-dataset.check.mts": {
+      "sha256": "b64cb78006e112459a0f00594ca0ea2733ce5a6c909c44e4f99e941acdc62219",
+      "blobId": "9f9ce8f89bb1d5430dadc57a7f61dabfa4977aee"
+    },
+    "services/pipeline/tests/feature-store/job-visibility-work-fixture.ts": {
+      "sha256": "ed1264437a15b03ba95c7431553efa4648575eae215b27c7477c66551eee4074",
+      "blobId": "0e42ae476b29dff06ac43906310fd28db971f87b"
+    },
+    "services/pipeline/tests/feature-store/job-visibility-work.ts": {
+      "sha256": "1b8d29d747b5105dc51ff2206610babb7c071fa9d954b0d793e8fc6780697eb1",
+      "blobId": "68b8579b7a37c45c18b3c56235c62e082458c6f2"
+    },
+    "services/pipeline/tests/feature-store/job-visibility-work.check.mts": {
+      "sha256": "06887f39d3fcef9b5b8a3e96d72ce6bd9efece3b8af45e62dddbeb55639abba5",
+      "blobId": "cb59e92808b73e41195b02a4c1518b23ea75169e"
+    },
+    "services/pipeline/tests/feature-store/fixtures/job-visibility-work-v1.manifest.json": {
+      "sha256": "3d7763a4645ca3c55b2159016dd2eab72123e420db778a9e4eeda7a8d30779cc",
+      "blobId": "a11b869258d26a233b75a309bb689ee258cd3861"
+    },
+    "services/pipeline/tests/feature-store/fixtures/job-visibility-work-v1.json.gz": {
+      "sha256": "eff4457e5f5064634d2cee03e70d1d17ccfb97303362f15caa3fba14520af8fe",
+      "blobId": "faec950141d0d1aae2854b939a0f78f21995398b"
+    },
+    "docs/feature-store-job-visibility.md": {
+      "sha256": "180b54d756e504f7638b5e665785fa56cc19fca84a638733c09902b1cb2c881b",
+      "blobId": "d8432d33c44423e166e57f3cc3d8e685fe82327c"
+    }
+  },
+  "ownerAmendment": {
+    "currentJobs": "Actual Loops=1; hits+reads <= heap pages + pages of indexes used by current_jobs. Measure pg_relation_size and pg_class.relpages in the same post-ANALYZE EXPLAIN transaction.",
+    "reason": "A 20% margin on a two-page baseline provided only one page of slack, not a meaningful one-pass budget.",
+    "unchangedCeilings": {
+      "root": 10349,
+      "current_f": 3190,
+      "current_l": 825
+    },
+    "lifecycle": "Start each job; transactionally write its outputs, ANALYZE, terminal UPDATE, COMMIT. This matches producer ownership, rather than tuning layout to meet a ceiling.",
+    "committedGzipAcceptedByOwner": true,
+    "compressedBytes": 5003909
+  },
+  "plans": [
+    {
+      "name": "retrospective-reconstruction-v1",
+      "budget": {
+        "observations": [
+          {
+            "name": "root",
+            "hits": 8624,
+            "reads": 0,
+            "ceiling": 10349,
+            "loops": 1,
+            "rows": 1
+          },
+          {
+            "name": "current_f",
+            "hits": 2657,
+            "reads": 0,
+            "ceiling": 3190,
+            "loops": 1,
+            "rows": 9381
+          },
+          {
+            "name": "current_l",
+            "hits": 686,
+            "reads": 0,
+            "ceiling": 825,
+            "loops": 1,
+            "rows": 9381
+          },
+          {
+            "name": "current_jobs",
+            "hits": 2,
+            "reads": 0,
+            "ceiling": 2,
+            "loops": 1,
+            "rows": 36,
+            "pageBudget": {
+              "blockSize": 8192,
+              "heap": {
+                "relation": "job_runs",
+                "kind": "r",
+                "bytes": 16384,
+                "pages": 2,
+                "analyzedPages": 2,
+                "blockSize": 8192
+              },
+              "indexes": [],
+              "ceiling": 2
+            }
+          }
+        ],
+        "helperFunctionScans": 0,
+        "explicitRowLocks": 0
+      },
+      "jobPages": {
+        "blockSize": 8192,
+        "heap": {
+          "relation": "job_runs",
+          "kind": "r",
+          "bytes": 16384,
+          "pages": 2,
+          "analyzedPages": 2,
+          "blockSize": 8192
+        },
+        "indexes": [],
+        "ceiling": 2
+      },
+      "negativeControls": {
+        "repeatedMaterializationRefused": true,
+        "extraPageRefused": true
+      }
+    },
+    {
+      "name": "strict-point-in-time-v1",
+      "budget": {
+        "observations": [
+          {
+            "name": "root",
+            "hits": 8624,
+            "reads": 0,
+            "ceiling": 10349,
+            "loops": 1,
+            "rows": 1
+          },
+          {
+            "name": "current_f",
+            "hits": 2657,
+            "reads": 0,
+            "ceiling": 3190,
+            "loops": 1,
+            "rows": 9381
+          },
+          {
+            "name": "current_l",
+            "hits": 686,
+            "reads": 0,
+            "ceiling": 825,
+            "loops": 1,
+            "rows": 9381
+          },
+          {
+            "name": "current_jobs",
+            "hits": 2,
+            "reads": 0,
+            "ceiling": 2,
+            "loops": 1,
+            "rows": 36,
+            "pageBudget": {
+              "blockSize": 8192,
+              "heap": {
+                "relation": "job_runs",
+                "kind": "r",
+                "bytes": 16384,
+                "pages": 2,
+                "analyzedPages": 2,
+                "blockSize": 8192
+              },
+              "indexes": [],
+              "ceiling": 2
+            }
+          }
+        ],
+        "helperFunctionScans": 0,
+        "explicitRowLocks": 0
+      },
+      "jobPages": {
+        "blockSize": 8192,
+        "heap": {
+          "relation": "job_runs",
+          "kind": "r",
+          "bytes": 16384,
+          "pages": 2,
+          "analyzedPages": 2,
+          "blockSize": 8192
+        },
+        "indexes": [],
+        "ceiling": 2
+      },
+      "negativeControls": {
+        "repeatedMaterializationRefused": true,
+        "extraPageRefused": true
+      }
+    },
+    {
+      "name": "real-active-corrections",
+      "budget": {
+        "observations": [
+          {
+            "name": "root",
+            "hits": 8624,
+            "reads": 0,
+            "ceiling": 10349,
+            "loops": 1,
+            "rows": 1
+          },
+          {
+            "name": "current_f",
+            "hits": 2657,
+            "reads": 0,
+            "ceiling": 3190,
+            "loops": 1,
+            "rows": 9381
+          },
+          {
+            "name": "current_l",
+            "hits": 686,
+            "reads": 0,
+            "ceiling": 825,
+            "loops": 1,
+            "rows": 9381
+          },
+          {
+            "name": "current_jobs",
+            "hits": 2,
+            "reads": 0,
+            "ceiling": 2,
+            "loops": 1,
+            "rows": 37,
+            "pageBudget": {
+              "blockSize": 8192,
+              "heap": {
+                "relation": "job_runs",
+                "kind": "r",
+                "bytes": 16384,
+                "pages": 2,
+                "analyzedPages": 2,
+                "blockSize": 8192
+              },
+              "indexes": [],
+              "ceiling": 2
+            }
+          }
+        ],
+        "helperFunctionScans": 0,
+        "explicitRowLocks": 0
+      },
+      "jobPages": {
+        "blockSize": 8192,
+        "heap": {
+          "relation": "job_runs",
+          "kind": "r",
+          "bytes": 16384,
+          "pages": 2,
+          "analyzedPages": 2,
+          "blockSize": 8192
+        },
+        "indexes": [],
+        "ceiling": 2
+      },
+      "negativeControls": {
+        "repeatedMaterializationRefused": true,
+        "extraPageRefused": true
+      }
+    }
+  ],
+  "probes": [
+    {
+      "name": "features: independent pin excludes a later completion and includes the exact microsecond",
+      "verdict": "pass",
+      "detailsSha256": "20365d28f9a4c3360c396401345a2a024ebf011f249ef834750f8e915be2e4cd"
+    },
+    {
+      "name": "labels: independent pin excludes a later completion and includes the exact microsecond",
+      "verdict": "pass",
+      "detailsSha256": "a95b9d695f514c2832ab6c05fb65a325692f7ae8a60eb6a5618351bafdd9195f"
+    },
+    {
+      "name": "current freshness ignores running/failed jobs and unrelated versions; unavailable completed heads set both flags",
+      "verdict": "pass",
+      "detailsSha256": "20adce73387f3a7c4396c248208d1c983bb7c76f1798d45759aa16ea9a1aa1de"
+    },
+    {
+      "name": "build and governed delivery preserve 8/2 and 3/2/1, with zero transaction hashes or payload reads",
+      "verdict": "pass",
+      "detailsSha256": "6382d62d5773211c402a7f66fbd93e27ad309580302b75875fbb7b0a35e3d383"
+    },
+    {
+      "name": "#163 exact feature pin uses completion, preserves typed refusal and never releases partial values",
+      "verdict": "pass",
+      "detailsSha256": "039b0cbfd55fe40b0b4f7d4d84bb2626995c00e226b31bafd595c1c5ca73a43e"
+    },
+    {
+      "name": "#163 current heads use completion and Q2 refreshes stale flags without selecting newer values",
+      "verdict": "pass",
+      "detailsSha256": "00a5c18abbd583cf0995a8e5cf49f33ea8200a6ba8f6060de4dad93a15b855f9"
+    },
+    {
+      "name": "#163 every n=2..16 uses three statements, two checks and exactly 2P rights calls on real narrow LOGIN",
+      "verdict": "pass",
+      "detailsSha256": "2de9f5ff6cc9c19792f28974984f698f8c05099c430196d31b1682afa8f37dbd"
+    }
+  ],
+  "work": {
+    "build": {
+      "sql": 8,
+      "checks": 2,
+      "transactionHashes": 0,
+      "transactionPayloadReads": 0
+    },
+    "delivery": {
+      "sql": 3,
+      "checks": 2,
+      "gets": 1
+    },
+    "direct163": {
+      "sql": 3,
+      "checks": 2,
+      "rightsCalls": "2P from independently observed profile scope",
+      "everyN": "2..16"
+    },
+    "compatibility166231": "Unchanged controls pass, including 3/2/1 context reads and 2 SQL model-only reads."
+  },
+  "validation": [
+    {
+      "command": "Node 24 live work gate",
+      "exitCode": 0,
+      "tests": 1,
+      "failed": 0
+    },
+    {
+      "command": "Node 24 existing datasets.check.mts and empirical-adapter.check.mts",
+      "tests": 43,
+      "failed": 0,
+      "note": "These suites passed within the resumed invocation that also retained a failing new-test setup. That invocation is not represented as exit 0."
+    },
+    {
+      "command": "Node 24 job-visibility-dataset.check.mts after explicit test INSERT parameter casts",
+      "exitCode": 0,
+      "tests": 8,
+      "failed": 0
+    },
+    {
+      "command": "Node 24 job-visibility.check.mts / model-context.check.mts / composite-authorization.check.mts / model-artifacts.check.mts",
+      "exitCode": 0,
+      "tests": 45,
+      "failed": 0
+    },
+    {
+      "command": "npm run typecheck (Node 24)",
+      "exitCode": 0
+    },
+    {
+      "command": "eslint --ignore-pattern codex-briefs/** (Node 24)",
+      "exitCode": 0
+    },
+    {
+      "command": "node --test tests/import-boundaries.check.mjs (Node 24)",
+      "exitCode": 0,
+      "tests": 11,
+      "failed": 0
+    },
+    {
+      "command": "vitest node config: featureStoreDerived.test.ts / model-context.test.ts, excluding codex-briefs/**",
+      "exitCode": 0,
+      "tests": 5,
+      "failed": 0
+    },
+    {
+      "command": "#166 and #231 evidence audit",
+      "exitCode": 0,
+      "records": [
+        8,
+        3
+      ]
+    }
+  ],
+  "stoppedHistory": [
+    {
+      "filename": "step-2-stopped-20261107T2208Z.json",
+      "sha256": "4a09a6d02eeabc9e4efb4f5aaf13ff04e5d7ae60d54271bad9f568b2071b3e53"
+    },
+    {
+      "filename": "step-2-stopped-full-records-20261107T2208Z.tar.gz",
+      "sha256": "35c6954bf8d0dc40fc825488348368fa147188547c25b39e171bee59627614bf"
+    }
+  ],
+  "retainedSetupFailure": "The first resumed behavior attempt failed before probes (42P08, text versus fs138.sha256 in the test INSERT). Explicit text casts fixed the setup; its empty probe record, log and disk telemetry remain retained. Production SQL did not change for this fix.",
+  "limitations": [
+    "Final speed qualification remains step 4; no step-2 timing claim.",
+    "Generic hash-first auditing verifies exact receipt projections, not independent database/plan reexecution. Live DB CI tests enforce the actual plan budgets.",
+    "No full-suite run or artifact-cleaner invocation in step 2.",
+    "No scratch databases/connections remain after validation. ALT was held during these runs; no further DB use in this iteration.",
+    "Current clocks come from ordinary triggers; this portable work graph is not historical timestamp evidence. The terminal UPDATE/COMMIT gap remains accepted."
+  ],
+  "supplementalRecords": [
+    {
+      "path": "step-2-resumed-full-records-20261107T221412Z.tar.gz#step-2-resumed/work.json",
+      "sha256": "8a6eede5de1eff0dd0bc33f8f301803a27e0543d3d6300605ad86fde594fcc5b",
+      "byteSize": 327905
+    },
+    {
+      "path": "step-2-resumed-full-records-20261107T221412Z.tar.gz#step-2-resumed/work.log",
+      "sha256": "bdbc2597292dce55ff28b2781f58a5484a7b5b9e5501f49ea42c511b0a141e86",
+      "byteSize": 215
+    },
+    {
+      "path": "step-2-resumed-full-records-20261107T221412Z.tar.gz#step-2-resumed/behavior.json",
+      "sha256": "7fbae216e69e6a9e816d387d8fe4e6895fc5ac54d7dd23a9df010ebe75c5975c",
+      "byteSize": 7979
+    },
+    {
+      "path": "step-2-resumed-full-records-20261107T221412Z.tar.gz#step-2-resumed/behavior.log",
+      "sha256": "0d7333fa7eb54a8893dc24bb40a9f1734b7b1588c2637823e53629bef83dfae7",
+      "byteSize": 1089
+    },
+    {
+      "path": "step-2-resumed-full-records-20261107T221412Z.tar.gz#step-2-resumed/resumed-attempt.json",
+      "sha256": "dfcbd08c55a17958032af60cd7c5962557cbe7a76a87a8301c9e17b1429ece12",
+      "byteSize": 26638
+    },
+    {
+      "path": "step-2-resumed-full-records-20261107T221412Z.tar.gz#step-2-resumed/setup-type-error.json",
+      "sha256": "eeca90bb465bb5d01299ee80b01f2bd5a7b344805a1d4d5f9ee880f16c8ffaab",
+      "byteSize": 988
+    },
+    {
+      "path": "step-2-resumed-full-records-20261107T221412Z.tar.gz#step-2-resumed/setup-type-error.log",
+      "sha256": "58721931dda886f59585dce219592e8fbf6846c109f03460d8716a859a2b2b21",
+      "byteSize": 6567
+    },
+    {
+      "path": "step-2-resumed-full-records-20261107T221412Z.tar.gz#step-2-resumed/compatibility.log",
+      "sha256": "010d71af9e6a219105300a59517b51c9f14583971d625f9b07fa3d3756bec1fd",
+      "byteSize": 5233
+    },
+    {
+      "path": "step-2-resumed-full-records-20261107T221412Z.tar.gz#step-2-resumed/typecheck.log",
+      "sha256": "f65fd97d2a283a6d774c84d936e0bc3d5153bb69f81b0ebef1975371238ff03e",
+      "byteSize": 314
+    },
+    {
+      "path": "step-2-resumed-full-records-20261107T221412Z.tar.gz#step-2-resumed/lint.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "byteSize": 0
+    },
+    {
+      "path": "step-2-resumed-full-records-20261107T221412Z.tar.gz#step-2-resumed/imports.log",
+      "sha256": "16ee1ecdcb917a0d0b7f0743b46f63e63f2e61369e6a2f82913a57f79f8350dd",
+      "byteSize": 1228
+    },
+    {
+      "path": "step-2-resumed-full-records-20261107T221412Z.tar.gz#step-2-resumed/unit.log",
+      "sha256": "117cc3a7ec664b66b1cb6e9e8a77c7da4d782ef2a1a06b3304d5e697fe24d8c6",
+      "byteSize": 822
+    },
+    {
+      "path": "step-2-resumed-full-records-20261107T221412Z.tar.gz#step-2-resumed/audit-166.log",
+      "sha256": "06e62d5b79c6743f212535280a81955f82237834dcec84ebc85d018cd20c2073",
+      "byteSize": 1378
+    },
+    {
+      "path": "step-2-resumed-full-records-20261107T221412Z.tar.gz#step-2-resumed/audit-231.log",
+      "sha256": "2e169c93998d84c3fd85f0ec46c3ed937aeda90995c472c7ad9bec6ded3f54b3",
+      "byteSize": 452
+    }
+  ],
+  "schemaVersion": 2,
+  "fullRecord": {
+    "path": "step-2-resumed-full-records-20261107T221412Z.tar.gz#step-2-resumed/validation.json",
+    "sha256": "873bba117493460846a27079ab6700f954c8a497e56875b85bd9b1e717ceb485",
+    "byteSize": 16693,
+    "retention": "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
+  }
+}

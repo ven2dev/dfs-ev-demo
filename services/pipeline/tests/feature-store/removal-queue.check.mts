@@ -9,6 +9,7 @@ import { startJob, finishJob } from "../../src/featureStore/jobs.ts";
 import { openLocalObjectStore } from "../../src/featureStore/localObjectStore.ts";
 import { objectKey, sha256 } from "../../src/featureStore/objectStore.ts";
 import { NORMALIZER_VERSION } from "../../src/featureStore/source.ts";
+import { mapFixtureObjects } from "./fixture-objects.ts";
 
 test("#174 shared removal pages progress and final-reference deletion re-arms completed work", { timeout: 120000 }, async () => {
   const started = performance.now();
@@ -23,7 +24,7 @@ test("#174 shared removal pages progress and final-reference deletion re-arms co
         const bytes = Buffer.from(`synthetic-queue-boundary-${n}`);
         return { bytes, key: objectKey("raw", bytes), hash: sha256(bytes), size: bytes.length };
       }).sort((a, b) => a.key.localeCompare(b.key));
-      for (const object of objects) await store.putIfAbsent(object.key, object.bytes);
+      await mapFixtureObjects(objects, object => store.putIfAbsent(object.key, object.bytes));
       const shared = objects.slice(0, 1025);
       const target = objects[1025]; // Later than every shared address in the SQL ordering.
       const job = await startJob(writer, { kind: "normalize", codeSha: "b".repeat(40),

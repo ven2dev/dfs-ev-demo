@@ -1,0 +1,182 @@
+{
+  "issue": 247,
+  "checkpoint": 2,
+  "codeSha": "0fdccd8f5a355745a9767aa4b4954310224e2f57",
+  "probeSha256": "74ddeb531a4ad5e1e34b42c630e58ef4c04f5ef91f0c119814091421ed5e4a71",
+  "dockerMemTotalBytes": 8319238144,
+  "hostMemTotalBytes": 19327352832,
+  "samples": 33,
+  "aggregatePeakCgroupBytes": 1090641920,
+  "aggregatePeakAnonResidentBytes": 159571968,
+  "aggregatePeakShmemBytes": 938655744,
+  "scope": "Synthetic logged table churn and spilling sort, eight rounds with one final explicit checkpoint on three lane servers. Not the full standard DB suite.",
+  "measurement": "Filesystem df, directory du, cgroup v2 memory.current and memory.stat anon/shmem. Temporary files can disappear between samples.",
+  "lanes": [
+    {
+      "name": "lane-2",
+      "tier": "standard",
+      "candidate": true,
+      "postgres": "18.6",
+      "settings": "96MB,32MB",
+      "walOnDataMount": true,
+      "fresh": {
+        "totalBytes": 536870912,
+        "usedBytes": 48439296,
+        "freeBytes": 488431616,
+        "baseBytes": 30998528,
+        "walBytes": 16777216,
+        "tempBytes": 0,
+        "cgroupBytes": 87400448,
+        "anonResidentBytes": 14807040,
+        "shmemBytes": 64569344
+      },
+      "scratchDatabaseBytes": 27555519,
+      "cumulativeTempBytes": 148800000,
+      "peak": {
+        "usedBytes": 187039744,
+        "baseBytes": 78258176,
+        "walBytes": 108625920,
+        "tempBytes": 0,
+        "cgroupBytes": 282566656,
+        "anonResidentBytes": 36589568,
+        "shmemBytes": 259309568
+      },
+      "afterCheckpoints": {
+        "totalBytes": 536870912,
+        "usedBytes": 159891456,
+        "freeBytes": 376979456,
+        "baseBytes": 58564608,
+        "walBytes": 100663296,
+        "tempBytes": 0,
+        "cgroupBytes": 252628992,
+        "anonResidentBytes": 13205504,
+        "shmemBytes": 230932480
+      },
+      "afterDrop": {
+        "totalBytes": 536870912,
+        "usedBytes": 132325376,
+        "freeBytes": 404545536,
+        "baseBytes": 30998528,
+        "walBytes": 100663296,
+        "tempBytes": 0,
+        "cgroupBytes": 225046528,
+        "anonResidentBytes": 13189120,
+        "shmemBytes": 203374592
+      }
+    },
+    {
+      "name": "lane-3",
+      "tier": "standard",
+      "candidate": false,
+      "postgres": "18.6",
+      "settings": "1GB,80MB",
+      "walOnDataMount": true,
+      "fresh": {
+        "totalBytes": 536870912,
+        "usedBytes": 48439296,
+        "freeBytes": 488431616,
+        "baseBytes": 30998528,
+        "walBytes": 16777216,
+        "tempBytes": 0,
+        "cgroupBytes": 83927040,
+        "anonResidentBytes": 11804672,
+        "shmemBytes": 64536576
+      },
+      "scratchDatabaseBytes": 27555519,
+      "cumulativeTempBytes": 148800000,
+      "peak": {
+        "usedBytes": 243777536,
+        "baseBytes": 68558848,
+        "walBytes": 184549376,
+        "tempBytes": 8314880,
+        "cgroupBytes": 351531008,
+        "anonResidentBytes": 34045952,
+        "shmemBytes": 316211200
+      },
+      "afterCheckpoints": {
+        "totalBytes": 536870912,
+        "usedBytes": 243777536,
+        "freeBytes": 293093376,
+        "baseBytes": 58564608,
+        "walBytes": 184549376,
+        "tempBytes": 0,
+        "cgroupBytes": 333922304,
+        "anonResidentBytes": 9977856,
+        "shmemBytes": 314736640
+      },
+      "afterDrop": {
+        "totalBytes": 536870912,
+        "usedBytes": 216211456,
+        "freeBytes": 320659456,
+        "baseBytes": 30998528,
+        "walBytes": 184549376,
+        "tempBytes": 0,
+        "cgroupBytes": 313528320,
+        "anonResidentBytes": 16740352,
+        "shmemBytes": 287178752
+      }
+    },
+    {
+      "name": "lane-4",
+      "tier": "large",
+      "candidate": true,
+      "postgres": "18.6",
+      "settings": "96MB,32MB",
+      "walOnDataMount": true,
+      "fresh": {
+        "totalBytes": 2147483648,
+        "usedBytes": 48439296,
+        "freeBytes": 2099044352,
+        "baseBytes": 30998528,
+        "walBytes": 16777216,
+        "tempBytes": 0,
+        "cgroupBytes": 93368320,
+        "anonResidentBytes": 20381696,
+        "shmemBytes": 64569344
+      },
+      "scratchDatabaseBytes": 66885311,
+      "cumulativeTempBytes": 446400000,
+      "peak": {
+        "usedBytes": 275021824,
+        "baseBytes": 156917760,
+        "walBytes": 117440512,
+        "tempBytes": 48668672,
+        "cgroupBytes": 502509568,
+        "anonResidentBytes": 97910784,
+        "shmemBytes": 398520320
+      },
+      "afterCheckpoints": {
+        "totalBytes": 2147483648,
+        "usedBytes": 199221248,
+        "freeBytes": 1948262400,
+        "baseBytes": 97894400,
+        "walBytes": 100663296,
+        "tempBytes": 0,
+        "cgroupBytes": 369131520,
+        "anonResidentBytes": 11104256,
+        "shmemBytes": 348704768
+      },
+      "afterDrop": {
+        "totalBytes": 2147483648,
+        "usedBytes": 132325376,
+        "freeBytes": 2015158272,
+        "baseBytes": 30998528,
+        "walBytes": 100663296,
+        "tempBytes": 0,
+        "cgroupBytes": 304136192,
+        "anonResidentBytes": 13197312,
+        "shmemBytes": 281817088
+      }
+    }
+  ],
+  "lowSpace": {
+    "lane": "lane-2",
+    "requiredBytes": 402653184,
+    "availableBytes": 118284288,
+    "retainedWalBytes": 100663296,
+    "decision": "refused-before-dispatch",
+    "samePostmasterAndSelectOne": true,
+    "freeAfterRemovingFillerBytes": 404545536
+  },
+  "cleanupVerified": true
+}

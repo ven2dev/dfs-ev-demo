@@ -101,6 +101,43 @@ const boundaries = [
     },
   },
   {
+    files: ["services/pipeline/**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}"],
+    ignores: ["services/pipeline/src/featureStore/normalize.ts", "services/pipeline/src/featureStore/objectStore.ts"],
+    rules: {
+      "import/no-restricted-paths": ["error", {
+        basePath: fileURLToPath(new URL(".", import.meta.url)),
+        zones: [{ target: "services/pipeline", from: "services/pipeline/src/featureStore/verifiedWireAccess.ts",
+          message: "Only the normalizer may read verified wire bytes." }],
+      }],
+    },
+  },
+  {
+    files: ["services/pipeline/src/featureStore/objectStore.ts"],
+    rules: {
+      "no-restricted-syntax": ["error", ...typeSyntax,
+        { selector: `ImportExpression[source.value=/${pipelineRuntimeForbidden}|verifiedWireAccess/]`, message: "Use an approved named import." },
+        { selector: `CallExpression[callee.name='require'] > Literal[value=/${pipelineRuntimeForbidden}|verifiedWireAccess/]`, message: "Use an approved named import." },
+      ],
+      "no-restricted-imports": ["error", { patterns: [
+        { regex: pipelineRuntimeForbidden, message: "Pipeline runtime cannot depend on web or DB tooling." },
+        { regex: "verifiedWireAccess", importNames: ["readVerifiedWire"], message: "Only the normalizer may read verified wire bytes." },
+      ] }],
+    },
+  },
+  {
+    files: ["services/pipeline/src/featureStore/normalize.ts"],
+    rules: {
+      "no-restricted-syntax": ["error", ...typeSyntax,
+        { selector: `ImportExpression[source.value=/${pipelineRuntimeForbidden}|verifiedWireAccess/]`, message: "Use an approved named import." },
+        { selector: `CallExpression[callee.name='require'] > Literal[value=/${pipelineRuntimeForbidden}|verifiedWireAccess/]`, message: "Use an approved named import." },
+      ],
+      "no-restricted-imports": ["error", { patterns: [
+        { regex: pipelineRuntimeForbidden, message: "Pipeline runtime cannot depend on web or DB tooling." },
+        { regex: "verifiedWireAccess", importNames: ["rememberVerifiedWire"], message: "Only ObjectStore may register verified wire bytes." },
+      ] }],
+    },
+  },
+  {
     files: ["apps/web/**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}"],
     rules: {
       // Checking unresolved/private subpaths too keeps web's build independent

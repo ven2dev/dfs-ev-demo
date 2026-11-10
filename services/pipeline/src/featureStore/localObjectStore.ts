@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { constants } from "node:fs";
 import { link, lstat, mkdir, open, readdir, realpath, unlink } from "node:fs/promises";
 import { isAbsolute, join, resolve } from "node:path";
-import { OBJECT_NAMESPACES, parseObjectKey, sha256, type ObjectInfo, type ObjectStore } from "./objectStore.ts";
+import { checkObjectPageRequest, checkObjectReadLimit, OBJECT_NAMESPACES, parseObjectKey, sha256, VerifiedWire, type ObjectInfo, type ObjectNamespace, type ObjectStore } from "./objectStore.ts";
 
 const isMissing = (error: unknown): boolean => (error as NodeJS.ErrnoException).code === "ENOENT";
 
@@ -49,16 +49,44 @@ export const openLocalObjectStore = async (
   };
   await syncDirectory(root);
 
-  const read = async (key: string, includeBytes: boolean): Promise<{ object: ObjectInfo; bytes?: Buffer }> => {
+  const read = async (key: string, includeBytes: boolean, maxReadBytes?: number): Promise<{ object: ObjectInfo; bytes?: Buffer }> => {
     const path = await checkedPath(key);
     const handle = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
     try {
       const info = await handle.stat();
       if (!info.isFile() || (info.mode & 0o077) !== 0 || info.size > maxObjectBytes) throw new Error("object-file-refused");
-      const bytes = includeBytes ? await handle.readFile() : undefined;
+      let bytes: Buffer | undefined;
+      if (maxReadBytes !== undefined) {
+        if (info.size > maxReadBytes) throw new Error("object-size-refused");
+        bytes = Buffer.from(new ArrayBuffer(info.size));
+        let offset = 0;
+        while (offset < bytes.length) {
+          const { bytesRead } = await handle.read(bytes, offset, bytes.length - offset, offset);
+          if (!bytesRead) throw new Error("object-size-changed");
+          offset += bytesRead;
+        }
+        if ((await handle.stat()).size !== info.size) throw new Error("object-size-changed");
+      } else if (includeBytes) {
+        bytes = await handle.readFile();
+      }
       if (bytes && bytes.byteLength !== info.size) throw new Error("object-size-changed");
       return { object: { key, sha256: parseObjectKey(key).sha256, byteSize: info.size }, bytes };
     } finally { await handle.close(); }
+  };
+
+  const listEntries = async (namespace: ObjectNamespace, limit = Infinity, startAfter?: string) => {
+    if (!OBJECT_NAMESPACES.includes(namespace)) throw new Error("object-namespace-refused");
+    await checkedPath(`${namespace}/${"0".repeat(64)}`);
+    const objects: ObjectInfo[] = [];
+    for (const name of (await readdir(join(root, namespace))).sort()) {
+      if (!/^[a-f0-9]{64}$/.test(name)) continue;
+      const key = `${namespace}/${name}`;
+      if (startAfter !== undefined && key <= startAfter) continue;
+      try { objects.push((await read(key, false)).object); }
+      catch (error) { if (!isMissing(error)) throw error; }
+      if (objects.length === limit) break;
+    }
+    return objects;
   };
 
   return {
@@ -113,20 +141,21 @@ export const openLocalObjectStore = async (
       return { created, object: { key, sha256: expected.sha256, byteSize: bytes.byteLength } };
     },
     get: async (key) => (await read(key, true)).bytes!,
+    getVerified: async (key, maxBytes) => {
+      checkObjectReadLimit(maxBytes);
+      return VerifiedWire.verify(key, (await read(key, true, maxBytes)).bytes!);
+    },
     head: async (key) => {
       try { return (await read(key, false)).object; }
       catch (error) { if (isMissing(error)) return null; throw error; }
     },
-    list: async (namespace) => {
-      if (!(OBJECT_NAMESPACES as readonly string[]).includes(namespace)) throw new Error("object-namespace-refused");
-      await checkedPath(`${namespace}/${"0".repeat(64)}`);
-      const objects: ObjectInfo[] = [];
-      for (const name of (await readdir(join(root, namespace))).sort()) {
-        if (!/^[a-f0-9]{64}$/.test(name)) continue;
-        try { objects.push((await read(`${namespace}/${name}`, false)).object); }
-        catch (error) { if (!isMissing(error)) throw error; }
-      }
-      return objects;
+    list: listEntries,
+    listPage: async (namespace, request) => {
+      checkObjectPageRequest(namespace, request);
+      const entries = await listEntries(namespace, request.limit + 1, request.startAfter);
+      if (entries.length <= request.limit) return { entries, nextStartAfter: null };
+      entries.pop();
+      return { entries, nextStartAfter: entries.at(-1)!.key };
     },
     delete: async (key) => {
       const path = await checkedPath(key);

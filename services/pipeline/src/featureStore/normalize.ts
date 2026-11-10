@@ -3,7 +3,8 @@ import { Readable, Transform } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { createGunzip } from "node:zlib";
 import { parse } from "csv-parse";
-import { sha256 } from "./objectStore.ts";
+import { sha256, type VerifiedWire } from "./objectStore.ts";
+import { readVerifiedWire } from "./verifiedWireAccess.ts";
 import { checkLimits, INGEST_LIMITS, type IngestLimits, type SourceAsset } from "./source.ts";
 
 export type NormalizedRow = Record<string, string | number | null | string[]>;
@@ -31,13 +32,13 @@ export const easternKickoff = (day: string, time: string): string => {
   return new Date(candidates[0]).toISOString();
 };
 
-export const normalizeSource = async (
-  wire: Buffer, asset: SourceAsset, signal: AbortSignal, limits: IngestLimits = INGEST_LIMITS,
+const normalizeWire = async (
+  wire: Buffer, asset: SourceAsset, signal: AbortSignal, limits: IngestLimits, verifiedDigest?: string,
 ): Promise<NormalizedFile> => {
   checkLimits(limits);
   signal.throwIfAborted();
   if (wire.byteLength > limits.wireBytes || wire.byteLength !== asset.wire_bytes) throw new Error("ingest-wire-size-mismatch");
-  const wireSha256 = sha256(wire);
+  const wireSha256 = verifiedDigest ?? sha256(wire);
   if ((asset.sha256 !== null && asset.sha256 !== wireSha256) ||
       (asset.provider_digest !== null && asset.provider_digest !== `sha256:${wireSha256}`)) throw new Error("ingest-wire-digest-mismatch");
   const decodedHash = createHash("sha256");
@@ -155,3 +156,11 @@ export const normalizeSource = async (
   diagnostics.refusedRows = selected.filter((row) => row.state !== "usable").length;
   return { rows: selected, rowCount, wireSha256, decodedSha256: decodedHash.digest("hex"), headerSha256, decodedBytes, diagnostics };
 };
+
+export const normalizeSource = (
+  wire: Buffer, asset: SourceAsset, signal: AbortSignal, limits: IngestLimits = INGEST_LIMITS,
+): Promise<NormalizedFile> => normalizeWire(wire, asset, signal, limits);
+
+export const normalizeVerifiedSource = async (
+  wire: VerifiedWire, asset: SourceAsset, signal: AbortSignal, limits: IngestLimits = INGEST_LIMITS,
+): Promise<NormalizedFile> => normalizeWire(readVerifiedWire(wire), asset, signal, limits, wire.wireSha256);

@@ -1,0 +1,208 @@
+{
+  "issue": 167,
+  "step": 1,
+  "kind": "handler-composition-validation",
+  "runId": "20261105T0225Z",
+  "recordedAt": "2026-11-05T02:25:15.900Z",
+  "verdict": "pass",
+  "baseCommit": "c6c7136e924b9f87c68a9ef9b2b814616898228b",
+  "mergeMessage": "Merge origin/main into feature/dfsEV-167-local-predictions",
+  "mergeTrailers": false,
+  "node": "v24.18.1",
+  "sourceIdentity": {
+    "services/pipeline/package.json": {
+      "baseBlob": "8321305eb27bc69144348015b19977c49d12b376",
+      "candidateBlob": "96803d130aa5c582da3ff3a130baffe602c6635b",
+      "sha256": "38ad80e5bf371065ba12620740430a310e71692f5cd8e064d29b280e83d3d063"
+    },
+    "services/pipeline/src/featureStore/predict.ts": {
+      "baseBlob": null,
+      "candidateBlob": "f0b560e16a7f233950ba81b88f1395cb226faff7",
+      "sha256": "8e44a2e182a44f62ff35c3bdea90fbe1e025f95986a2c926d0e59b7ca30761f5"
+    },
+    "services/pipeline/tests/feature-store/prediction-handler.test.ts": {
+      "baseBlob": null,
+      "candidateBlob": "221a2e7c0eea8af0eab4b7504f1e23f13d8476a5",
+      "sha256": "34b77499de958873d5c2a7aea847cfb6387c9eef7a6b140c7d76c2e3ea69c315"
+    },
+    "docs/feature-store-local-predictions.md": {
+      "baseBlob": null,
+      "candidateBlob": "11ff518e576e75e7e376860b8865c26ba3181d2c",
+      "sha256": "43c1c08df14058feb16b5f71355547c899b2d8fde9a48c63026de14eab6dba28"
+    },
+    "packages/db/proposals/231_composite_authorization.sql": {
+      "baseBlob": "1b76bbadad364ea557f336ba2ee0239d6844e5dc",
+      "candidateBlob": "1b76bbadad364ea557f336ba2ee0239d6844e5dc",
+      "sha256": "0a43711275a090e5454969805262e61093c0493f46cf37cb36254f75c8818681"
+    },
+    "services/pipeline/src/featureStore/modelArtifacts.ts": {
+      "baseBlob": "3857fb0480243fac7578a2dcf66cf027f26b5e1f",
+      "candidateBlob": "3857fb0480243fac7578a2dcf66cf027f26b5e1f",
+      "sha256": "d4fd216bd4339b6a070787da4a0dc7e6112ab157e7e3b702a1e23f41c817d388"
+    },
+    "services/pipeline/src/featureStore/modelContext.ts": {
+      "baseBlob": "f6df312d6e376c6c9d9d7fdecd671ba16db84cde",
+      "candidateBlob": "f6df312d6e376c6c9d9d7fdecd671ba16db84cde",
+      "sha256": "f5fc5357ac5168f221e14f45e7c1f7513d9991c7ed196368cd197f414c0cb47b"
+    },
+    "services/pipeline/src/featureStore/predictionHelpers.ts": {
+      "baseBlob": "76778189b8c0f53d5a96e72ffea647a4642c9e70",
+      "candidateBlob": "76778189b8c0f53d5a96e72ffea647a4642c9e70",
+      "sha256": "d552ee1f61255f0805d5fa1a558b82bfae9029611c0f7bc435fa78e3f2140281"
+    }
+  },
+  "commands": [
+    {
+      "command": "Node 24 vitest prediction-handler / prediction-helpers / prediction-forecast / prediction-purity (four files)",
+      "exitCode": 1,
+      "summary": "Initial focused run: 12 assertions used exact floating-point equality; all 12 failures retained. Kernel values were correct.",
+      "output": {
+        "path": "step-1-full-records-20261105T0225Z.tar.gz#step-1/logs/focused.log",
+        "sha256": "063361d5d6b18d4e54cba9c41ba8c5f44f8b7220e55ebd08f1d10a075f118b07",
+        "byteSize": 17130
+      },
+      "originalOutputSha256": "6c2424c67829c9e99caba71fb5872a6e1c438ee73d8046317082be9673ecf49f",
+      "normalization": "Only the checkout prefix is replaced with <worktree>."
+    },
+    {
+      "command": "npm run typecheck",
+      "exitCode": 2,
+      "summary": "Initial typecheck: two readonly fixture mutations; corrected to explicit Object.assign mutation probes.",
+      "output": {
+        "path": "step-1-full-records-20261105T0225Z.tar.gz#step-1/logs/typecheck.log",
+        "sha256": "647831ef806419018363ab71fc2e2e03c11b78adffcf27047c30688bc2325643",
+        "byteSize": 622
+      },
+      "originalOutputSha256": "647831ef806419018363ab71fc2e2e03c11b78adffcf27047c30688bc2325643",
+      "normalization": "Only the checkout prefix is replaced with <worktree>."
+    },
+    {
+      "command": "npm run lint",
+      "exitCode": 0,
+      "summary": "Initial lint passed.",
+      "output": {
+        "path": "step-1-full-records-20261105T0225Z.tar.gz#step-1/logs/lint.log",
+        "sha256": "ae918245b9340da35f13defbde375a70f576832a00b8b4eaa6ee587ada6ec012",
+        "byteSize": 1378
+      },
+      "originalOutputSha256": "ae918245b9340da35f13defbde375a70f576832a00b8b4eaa6ee587ada6ec012",
+      "normalization": "Only the checkout prefix is replaced with <worktree>."
+    },
+    {
+      "command": "Node 24 vitest prediction-handler / prediction-helpers / prediction-forecast / prediction-purity (four files)",
+      "exitCode": 0,
+      "summary": "197 focused tests passed, including all 52 new handler controls.",
+      "output": {
+        "path": "step-1-full-records-20261105T0225Z.tar.gz#step-1/logs/focused-final.log",
+        "sha256": "fdeec37e79adce13acba79857de92eaab6eb7b147992d479dac8a9f7968349fa",
+        "byteSize": 707
+      },
+      "originalOutputSha256": "4666fe21fbc262123f5596309df7a4c634ad532ced06e93322a5021e108c942f",
+      "normalization": "Only the checkout prefix is replaced with <worktree>."
+    },
+    {
+      "command": "npm run typecheck",
+      "exitCode": 0,
+      "summary": "TypeScript, readiness and type generation passed.",
+      "output": {
+        "path": "step-1-full-records-20261105T0225Z.tar.gz#step-1/logs/typecheck-final.log",
+        "sha256": "f65fd97d2a283a6d774c84d936e0bc3d5153bb69f81b0ebef1975371238ff03e",
+        "byteSize": 314
+      },
+      "originalOutputSha256": "f65fd97d2a283a6d774c84d936e0bc3d5153bb69f81b0ebef1975371238ff03e",
+      "normalization": "Only the checkout prefix is replaced with <worktree>."
+    },
+    {
+      "command": "npm run lint",
+      "exitCode": 0,
+      "summary": "ESLint and 11 import-boundary controls passed.",
+      "output": {
+        "path": "step-1-full-records-20261105T0225Z.tar.gz#step-1/logs/lint-final.log",
+        "sha256": "f5416d74d9b219619d6e36e190d0c381ac8532dc464f67d0f87fcd6ce43460bc",
+        "byteSize": 1386
+      },
+      "originalOutputSha256": "f5416d74d9b219619d6e36e190d0c381ac8532dc464f67d0f87fcd6ce43460bc",
+      "normalization": "Only the checkout prefix is replaced with <worktree>."
+    },
+    {
+      "command": "npm test",
+      "exitCode": 0,
+      "summary": "Full repository unit suite: 1451 tests across 102 files passed under Node 24.",
+      "output": {
+        "path": "step-1-full-records-20261105T0225Z.tar.gz#step-1/logs/unit-final.log",
+        "sha256": "4266f636772315958556ac37ab1d88631f727296b68a75e2744160aba15af8ec",
+        "byteSize": 2167
+      },
+      "originalOutputSha256": "906554e243c5c852282740f252e84ac8c55aa08041c1b3c802435682b53cbe49",
+      "normalization": "Only the checkout prefix is replaced with <worktree>."
+    }
+  ],
+  "focusedResults": {
+    "path": "step-1-full-records-20261105T0225Z.tar.gz#step-1/focused-results.json",
+    "sha256": "3c98748ace0e6c1db3b9f3bee289e7a2f0d611c3778beea02f2280929cf75d48",
+    "byteSize": 71892
+  },
+  "originalFocusedResultsSha256": "9f15d490bf415c51592688d3dc45eabd823dc81e5f4eb358070176d33427cf8b",
+  "assertionSummary": {
+    "handler": 52,
+    "helpers": 145,
+    "focused": 197,
+    "fullUnit": 1451,
+    "importBoundaries": 11
+  },
+  "assertedWork": {
+    "tier": "Actual handler/resolver/reader/helpers with synthetic transport replies; database work is not measured in this checkpoint.",
+    "n": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "available": {
+      "sql": 3,
+      "combinedRightsStatusChecks": 2,
+      "descriptorGets": 1,
+      "trace": [
+        "context",
+        "Q1",
+        "descriptor GET",
+        "math",
+        "Q2"
+      ]
+    },
+    "yardsReads": "one per example; all other example properties throw",
+    "carriedBindings": [
+      "sampleSize from selected Q1 feature; mismatched history refuses before Q2",
+      "Q2 context and both distinct Q1/Q2 receipts reach the response builder",
+      "evidence-mode mismatch refuses; report and target content stay unread"
+    ],
+    "failureDelivery": "Only status, stable reason and connection disposition; no partial/private fields.",
+    "modelOnly": "Unchanged implementation; merge validation proved 2 SQL."
+  },
+  "limits": [
+    "Step 1 transport controls do not prove real PostgreSQL rights-call counts, races or no-lock behavior through the new handler. Step 2 owns these proofs.",
+    "Deadline/cancellation/late-GET containment is Step 2, not yet implemented or qualified.",
+    "Final real 2504-row, six-cohort actual-handler benchmark remains Step 3; no Step 1 timing claim or CI speed assertion.",
+    "No SQL, frozen migration, existing helper, previous evidence, hosted command or Production change."
+  ],
+  "artifactCleaner": "No feature-store DB suite was run in Step 1; all 220 checks including artifact-cleaner passed at the committed main-integration checkpoint. Any later full-suite cleaner failure is retained and reported.",
+  "gitState": "Uncommitted handler Step 1 candidate, stopped for owner commit approval; no push.",
+  "schemaVersion": 2,
+  "fullRecord": {
+    "path": "step-1-full-records-20261105T0225Z.tar.gz#step-1/full-validation.json",
+    "sha256": "bd8e586e392da0f204d971f0897aea9ed1bfc6ff468ad6b3aa37ad5ace7ce872",
+    "byteSize": 8984,
+    "retention": "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
+  }
+}

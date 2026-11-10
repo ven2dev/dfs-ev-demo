@@ -1,0 +1,26 @@
+{
+  "issue": 247,
+  "checkpoint": 1,
+  "codeBaseSha": "03fac0042b4910185bca65c6d23a9f03209df861",
+  "candidate": "working-tree checkpoint changes on codeBaseSha",
+  "lanes": [
+    {
+      "name": "lane-2",
+      "port": 54339,
+      "project": "dfs-ev-demo-test-lane-2",
+      "serverVersion": "18.6"
+    },
+    {
+      "name": "lane-3",
+      "port": 54349,
+      "project": "dfs-ev-demo-test-lane-3",
+      "serverVersion": "18.6"
+    }
+  ],
+  "sweepRemovedOnlySelectedSentinel": true,
+  "teardownPreservedOtherContainerAndSentinel": true,
+  "runningTierChangeRefused": true,
+  "largeTierReusedSelectedPort": true,
+  "largeTmpfsBytes": 2147483648,
+  "cleanupVerified": true
+}

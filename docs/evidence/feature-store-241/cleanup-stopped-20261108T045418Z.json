@@ -1,0 +1,162 @@
+{
+  "issue": 241,
+  "step": "post-step-4-cleanup",
+  "kind": "producer-cleanup-stopped",
+  "recordedAt": "2026-11-08T04:54:18.434Z",
+  "runtime": "v24.18.1",
+  "verdict": "stopped-work-budget-miss",
+  "baseCommit": "e78e1753955baf16cacd2b9fe8229af5391c3a5c",
+  "sourceIdentity": {
+    "packages/db/proposals/241_job_visibility.sql": {
+      "sha256": "481c106d418a007cfb07af547213cea9ae5b5eb237868a91bee19a602eba89e3",
+      "blobId": "25c77329336b5c599a1d005a634d0ed7979ae294"
+    },
+    "docs/feature-store-job-visibility.md": {
+      "sha256": "a02552f31fcde69f22a9865172dff344e7f64b1ddbb4736181a91d59fa59667e",
+      "blobId": "f988cf5f74401cf22ab5e25a80b0a66ee05177ff"
+    },
+    "services/pipeline/tests/feature-store/job-visibility-producer-work.check.mts": {
+      "sha256": "08913fa6c5bfcf0685f0a26443cca4a61a16e976ea2becb615ddb82f25e43398",
+      "blobId": "df48ce6c988d2019d820fe7fd3239204b5d14117"
+    },
+    "services/pipeline/tests/feature-store/job-visibility-producer-work.ts": {
+      "sha256": "170c00473f6aab2ef4cb4c23df611ec7cb992a87ac491d87b6b98863ded74bb0",
+      "blobId": "12bdc20b7146fcc19889886bca0715f8b956412a"
+    },
+    "services/pipeline/tests/feature-store/job-visibility-producer.check.mts": {
+      "sha256": "d0e26e0a2b88971414d600cbb70bb73f6c12b8c4bdbc2157289e357d490aba2c",
+      "blobId": "c00158f972d10f782b23eafb3acb98dd29b7bfc0"
+    },
+    "services/pipeline/tests/feature-store/derived.check.mts": {
+      "sha256": "38ca271af164a1e0d53a4a4ea1a862ec5407c073ba7ae94be69c2a4ab1c2c58c",
+      "blobId": "aa4a7b697f2092860ec26015790b22d7f0d5f84c"
+    },
+    "services/pipeline/tests/feature-store/job-visibility-work-fixture.ts": {
+      "sha256": "c0333e5741264f5ff32163d7f65ec86ca11bc75c26e480a6e12d74b9dded3584",
+      "blobId": "b9d81352c702b7d0d4459bdcacce8f4203eec440"
+    }
+  },
+  "change": "Materialize strict least(checkpoint,eligibility_clock), otherwise checkpoint, as requests.knowledge_clock; all eight completion joins use it.",
+  "measured": {
+    "hits": 1898609,
+    "reads": 0,
+    "ceiling": 1745394,
+    "excessHits": 153215,
+    "excessPercent": 8.778247203783218,
+    "helperFunctionScans": 0,
+    "ctes": [
+      {
+        "name": "snapshots",
+        "loops": 1,
+        "rows": 16
+      },
+      {
+        "name": "discovery_schedule",
+        "loops": 1,
+        "rows": 1359
+      },
+      {
+        "name": "population",
+        "loops": 1,
+        "rows": 9381
+      },
+      {
+        "name": "targets",
+        "loops": 1,
+        "rows": 1948
+      },
+      {
+        "name": "requests",
+        "loops": 1,
+        "rows": 119515
+      },
+      {
+        "name": "schedules",
+        "loops": 1,
+        "rows": 119515
+      },
+      {
+        "name": "stats",
+        "loops": 1,
+        "rows": 50352
+      },
+      {
+        "name": "identities",
+        "loops": 1,
+        "rows": 119515
+      },
+      {
+        "name": "participation",
+        "loops": 1,
+        "rows": 52188
+      }
+    ]
+  },
+  "disposition": {
+    "retried": false,
+    "ceilingChanged": false,
+    "producerBehaviorTestsRun": false,
+    "cleanupCommitted": false,
+    "pushed": false,
+    "priorStep4EvidenceUnchanged": true
+  },
+  "resource": {
+    "mountBytes": 536870912,
+    "peakSampledUsedBytes": 263520256,
+    "sampling": "one second and boundaries, not absolute peak",
+    "cleanup": {
+      "scratch_databases": 0,
+      "scratch_connections": 0,
+      "throwaway_logins": 0
+    }
+  },
+  "limitations": [
+    "The work assertion fails before the test suite reaches its subsequent negative controls or normalized parity comparison.",
+    "No timing regression or disk-only explanation is inferred from measurements made with different fixture/resource setups.",
+    "Step 4 speed evidence describes the pre-cleanup SQL; this candidate is unqualified."
+  ],
+  "supplementalRecords": [
+    {
+      "path": "cleanup-stopped-full-records-20261108T045418Z.tar.gz#cleanup-stopped/plan.json",
+      "sha256": "6178d5a43c0a5c1e5ac915ba52edd11a1f4cb9aa5c0fc4b47c0918e09aa0ab0b",
+      "byteSize": 226844
+    },
+    {
+      "path": "cleanup-stopped-full-records-20261108T045418Z.tar.gz#cleanup-stopped/plan.log",
+      "sha256": "7ac3d258721fe33763c492044e18efb3f7ad1a90d4bbfa74bb3cb151b8375789",
+      "byteSize": 1799
+    },
+    {
+      "path": "cleanup-stopped-full-records-20261108T045418Z.tar.gz#cleanup-stopped/validation.json",
+      "sha256": "a5cc37574246dabe1ecdafeab47ffdd5445309b448a5d4e4cb4bbd8633b56fa1",
+      "byteSize": 13036
+    },
+    {
+      "path": "cleanup-stopped-full-records-20261108T045418Z.tar.gz#cleanup-stopped/disk.jsonl",
+      "sha256": "27eb0c98a10db28e7a26722c42a85db363af9b279b025e5d8515284246844a79",
+      "byteSize": 7275
+    },
+    {
+      "path": "cleanup-stopped-full-records-20261108T045418Z.tar.gz#cleanup-stopped/runner.mjs",
+      "sha256": "bd376d6e5d56d5c6a95eecbca2683d7fb51f75727b079584f8043c17ef61c354",
+      "byteSize": 3729
+    },
+    {
+      "path": "cleanup-stopped-full-records-20261108T045418Z.tar.gz#cleanup-stopped/candidate.sql",
+      "sha256": "481c106d418a007cfb07af547213cea9ae5b5eb237868a91bee19a602eba89e3",
+      "byteSize": 12178
+    },
+    {
+      "path": "cleanup-stopped-full-records-20261108T045418Z.tar.gz#cleanup-stopped/step4.sql",
+      "sha256": "13c7cedb65a2dcce133d8e1daff07bcd8f27f7330dca097c5390df66b6d3007a",
+      "byteSize": 12743
+    }
+  ],
+  "schemaVersion": 2,
+  "fullRecord": {
+    "path": "cleanup-stopped-full-records-20261108T045418Z.tar.gz#cleanup-stopped/summary.json",
+    "sha256": "0c5b8fd26be871a06cd288108e1f8fe730cc293aa127f40c82f6001612dd2938",
+    "byteSize": 5377,
+    "retention": "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "issue": 250,
+  "mode": "local-probe",
+  "gitSha": "9ef323eb98cf89b260a1135d7d91bd70a39ac3f1",
+  "lane": "lane-2",
+  "serverVersion": "18.6",
+  "initialDisk": {
+    "capacityBytes": 536870912,
+    "usedBytes": 48439296,
+    "freeBytes": 488431616
+  },
+  "standalone": {
+    "ms": 440.68695899999994,
+    "disk": {
+      "capacityBytes": 536870912,
+      "usedBytes": 72163328,
+      "freeBytes": 464707584
+    }
+  },
+  "template": {
+    "ms": 405.20504200000005,
+    "disk": {
+      "capacityBytes": 536870912,
+      "usedBytes": 72163328,
+      "freeBytes": 464707584
+    }
+  },
+  "samples": [
+    {
+      "createMs": 47.81154199999992,
+      "afterClone": {
+        "capacityBytes": 536870912,
+        "usedBytes": 76513280,
+        "freeBytes": 460357632
+      }
+    },
+    {
+      "createMs": 23.956916999999976,
+      "afterClone": {
+        "capacityBytes": 536870912,
+        "usedBytes": 82198528,
+        "freeBytes": 454672384
+      }
+    },
+    {
+      "createMs": 21.512084000000186,
+      "afterClone": {
+        "capacityBytes": 536870912,
+        "usedBytes": 82206720,
+        "freeBytes": 454664192
+      }
+    },
+    {
+      "createMs": 20.686999999999898,
+      "afterClone": {
+        "capacityBytes": 536870912,
+        "usedBytes": 82223104,
+        "freeBytes": 454647808
+      }
+    },
+    {
+      "createMs": 21.340416000000005,
+      "afterClone": {
+        "capacityBytes": 536870912,
+        "usedBytes": 82231296,
+        "freeBytes": 454639616
+      }
+    }
+  ],
+  "schemaFingerprint": "8b7459e29b658e0e9d3754f167d22a350b368d32bf0e03ead09c9f726f6ac21b",
+  "afterDrop": {
+    "capacityBytes": 536870912,
+    "usedBytes": 65306624,
+    "freeBytes": 471564288
+  },
+  "scratchCleanup": true
+}

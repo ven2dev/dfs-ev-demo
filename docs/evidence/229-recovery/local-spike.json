@@ -1,0 +1,131 @@
+{
+  "issue": 229,
+  "qualification": "prototype scheduling/handoff only, not full implementation or authorization proof",
+  "fixture": "real #138/#163/#165/#166 schema, PostgreSQL18.6 512MiB; 1025 observed,1025 shared queue controls,1 pending target,1025 completed recovery; actual local ObjectStore for late upload",
+  "checks": [
+    "atomic adoption preserves enrollment horizon; repeat adoption/requeue does not extend; orphan defers after handoff",
+    "absent then late PUT reclaimed; unlink-before-ack rollback resumes idempotently",
+    "expired final revisit retires only scheduling metadata; tombstone remains",
+    "both real lock orders: handoff blocks orphan then refuses it; orphan blocks handoff then adoption succeeds",
+    "bounded same-table join discovers and adopts pre-existing observations in pages 1024+1",
+    "pending pages 1024+2 reach later target; recovery 1024+1 independently progresses; no mixed-limit starvation"
+  ],
+  "timings": [
+    {
+      "round": 0,
+      "pendingMs": 4.561207999999965,
+      "recoveryMs": 4.359625000000051
+    },
+    {
+      "round": 1,
+      "recoveryMs": 5.272333000000003,
+      "pendingMs": 4.200458000000026
+    },
+    {
+      "round": 2,
+      "pendingMs": 4.5206249999999955,
+      "recoveryMs": 4.617833000000019
+    },
+    {
+      "round": 3,
+      "recoveryMs": 3.846416999999974,
+      "pendingMs": 4.073666000000003
+    },
+    {
+      "round": 4,
+      "pendingMs": 4.55154200000004,
+      "recoveryMs": 4.4570830000000115
+    },
+    {
+      "round": 5,
+      "recoveryMs": 3.792874999999867,
+      "pendingMs": 3.7482500000000982
+    }
+  ],
+  "measuredFullPages": {
+    "pendingStatements": 4097,
+    "recoveryStatements": 4097,
+    "pendingDeletes": 1024,
+    "recoveryDeletes": 1024
+  },
+  "statementBudget": {
+    "emptyInvocation": 2,
+    "pendingPerAllowed": 4,
+    "recoveryPerAllowed": 4,
+    "maxPerFullInvocation": 8194,
+    "objectDeletesPerFullInvocation": 2048,
+    "objectGetsHeadsListsPutsDuringCleanup": 0
+  },
+  "plan": [
+    {
+      "Plan": {
+        "Node Type": "Function Scan",
+        "Parallel Aware": false,
+        "Async Capable": false,
+        "Function Name": "spike229_recovery_page",
+        "Alias": "spike229_recovery_page",
+        "Startup Cost": 0.25,
+        "Total Cost": 10.25,
+        "Plan Rows": 1000,
+        "Plan Width": 32,
+        "Actual Startup Time": 2.256,
+        "Actual Total Time": 2.257,
+        "Actual Rows": 1,
+        "Actual Loops": 1,
+        "Disabled": false,
+        "Shared Hit Blocks": 58,
+        "Shared Read Blocks": 0,
+        "Shared Dirtied Blocks": 0,
+        "Shared Written Blocks": 0,
+        "Local Hit Blocks": 0,
+        "Local Read Blocks": 0,
+        "Local Dirtied Blocks": 0,
+        "Local Written Blocks": 0,
+        "Temp Read Blocks": 0,
+        "Temp Written Blocks": 0
+      },
+      "Planning": {
+        "Shared Hit Blocks": 0,
+        "Shared Read Blocks": 0,
+        "Shared Dirtied Blocks": 0,
+        "Shared Written Blocks": 0,
+        "Local Hit Blocks": 0,
+        "Local Read Blocks": 0,
+        "Local Dirtied Blocks": 0,
+        "Local Written Blocks": 0,
+        "Temp Read Blocks": 0,
+        "Temp Written Blocks": 0
+      },
+      "Planning Time": 0.01,
+      "Triggers": [],
+      "Execution Time": 2.26
+    }
+  ],
+  "limits": [
+    "shared queue rows are controls, not live registry graphs; per-item adoption page work is not yet production-qualified",
+    "both handoff/orphan lock orders proven; full paused-PUT/publication races remain implementation tests",
+    "cadence 60 seconds owner-agreed; no elapsed-time acceptance target",
+    "authorization and complete shared-reference recheck not implemented in spike"
+  ],
+  "date": "2026-11-01",
+  "baseMain": "6cae8b0df076de0987d81ade3228735e2e2b4897",
+  "schemaCheckout": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-220-hosted-harness",
+  "runner": "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/229-recovery-spike.mts",
+  "runnerSha256": "d36d4bffcb6ae6095b95ec5947272adc16273c1f0887920fb48ea52f54c31d97",
+  "command": "env -i PATH=/Users/vernonneilly/.nvm/versions/node/v24.18.1/bin:/usr/bin:/bin HOME=/Users/vernonneilly TEST_DATABASE_URL=postgresql://dfs_ev_test:dfs_ev_test@127.0.0.1:54329/dfs_ev_test /Users/vernonneilly/.nvm/versions/node/v24.18.1/bin/node /Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/229-recovery-spike.mts <new-output-path>",
+  "source": {
+    "packages/db/proposals/229_recovery_qualification.sql": {
+      "gitBlob": "dabc231bef4093bdbf0b195fa741cd9665064337",
+      "sha256": "05ce460bfe5524fa905d6d9fbe230c80fba9354029460611a0af5e0bde3d7042"
+    },
+    "docs/229-late-put-recovery-roadmap.md": {
+      "gitBlob": "b39c8d99a64d203bf851a6dc3a1bba8d2f45b910",
+      "sha256": "0361270570f338ea0d2e1b0de60db8b782084d98be128ab5ad84925ab0893bc0"
+    }
+  },
+  "cleanup": "guarded scratch database and generated LOGIN roles dropped in finally; private ObjectStore directory removed; existing standard fixture left running; extra owned 54362 fixture stopped",
+  "ownerDecision": {
+    "horizon": "latest actual enrollment +24 hours; no restart on scans/handoff",
+    "minimumRevisitSeconds": 60
+  }
+}

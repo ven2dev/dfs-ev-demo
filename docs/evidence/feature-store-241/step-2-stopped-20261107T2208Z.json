@@ -1,0 +1,137 @@
+{
+  "issue": 241,
+  "step": 2,
+  "kind": "stopped-live-work-gate",
+  "recordedAt": "2026-11-07T22:04:10.787Z",
+  "verdict": "stopped-not-qualified",
+  "baseCommit": "53970ca3432f1b4d3ed06029bf431af433d222d7",
+  "runtime": "v24.18.1",
+  "sourceIdentity": {
+    "packages/db/proposals/163_empirical_authorize.sql": {
+      "sha256": "c6db3f6f041a1f8280b573e9f21e2e8e04a206119df8c6410a71d897f5059804",
+      "blobId": "aa892576b261d4404d3861b23d00fb7692f28184"
+    },
+    "packages/db/proposals/163_empirical_reader.sql": {
+      "sha256": "1e8acb629e2f5ca7a7f7709752d214a22fe76330e8a86dada18f2ee3c32bf012",
+      "blobId": "4e9dd3782ceb884e65da49db9253eadd877c0f24"
+    },
+    "packages/db/proposals/241_job_visibility.sql": {
+      "sha256": "39ff3f47edb4de424246bcd222d4ab742fe5db632079fe46210d7166720c4448",
+      "blobId": "3946ddf51d0ca83c939991082258214fec050de5"
+    },
+    "services/pipeline/src/featureStore/datasets.ts": {
+      "sha256": "9dcd5576742d9caa7ca2cd3bdd8b95629a2d87d9c9ae85d9e783ee9f3e4171b9",
+      "blobId": "d0421c54f595f971cbd93bfb8f46385650350468"
+    },
+    "services/pipeline/tests/feature-store/empirical-adapter.check.mts": {
+      "sha256": "dad3f3fafe3eb37dd362bb3c323db73bd0224fdbef9d3db171e4ba0e79f077bf",
+      "blobId": "3d38329d5b76504dd67eafae497a99fcbbf07eb4"
+    },
+    "services/pipeline/tests/feature-store/job-visibility-dataset.check.mts": {
+      "sha256": "68bb7826dfdf84730045715074309fe480a6eb3784cdabe3b625e2a54af2db8a",
+      "blobId": "f3ee001597b27d16fbefe8623d150607249be883"
+    },
+    "services/pipeline/tests/feature-store/job-visibility-work-fixture.ts": {
+      "sha256": "145fe47c681e36bc58d7cbb8bef695d862c647c418755865d39ef511744a87b3",
+      "blobId": "65a46bc5c9835c580b12a24fe8aed81373b467a1"
+    },
+    "services/pipeline/tests/feature-store/job-visibility-work.ts": {
+      "sha256": "0ba4ec9ad027c466a42df8c3081fa6107e8a25b2e127f8c8edf1071b053e46cf",
+      "blobId": "253dd0aa55f8b95757a5931a3b1e9879f2b09ea7"
+    },
+    "services/pipeline/tests/feature-store/job-visibility-work.check.mts": {
+      "sha256": "a0b31624b85805df576d73eb3cc7f231f20d4c704bddacb8211717c2eea24049",
+      "blobId": "1f7e0a7a59810c5c98a56706b028d8823233d788"
+    },
+    "services/pipeline/tests/feature-store/fixtures/job-visibility-work-v1.manifest.json": {
+      "sha256": "3d7763a4645ca3c55b2159016dd2eab72123e420db778a9e4eeda7a8d30779cc",
+      "blobId": "a11b869258d26a233b75a309bb689ee258cd3861"
+    },
+    "services/pipeline/tests/feature-store/fixtures/job-visibility-work-v1.json.gz": {
+      "sha256": "eff4457e5f5064634d2cee03e70d1d17ccfb97303362f15caa3fba14520af8fe",
+      "blobId": "faec950141d0d1aae2854b939a0f78f21995398b"
+    }
+  },
+  "result": {
+    "failedGate": "current_jobs buffer hits",
+    "observed": 4,
+    "ceiling": 3,
+    "reads": 0,
+    "loops": 1,
+    "rows": 36,
+    "rootHits": 8631,
+    "rootCeiling": 10349,
+    "currentFeatureHits": 2656,
+    "currentFeatureCeiling": 3190,
+    "currentLabelHits": 691,
+    "currentLabelCeiling": 825,
+    "currentFeatureRows": 9381,
+    "currentLabelRows": 9381,
+    "executedCases": 1,
+    "plannedCases": 3
+  },
+  "diagnosis": "The portable loader batches all 36 job INSERTs before terminal UPDATEs. Its job_runs scan touches four buffers versus two in the measured producer-prepared fixture. Tuple/heap lifecycle is a likely fixture-stage cause; not established by a rerun. No ceiling increased or normalization applied.",
+  "otherFailure": "The new behavior suite failed before database setup: mkdtemp returned a symlinked macOS temporary path; openLocalObjectStore requires its canonical realpath. No new behavior probe executed.",
+  "validation": {
+    "databaseTests": {
+      "passed": 43,
+      "failed": 2,
+      "exitCode": 1
+    },
+    "existingDatasetAnd163Suites": "pass",
+    "typescript": {
+      "command": "tsc --noEmit",
+      "exitCode": 0
+    },
+    "eslintTouchedFiles": {
+      "exitCode": 0
+    },
+    "diffCheck": "pass",
+    "artifactCleanerInvoked": false
+  },
+  "fixture": {
+    "compressedByteSize": 5003909,
+    "uncompressedByteSize": 146651894,
+    "sourceFiles": 16,
+    "retrospectiveRows": 2504,
+    "strictRows": 0,
+    "sourceHashesMatchExpectedCohorts": true,
+    "purpose": "Portable real relational work graph with ordinary writer clock triggers on restore, not restored-clock temporal proof."
+  },
+  "interruption": "Initial preparation failed with 57P01 during a concurrent local session, at sampled 47% tmpfs usage. Owner confirmed the other session finished. Fresh preparation completed; interrupted attempt is not a qualifying sample.",
+  "proposedNextAction": "After owner review, repair temporary-path canonicalization and reproduce the measured job lifecycle/ANALYZE preparation in the portable loader, then rerun the unchanged gates. Stop again on any miss.",
+  "supplementalRecords": [
+    {
+      "path": "step-2-stopped-full-records-20261107T2208Z.tar.gz#step-2-stop/work.json",
+      "sha256": "031afec6bf908566c0bbaa5d7fc38ebd223c5b9f32da523ed30fa6aea03303fb",
+      "byteSize": 111399
+    },
+    {
+      "path": "step-2-stopped-full-records-20261107T2208Z.tar.gz#step-2-stop/db.log",
+      "sha256": "3fe77020cb280106c73911280fb2a681a2efa4876d191d3da8f1feb255d35fce",
+      "byteSize": 7280
+    },
+    {
+      "path": "step-2-stopped-full-records-20261107T2208Z.tar.gz#step-2-stop/fixture-disk.json",
+      "sha256": "bade0ed01e00cfd055fe5a0df6d4291d24525cd5271754ef65ecf1fb9a328ef2",
+      "byteSize": 110671
+    },
+    {
+      "path": "step-2-stopped-full-records-20261107T2208Z.tar.gz#step-2-stop/fixture-disk-interrupted.json",
+      "sha256": "875a65a4ed342408aa27ac0479d5b5ec9372bb76b87ef14bb56028de3880e5d7",
+      "byteSize": 2927
+    },
+    {
+      "path": "step-2-stopped-full-records-20261107T2208Z.tar.gz#step-2-stop/fixture-interruption.json",
+      "sha256": "a23c9b7e5ee95226a299043b203685d80451dadedf326a1ccca94f93208410cc",
+      "byteSize": 519
+    }
+  ],
+  "schemaVersion": 2,
+  "fullRecord": {
+    "path": "step-2-stopped-full-records-20261107T2208Z.tar.gz#step-2-stop/stop.json",
+    "sha256": "24ae9aafc26ae78736610a237743b044da82eb9a65cad1b18d066c361e81c1f1",
+    "byteSize": 5945,
+    "retention": "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
+  }
+}

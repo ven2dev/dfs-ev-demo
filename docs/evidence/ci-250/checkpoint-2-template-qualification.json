@@ -1,0 +1,82 @@
+{
+  "issue": 250,
+  "checkpoint": 2,
+  "baseCommit": "023b44df1b37863eef054c066f8c8a1dc94aa473",
+  "mode": "local qualification from uncommitted checkpoint code",
+  "lane": "lane-2",
+  "tier": "standard",
+  "postgres": "18.6",
+  "codeBlobs": {
+    ".github/workflows/ci.yml": "9fd1398fbc9c4eceed1c2e5a85d658f03af3dda2",
+    "packages/db/tooling/tests/templates.mts": "985534c12bf164a3f13244b6ec4ba16d9a223d72",
+    "scripts/db/test-db.mjs": "77341b570baf1ee753f9ff2f2f06a39954ae7512",
+    "services/pipeline/scripts/feature-store/fixture-proposals.ts": "910f94d22dc1e804681778d67315b2f78087c1e3",
+    "services/pipeline/scripts/feature-store/harness.ts": "705866890d1cf390d0cdee0236fefdcc0c5df7e9",
+    "services/pipeline/tests/feature-store/fixture-template.probe.mts": "9d8168f157dcf4a008cbac8b836c7103c1b41bee",
+    "tests/ciGate.check.mjs": "ee82ae337bfb35416139b1e4f7fcfdb538ed29c5"
+  },
+  "hostedCheckpoint1": {
+    "url": "https://github.com/ven2dev/dfs-ev-demo/actions/runs/42557982456",
+    "headSha": "023b44df1b37863eef054c066f8c8a1dc94aa473",
+    "appSeconds": 180,
+    "dbCoreSeconds": 94,
+    "dbFeatureSeconds": 212,
+    "dbFinishAfterAppSeconds": 32,
+    "sharedHarnessSetupMs": 31059.357043999997,
+    "sharedHarnessSamples": 27,
+    "result": "CI passed, both timing targets missed"
+  },
+  "template": {
+    "migrationVersions": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
+    ],
+    "templateCount": 1,
+    "catalogVerifications": 1,
+    "sourceDigest": "364e776dba9821d0633a1b9c858d11ec629b01b4cae96f31729cb52041670146",
+    "proposalCount": 4,
+    "durationMs": 632.2606249999999
+  },
+  "featureStore": {
+    "passed": 296,
+    "existingCases": 295,
+    "skipped": 0,
+    "failed": 0,
+    "parityProbe": "the feature-store template matches the fresh catalog and refuses stale or changed inputs",
+    "sharedHarnessSamples": 27,
+    "sharedHarnessTotalsMs": {
+      "setupMs": 7189.42871,
+      "callbackMs": 114467.45629,
+      "cleanupMs": 969.3272499999946
+    },
+    "commandWallSeconds": 132.76
+  },
+  "disk": {
+    "intervalSeconds": 1,
+    "samples": 133,
+    "capacityBytes": 536870912,
+    "minimumFreeBytes": 287043584,
+    "freeFractionAtLowestSample": 0.5346603393554688
+  },
+  "core": {
+    "nodeRequiredCases": 74,
+    "leaseRequiredCases": 13,
+    "readinessRequiredCases": 4,
+    "corpusRequiredCases": 8,
+    "result": "verified"
+  },
+  "cleanup": {
+    "remainingScratchDatabases": 0,
+    "remainingTestLogins": 0,
+    "laneTeardownVerified": true
+  }
+}

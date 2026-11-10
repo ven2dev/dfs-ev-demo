@@ -51,7 +51,8 @@
     "test:repo-layout": "node --test tests/monorepo-layout.check.mjs",
     "test:import-boundaries": "node --test tests/import-boundaries.check.mjs",
     "test:turbo-layout": "node --test tests/turbo-layout.check.mjs tests/turbo-selection.check.mjs tests/turbo-ci-selection.check.mjs",
-    "turbo:affected": "node scripts/turbo/run-affected.mjs"
+    "turbo:affected": "node scripts/turbo/run-affected.mjs",
+    "test:r2:live": "R2_LIVE_CONTRACT=1 vitest run --disableConsoleIntercept --config vitest.node.config.ts services/pipeline/tests/feature-store/featureStoreR2.process.test.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "1.2.0",
@@ -91,7 +92,7 @@
     "@vitejs/plugin-react": "6.1.2",
     "eslint": "^9",
     "eslint-config-next": "16.4.2",
-    "firebase-tools": "15.34.0",
+    "firebase-tools": "15.34.2",
     "jsdom": "30.1.3",
     "pg": "8.23.1",
     "tailwindcss": "^4",

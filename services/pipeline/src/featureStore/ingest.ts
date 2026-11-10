@@ -1,6 +1,6 @@
 import type { Client } from "pg";
 import { finishJob, startJob } from "./jobs.ts";
-import { normalizeSource } from "./normalize.ts";
+import { normalizeSource, type NormalizedRow } from "./normalize.ts";
 import { objectKey, sha256, type ObjectStore } from "./objectStore.ts";
 import { downloadSource, feedKind, INGEST_LIMITS, NORMALIZER_VERSION, policyDigest, profileId,
   type IngestLimits, type SourceAsset } from "./source.ts";
@@ -13,6 +13,16 @@ const targets = {
   pbp_participation: { table: "norm_participation", fields: "player_id text, game_id text, offense_play_count integer, state text, reasons text[]" },
   schedules: { table: "norm_schedule", fields: "game_id text, season integer, week integer, game_type text, kickoff timestamptz, home_team text, away_team text, home_score integer, away_score integer, state text, reasons text[]" },
 } as const;
+export const loadNormalizedRows = async (
+  client: Pick<Client, "query">, feed: SourceAsset["feed"], snapshotId: string, jobId: string, rows: NormalizedRow[],
+): Promise<void> => {
+  const target = targets[feed];
+  const columns = target.fields.split(", ").map((field) => field.split(" ")[0]).join(", ");
+  await client.query(`INSERT INTO fs138.${target.table} (snapshot_id, normalizer_version, job_id, ${columns})
+    SELECT $1::uuid, $2::text, $3::uuid, r.* FROM jsonb_to_recordset($4::jsonb) AS r(${target.fields})`,
+  [snapshotId, NORMALIZER_VERSION, jobId, JSON.stringify(rows)]);
+};
+
 export type IngestDependencies = { download?: typeof downloadSource; limits?: IngestLimits };
 
 export const ingestSource = async (
@@ -76,11 +86,8 @@ export const ingestSource = async (
     if (inserted.rows[0]) snapshotId = inserted.rows[0].snapshot_id;
     else snapshotId = (await client.query("SELECT snapshot_id FROM fs138.source_snapshots WHERE profile_id = $1 AND sha256 = $2",
       [profile, normalized.wireSha256])).rows[0].snapshot_id;
+    await loadNormalizedRows(client, asset.feed, snapshotId, job.jobId, normalized.rows);
     const target = targets[asset.feed];
-    const columns = target.fields.split(", ").map((field) => field.split(" ")[0]).join(", ");
-    await client.query(`INSERT INTO fs138.${target.table} (snapshot_id, normalizer_version, job_id, ${columns})
-      SELECT $1::uuid, $2::text, $3::uuid, r.* FROM jsonb_to_recordset($4::jsonb) AS r(${target.fields})`,
-    [snapshotId, NORMALIZER_VERSION, job.jobId, JSON.stringify(normalized.rows)]);
     await client.query("INSERT INTO fs138.job_inputs (job_id, snapshot_id) VALUES ($1,$2)", [job.jobId, snapshotId]);
     // The bulk-load producer refreshes its own table before downstream jobs.
     await client.query(`ANALYZE fs138.${target.table},fs138.source_snapshots,fs138.job_runs`);

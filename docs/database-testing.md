@@ -35,9 +35,42 @@ remove any resources left by an interrupted run:
 npm run test:db:down
 ```
 
-All lifecycle commands are scoped to Compose project `dfs-ev-demo-test`.
-They do not remove other Docker projects or cached images. The fixed project
-and port mean only one database suite should run at a time on a machine.
+### Select a local lane
+
+Set `DB_TEST_LANE` for every command in a non-default session. An unset
+selector uses the default. The fixed registry in
+`packages/db/tooling/tests/target.mts` controls the Compose project, loopback
+port and disposable URL.
+
+| Lane | Compose project | IPv4 loopback port |
+| --- | --- | ---: |
+| `default` | `dfs-ev-demo-test` | 54329 |
+| `lane-2` | `dfs-ev-demo-test-lane-2` | 54339 |
+| `lane-3` | `dfs-ev-demo-test-lane-3` | 54349 |
+| `lane-4` | `dfs-ev-demo-test-lane-4` | 54359 |
+
+Each lane has its own PostgreSQL server and tmpfs. Startup sweeps scratch
+databases on the selected server, and teardown removes only the selected
+Compose project. Coordinate ownership within a lane, including manual starts
+and stops. Separate servers still share host CPU and memory. Keep heavy work
+out of another lane's benchmark window.
+
+## App test timeouts
+
+The browser and Node Vitest configs each run unit and process projects.
+Unit tests keep the 5 s default, including small temporary-directory tests.
+The dot in `*.process.test.ts` selects the 60 s process class for tests that
+start real children or are slow by design. Existing `*-process.test.ts`
+files use mocked children and stay in the unit class.
+
+Give asynchronous child processes deadlines below the test limit and leave
+time for serial phases and cleanup. On timeout, the shared test helper stops
+the POSIX process group and reports captured output. The repeated stale-lock
+case retains 120 s because three serial worker batches each allow 35 s. The
+live R2 contract runs only through the opt-in `npm run test:r2:live` command
+or its explicit environment flag. The offline ObjectStore tests use the
+unit class. These timeouts apply to App checks. The PostgreSQL suites use
+their own harness limits.
 
 ## Environment boundary
 
@@ -48,8 +81,8 @@ The harness refuses an environment containing `DATABASE_URL`, `MIGRATION_DATABAS
 Firebase Admin variables, Google application credentials, or ambient
 `POSTGRES_*`/`PG*` configuration. Run it from a shell without those variables.
 
-The service exposes only `127.0.0.1:54329`, with database, username, and password
-all set to `dfs_ev_test`. These public throwaway values belong only to this test
+Each service binds to its registered IPv4 loopback port, with database,
+username and password all set to `dfs_ev_test`. These public throwaway values belong only to this test
 container. The schema bootstrap validates the full connection configuration and
 verifies the connected database, role, and PostgreSQL 18 major before DDL.
 
@@ -60,8 +93,9 @@ TEST_DATABASE_URL=postgresql://dfs_ev_test:dfs_ev_test@127.0.0.1:54329/dfs_ev_te
 ```
 
 It accepts only `postgres:`/`postgresql:`, a loopback host (`127.0.0.1`,
-`localhost`, or `::1`), port 54329, the exact `dfs_ev_test` database and throwaway
-credentials, and no query options or fragment. `localhost` is connected through
+`localhost`, or `::1`), the selected lane's registered port, the exact
+`dfs_ev_test` database and throwaway credentials, and no query options or
+fragment. An explicit URL for another lane is refused before lifecycle actions. `localhost` is connected through
 127.0.0.1; IPv6 requires a separately provisioned loopback listener. The default
 Compose service binds IPv4 only. Errors never include the supplied URL.
 Missing or unsafe configuration fails before connecting; it never falls back
@@ -81,17 +115,95 @@ major 17 proposal. The same definition supports Apple Silicon locally and
 Linux AMD64 in CI.
 
 PostgreSQL 18 uses `/var/lib/postgresql/18/docker`; the parent
-`/var/lib/postgresql` is a 512 MiB tmpfs mount. No database data volume survives
-service removal. See the [official image's storage documentation](https://github.com/docker-library/docs/blob/master/postgres/README.md#pgdata).
+`/var/lib/postgresql` is a tmpfs mount sized for the selected tier. No database
+data volume survives service removal. See the [official image's storage documentation](https://github.com/docker-library/docs/blob/master/postgres/README.md#pgdata).
 Dependabot maintains the image through its weekly `docker-compose` entry and
 the driver pair through its npm test-tooling group. Major PostgreSQL upgrades
 remain deliberate; see the [dependency review guide](dependency-updates.md).
+
+## Workload tiers and disk admission
+
+| Tier | Data tmpfs | Required free space at admission | Workload |
+| --- | ---: | ---: | --- |
+| Standard | 512 MiB | 272 MiB | Migration and catalog suites, feature-store CI, focused integration checks, and repeats |
+| Large | 2 GiB | 608 MiB | Full-season materialization plans, producer capacity timing, #244 recompute replay, #169 capacity matrices, prediction-capacity matrices and fresh-process dataset matrices |
+
+The standard tier sets WAL max/min to 96/32 MiB, disables `fsync`,
+`synchronous_commit` and `full_page_writes`, and sets `temp_file_limit=128MB`.
+It is disposable and should be recreated after a crash. `wal_level` stays at
+`replica` so the fixture continues to exercise the usual WAL path. Minimal
+WAL can skip logging for some bulk operations and would change the workload
+behind the recorded WAL measurements. The 2 GiB tier retains the existing
+durability and WAL defaults used by #241.
+
+The prediction-capacity and dataset matrices prepare full-season fixtures, so
+they use the large tier even though the measured requests are small. #242 was
+measured before #247 introduced the standard tier's 128 MiB temporary-file
+limit; the large tier is closer to that original PostgreSQL environment.
+Record the selected tier, actual mount and PostgreSQL settings with each
+qualification receipt. This classification changes no workload target, work
+budget or deadline.
+
+`max_wal_size` is a soft checkpoint target. `temp_file_limit` applies per
+PostgreSQL process, so concurrent backends can allocate separate allowances.
+Explicit temporary tables are outside that limit. The observed standard
+growth already includes the suite's concurrent workers. Revisit the
+measurement if worker counts or fixture workloads grow.
+[PostgreSQL WAL settings](https://www.postgresql.org/docs/18/runtime-config-wal.html) ·
+[PostgreSQL resource settings](https://www.postgresql.org/docs/18/runtime-config-resource.html)
+
+The threshold is measured peak growth plus margin, rounded up to 16 MiB.
+Standard growth was 193.4 MiB across both suites from fresh admission, with
+64 MiB margin. The measured 512 MiB fixture retained 53.2% free at its sampled
+peak, against the separate 25% headroom target. The large tier uses the
+larger #241 growth observation, 466.8 MiB for the full-season plan, plus
+128 MiB margin. These are sampled observations. Requalify larger workloads
+against their own measured growth.
+[Standard suite and historical large-tier evidence](evidence/database-247/checkpoint-2-standard-suite.json)
+
+The harness checks free space inside the selected container with `df` on
+`PGDATA` and verifies that `pg_wal` is on the same data tmpfs. It reports
+retained WAL measured with `du`. The guarded suite checks after taking its
+lane lease, before dispatch, and again before each repetition. An admission
+failure reports required and available space and suggests freeing space or
+using the appropriate tier. Free space can change after sampling, so keep
+exclusive ownership for the entire workload. The standalone preflight command
+relies on operator ownership.
+
+For a manually dispatched full-season workload, start an unused non-default
+lane and use the same selector through teardown. Run preflight immediately
+before dispatching the specific #241, #244 or #169 workload. Keep the lane
+reserved until cleanup completes.
+
+```bash
+export DB_TEST_LANE=lane-2 DB_TEST_TIER=large
+export TEST_DATABASE_URL="$(env -u TEST_DATABASE_URL node scripts/db/test-db.mjs url)"
+node scripts/db/test-db.mjs up
+node scripts/db/test-db.mjs preflight
+# Run the selected workload on this lane.
+node scripts/db/test-db.mjs down
+```
+
+The harness starts fixtures with `--no-recreate`. New Compose settings take
+effect only after the owner of an idle lane runs `down` and starts it again.
+Do not recreate a default server while another session is using it. CI picks
+up the standard settings on its next fresh start.
+
+### Docker memory envelope
+
+On the measured host, two 512 MiB lanes plus one 2 GiB lane peaked at **1.02 GiB**
+of combined cgroup memory under synthetic load. The same mounts can consume
+**3 GiB** when filled, plus PostgreSQL shared buffers, backend memory and
+Docker VM overhead. Docker's VM limit was **7.75 GiB**. Two standard lanes
+plus one large lane is the largest combination qualified on this host.
+Account for other Docker workloads before starting all three.
+[Three-lane disk and memory evidence](evidence/database-247/checkpoint-2-wal-churn.json)
 
 ## Suite contract
 
 Ordinary migrated fixtures clone sealed, run-scoped migration-prefix templates;
 explicit migration proofs keep empty scratch databases. A session advisory lock
-refuses concurrent runs; startup sweeps all leftover `dfs_ev_test_` databases
+refuses concurrent runs; startup sweeps leftover `dfs_ev_test_` databases on the selected server
 and logs the count. Teardown is best-effort; the next run recovers leftovers
 after process termination or connection loss. The parent verifies each
 prefix once, owns interrupted-clone cleanup, and removes the chain after each
@@ -229,29 +341,46 @@ It is validation evidence, not a passing integration run.
 
 ## CI enforcement
 
-On PRs to `main` and pushes to `main`, `App checks` and `DB integration` run
-independently on Linux. The database job runs a clean Node 24 `npm ci`, the
-target/bootstrap/report guards, and `npm run test:db:local`. The local command
-requires migration/reference integrity, all named database cases and freshly
-rebuilt contract equality to succeed. This uses the same Compose file,
-image digest, health check, loopback port, throwaway credentials, and tmpfs as
-the laptop command. An additional `always()` cleanup step runs
-`npm run test:db:down`; no production credentials or external database access
-are configured in either CI job.
+The local `npm run test:feature-store:db` command uses fresh migrations for its
+scratch fixtures. For the CI-equivalent template run, start the standard
+fixture, set `TEST_DATABASE_URL` for that lane and run
+`node scripts/db/test-db.mjs feature-store`.
 
-The sole job named `CI` depends on both jobs and uses `if: always()` with
-`permissions: {}` and no checkout. It fails unless both dependency results are
-exactly `success`, including when a dependency failed, was cancelled, or was
-skipped. This retains the existing ruleset's required `CI` check without a
-settings change. Workflow cancellation can cancel the gate itself; cancellation
-does not provide a successful required check. GitHub documents these results
-in the [needs context](https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#needs-context).
+On PRs to `main`, pushes to `main` and manual checkpoints, `App checks`,
+`DB integration / Core` and `DB integration / Feature store` run independently
+on Linux. Each DB job computes and validates the same affected-selection plan
+locally. The core job runs the target/bootstrap/report guards, verifies startup
+and failure cleanup when either DB suite is selected, and runs
+`npm run test:db:local` when selected. The local command requires
+migration/reference integrity, all named database cases and freshly rebuilt
+contract equality.
+
+The feature-store job starts its own standard fixture and runs preflight before
+the selected suite. The guarded runner holds the lane lease, applies the
+migration chain and four default feature-store proposals once, and seals that
+database. Serial harness calls clone it through the private run manifest.
+Schema-specific checks still create a fresh fixture. The runner compares the
+fresh and cloned catalogs and grants, and refuses stale proposal input.
+It logs template build time, shared-harness setup, callback and cleanup times,
+and total command wall time as observations. Each DB job has its own `always()` cleanup step.
+Both use the same Compose file, image digest, health check, loopback port,
+throwaway credentials and tmpfs as the laptop command. CI uses disposable
+PostgreSQL without application credentials or external database access.
+
+The sole job named `CI` depends on all three jobs and uses `if: always()` with
+`permissions: {}` and no checkout. It requires successful dependency results,
+agreement between the DB plans and matching raw outcomes for selection,
+execution and both cleanups. This retains the existing ruleset's required
+`CI` check without a settings change. Workflow cancellation can cancel the
+gate itself. GitHub documents these results in the
+[needs context](https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#needs-context).
 
 `npm run test:ci-gate` extracts and executes the actual inline gate shell script
-against all 16 combinations of GitHub's four job results. It also rejects empty
-or unexpected results and checks the gate's always-run condition, dependency
-list, unique check name, empty permissions, and absence of checkout. This runs
-inside `App checks`. The extraction checks the current YAML block layout;
+against all 64 combinations of GitHub's four job results. It also tests missing
+results, contradictory selection, omitted execution and failed cleanup. It
+checks the gate's always-run condition, dependency list, unique check name,
+empty permissions and absence of checkout. This runs inside `App checks`.
+The extraction checks the current YAML block layout.
 `actionlint` remains the workflow syntax validator.
 
 ### Hosted gate validation
@@ -263,11 +392,11 @@ validation branch with separately approved commits and pushes:
 1. Change only the database test command to
    `npm run test:db:local -- --testNamePattern='^bootstraps'`. Open a draft PR to
    `main` so the actual workflow runs. The one-case suite must be rejected by
-   the mandatory-report guard, `DB integration` must fail, and `CI` must run
-   and fail with its database result shown as `failure`. Record the run URL,
-   commit, job results, and cleanup evidence on #45.
+   the mandatory-report guard. `DB integration / Core` and `CI` must fail so
+   incomplete coverage cannot satisfy the required check. Record the run URL,
+   commit, job results and cleanup evidence on #45.
 2. Restore the database command in a follow-up commit without rewriting
-   history. Obtain a complete successful run showing both upstream jobs and
+   history. Obtain a complete successful run showing all upstream jobs and
    `CI` passing and record it. Close the validation PR without merging it, then
    delete its temporary local and remote branches.
 3. Obtain passing checks on the final feature PR before the owner merges it.

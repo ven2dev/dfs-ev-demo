@@ -1,0 +1,139 @@
+{
+  "issue": 167,
+  "step": 0,
+  "kind": "composite-authorization-behavior",
+  "relabelledFrom": {
+    "issue": 231,
+    "step": 2,
+    "receipt": "Current #231 composite harness output; only issue/step metadata relabelled for #167 main integration.",
+    "fullRecord": {
+      "path": "main-merge-full-records-20261105T012821Z.tar.gz#main-merge/full-composite-original.json",
+      "sha256": "61c945e5a0b90d1447c379da77b7928bd4c838e1875ee9aa9886e0611637dac7",
+      "byteSize": 122936
+    }
+  },
+  "fixture": "synthetic lineage/selection controls; no historical availability claim",
+  "verdict": "pass",
+  "sourceHashes": {
+    "packages/db/proposals/231_composite_authorization.sql": "0a43711275a090e5454969805262e61093c0493f46cf37cb36254f75c8818681",
+    "services/pipeline/src/featureStore/modelArtifacts.ts": "d4fd216bd4339b6a070787da4a0dc7e6112ab157e7e3b702a1e23f41c817d388",
+    "services/pipeline/src/featureStore/modelContext.ts": "f5fc5357ac5168f221e14f45e7c1f7513d9991c7ed196368cd197f414c0cb47b",
+    "services/pipeline/tests/feature-store/composite-authorization-fixture.ts": "ce21e6cafa8db3b89fc24b8b3d8d253746cedbe3a8282b293856a522ade4e68f",
+    "services/pipeline/tests/feature-store/composite-read-work.ts": "443a086aad0f54b91bbff22d56618ae729f36ab86e41b5619da1d9992e8911ef",
+    "services/pipeline/tests/feature-store/composite-authorization.check.mts": "c233f8f47e5dc4d33e29d246119e973ddb7397ff066326b0e761861c7788989c"
+  },
+  "probes": [
+    {
+      "name": "every n=2..16 uses exactly 3 SQL / 2 union checks / 1 descriptor GET and 2 × P rights calls",
+      "verdict": "pass",
+      "detailsSha256": "c6606fe1b5416d9750db8563a86b480e80e9ac92e941f2a1013147cac1c29c6b"
+    },
+    {
+      "name": "unlabeled independent input, target-label existence/value independence and two QBs in one game",
+      "verdict": "pass",
+      "detailsSha256": "9dac03bae3a25ad3608c69a2aa7a0a386b0527e6f217ed72def5c98b8e0d176f"
+    },
+    {
+      "name": "one profile shared by multiple snapshots is checked once; independent and unselected model lineage stays included",
+      "verdict": "pass",
+      "detailsSha256": "e29b7f373ac6362fd78d178f84d1d8cbfbfc1de4354a6c2fbec9696d2c8e452a"
+    },
+    {
+      "name": "exact reference refuses omitted/extra/forged lineage and metadata, older revision and alternate policy",
+      "verdict": "pass",
+      "detailsSha256": "9d7cce3db2092c20142179e186a1685c7cd3960bb65c3badf9a18f203c039136"
+    },
+    {
+      "name": "Q2 retains selected values while refreshing flags; caller/callback mutation cannot narrow private scope",
+      "verdict": "pass",
+      "detailsSha256": "7a61ef11a177b93dad60ee4c9cac40fd9d8b65613413ae1ccc0ad1738994d604"
+    },
+    {
+      "name": "pruning the selected revision refuses instead of returning an older still-valid feature",
+      "verdict": "pass",
+      "detailsSha256": "93167f3fff0763fbb87b8d54b9c2b656fefe65e09915d1fc05be72edd02cbc42"
+    },
+    {
+      "name": "independent model/feature revocation before Q1, during GET or calculation refuses with measured per-probe calls",
+      "verdict": "pass",
+      "detailsSha256": "b6d312eb7fb41054d679d0522f1077bf2747cd2b6e7de88995dd1f5d3c35121a"
+    },
+    {
+      "name": "both deletion APIs and independent feature deletion refuse without reselection or delivery",
+      "verdict": "pass",
+      "detailsSha256": "198e64348c13d9e2d00a3e4089fea90940e14482f508f766f1edf54566175391"
+    },
+    {
+      "name": "empty/pruned/changed lineage and missing feature or source state fail closed at both boundaries",
+      "verdict": "pass",
+      "detailsSha256": "5835797a8d558e90ed1e553dc0c1143e51440cabde788bda7e593b47e1c88eff"
+    },
+    {
+      "name": "database work is identical at matched n=2/16 graphs; observer detects hidden scans/writes",
+      "verdict": "pass",
+      "detailsSha256": "bfeea9de75c2abb55def8fef26969bd3d8db3505d898171af71da9d9715b6099"
+    },
+    {
+      "name": "paused GET and calculation hold no reader transaction/locks and concurrent deletion commits",
+      "verdict": "pass",
+      "detailsSha256": "f7131693807293b19f9f0c2a51c0747c1f309fe87628345da53f1c2e94eaaf11"
+    },
+    {
+      "name": "missing bytes, callback failures and Q2 connection loss never deliver a private result",
+      "verdict": "pass",
+      "detailsSha256": "fa0e16dc397802926c14a4c06baf0074e12979023ec0eacc88a7f19f536c0170"
+    },
+    {
+      "name": "model-only reads keep two queries; narrow LOGIN has no unscoped/private-core or writer escape",
+      "verdict": "pass",
+      "detailsSha256": "1ae0b020a45ba2550ab2e8b8463d49968ba4a0491f3cb43092758dceb1595685"
+    },
+    {
+      "name": "common core preserves model-only 0/2504-member and selected-report contracts",
+      "verdict": "pass",
+      "detailsSha256": "92abb1b0845dc143cf99f350dd38879f7b136a6376961bf66887138ff67cde69"
+    },
+    {
+      "name": "shared-retained removal intent still permits unaffected live-run delivery through the common core",
+      "verdict": "pass",
+      "detailsSha256": "39dd5915d28678a0f7fca10ef84ac437d0d78e50dad9dca02aa1e3e2948f1285"
+    }
+  ],
+  "work": {
+    "probes": 79,
+    "successfulAllNProbes": 30,
+    "n": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "sql": 3,
+    "checks": 2,
+    "descriptorGets": 1,
+    "rightsCallBudget": "completed batches * independently derived union profile count; exactly 2P on success",
+    "matchedRelationalWork": true,
+    "readerDml": 0,
+    "hiddenExampleReads": 0,
+    "scanDetected": true,
+    "writeDetected": true
+  },
+  "schemaVersion": 2,
+  "fullRecord": {
+    "path": "main-merge-full-records-20261105T012821Z.tar.gz#main-merge/full-composite.json",
+    "sha256": "67e22bddae7ea1f6fa3c979a24c5c85705ee0fcf006b0b2a3257f67ae802351f",
+    "byteSize": 123402,
+    "retention": "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
+  }
+}

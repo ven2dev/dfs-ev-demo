@@ -334,14 +334,15 @@ internal-research review. It makes no upstream requests and creates/removes only
 a registered disposable database and a separate private artifact directory:
 
 ```sh
-docker compose --env-file /dev/null --project-name dfs-ev-demo-test \
-  -f compose.test.yml up -d --wait --wait-timeout 60
-TEST_DATABASE_URL=postgresql://dfs_ev_test:dfs_ev_test@127.0.0.1:54329/dfs_ev_test \
-  npm run predictive:source:local -- prove \
+export DB_TEST_LANE=lane-2 DB_TEST_TIER=standard
+export TEST_DATABASE_URL="$(env -u TEST_DATABASE_URL node scripts/db/test-db.mjs url)"
+node scripts/db/test-db.mjs up
+node scripts/db/test-db.mjs preflight
+npm run predictive:source:local -- prove \
   --artifact-root /private/tmp/dfs-ev-52-source-proof.utpDdL \
   --journal f496e74d6823d5507b301568d2c9c1dbc6f562fe93c8cbb52f621bd6674a5b31.json \
   --journal-bytes 10967
-npm run test:db:down
+node scripts/db/test-db.mjs down
 ```
 
 CSV-storage checkpoint proof (`83de5fd`) on 2026-10-11 (Los Angeles; SQL import at
