@@ -42,13 +42,16 @@ limits and Vercel lifecycle behavior require hosted preflight. The ordinary
 app client and the admission proposal are unchanged.
 
 Binding pins the exact branch and SHA, Vercel project and region, candidate
-cluster and branch IDs, and exact host, port, database and runner role.
+organization and cluster name, branch ID, and exact host, port, database
+and runner role. The organization and cluster name identify the provider
+resource for control-plane verification and cleanup. An opaque database ID
+is optional receipt metadata.
 The pooled connection on port 6432 uses `role.branch_id` as its login.
 SQL grants and the hosted run fence use the bare role returned by
 `current_user`. Use a canonical
 `?sslmode=verify-full` query string. The adapter constructs its own strict
-TLS options. Owner-verifiable provider metadata binds the cluster and branch
-IDs to the managed endpoint. Those IDs are control-plane metadata.
+TLS options. Verify the organization, cluster name and branch ID against
+the provider dashboard before binding the managed endpoint.
 
 The synthetic free observation uses the same fixed quota total and period as
 the stale fixture. It never makes an external provider call. Its timings

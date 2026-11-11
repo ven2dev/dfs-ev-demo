@@ -13,7 +13,7 @@ const createHandler = ({queryFactory,...options}) => handlerFactory({
  },
 });
 const now=Date.now(),bearer='a'.repeat(64),sha='b'.repeat(40),host='qualification-test.vercel.app';
-const binding={arm:'iad1',projectId:PROJECT_ID,nodeMajor:24,database:{provider:'planetscale',verified:true,disposable:true,syntheticOnly:true,clusterId:'test-cluster',branchId:'test-branch',host:'aws-us-east-1-test.pg.psdb.cloud',port:6432,role:'spike220_runner_123456abcdef',name:'postgres',region:'us-east-1',sku:'PS-5',topology:'single-node',postgresMajor:18},gates:{automationBypass:true,branchScopedSensitive:true,previewProtection:true},gitBranch:'feature/dfsEV-220-planetscale-harness',reviewedSha:sha,runId:'12345678-1234-1234-1234-123456789abc'};
+const binding={arm:'iad1',projectId:PROJECT_ID,nodeMajor:24,database:{provider:'planetscale',verified:true,disposable:true,syntheticOnly:true,organization:'test-org',clusterName:'test-cluster',branchId:'test-branch',host:'aws-us-east-1-test.pg.psdb.cloud',port:6432,role:'spike220_runner_123456abcdef',name:'postgres',region:'us-east-1',sku:'PS-5',topology:'single-node',postgresMajor:18},gates:{automationBypass:true,branchScopedSensitive:true,previewProtection:true},gitBranch:'feature/dfsEV-220-planetscale-harness',reviewedSha:sha,runId:'12345678-1234-1234-1234-123456789abc'};
 const env={SPIKE220_ENABLED:'1',VERCEL_ENV:'preview',VERCEL_REGION:'iad1',VERCEL_PROJECT_ID:PROJECT_ID,VERCEL_GIT_COMMIT_REF:binding.gitBranch,VERCEL_GIT_COMMIT_SHA:sha,VERCEL_URL:host,SPIKE220_BINDING:JSON.stringify(binding),SPIKE220_ISSUED_AT:new Date(now-1000).toISOString(),SPIKE220_EXPIRES_AT:new Date(now+10000).toISOString(),SPIKE220_TOKEN_SHA256:createHash('sha256').update(bearer).digest('hex'),SPIKE220_DATABASE_URL:`postgresql://${binding.database.role}.${binding.database.branchId}:${'x'.repeat(40)}@${binding.database.host}:6432/postgres?sslmode=verify-full`};
 const sample={stage:'warm',workers:20,round:0,mode:'path',index:0};
 const request=(body=sample,url=`https://${host}/api/qualification220`,token=bearer)=>new Request(url,{method:'POST',headers:{authorization:`Bearer ${token}`},body:JSON.stringify(body)});
@@ -119,7 +119,7 @@ test('setup preallocates bounded unique tickets, full 240-key catalog and no sha
  assert.throws(()=>prepareGroup('stale:20:0:path',{remaining:19,used:0},binding.runId));
 });
 test('unverified compute and unsupported protections block configuration',()=>{
- for(const mutate of [c=>{c.database.sku='PS-10';},c=>{c.gates.branchScopedSensitive=false;},c=>{c.gates.automationBypass=false;},c=>{c.database.syntheticOnly=false;}]){
+ for(const mutate of [c=>{c.database.organization=undefined;},c=>{c.database.clusterName=undefined;},c=>{c.database.sku='PS-10';},c=>{c.gates.branchScopedSensitive=false;},c=>{c.gates.automationBypass=false;},c=>{c.database.syntheticOnly=false;}]){
  const copy=structuredClone(binding);mutate(copy);assert.equal(authorize(request(),{...env,SPIKE220_BINDING:JSON.stringify(copy)},now),null);
  }
 });
@@ -156,9 +156,9 @@ test('p95 gates allow outlier maxima and overall warm assessment never pools arm
  assert.equal(summarizeRun(slow,sha).passed,false);
 });
 
-test('branch registration disables harness deployment and preserves iad1',async()=>{
+test('prepared Preview config enables Git deployment in iad1',async()=>{
  const iad=JSON.parse(await readFile(new URL('../apps/web/vercel.json',import.meta.url),'utf8'));
- assert.deepEqual(iad,{regions:['iad1'],git:{deploymentEnabled:{'feature/dfsEV-220-planetscale-harness':false}}});
+ assert.deepEqual(iad,{regions:['iad1']});
  await assert.rejects(access(new URL('../apps/web/vercel.harness-pdx1.json',import.meta.url)),e=>e.code==='ENOENT');
 });
 test('immutable Preview binds the approved SHA, region metadata, Git branch and deployment ID',()=>{

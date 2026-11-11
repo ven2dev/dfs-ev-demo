@@ -17,7 +17,8 @@ export function validateBinding(c) {
   const db=c.database;
   requireValue(db?.provider==='planetscale' && db.verified===true && db.disposable===true && db.syntheticOnly===true,'unverified disposable database');
   requireValue(db.region==='us-east-1' && db.sku==='PS-5' && db.topology==='single-node' && db.postgresMajor===18,'unexpected candidate configuration');
-  requireValue(/^[a-zA-Z0-9_-]+$/.test(db.clusterId??'') && /^[a-zA-Z0-9_-]+$/.test(db.branchId??''),'missing database identity');
+  requireValue(/^[a-zA-Z0-9_-]+$/.test(db.organization??'') && /^[a-zA-Z0-9_-]+$/.test(db.clusterName??'')
+    && /^[a-zA-Z0-9_-]+$/.test(db.branchId??''),'missing database identity');
   requireValue(typeof db.host==='string' && /^[a-z0-9-]+\.pg\.psdb\.cloud$/.test(db.host) && db.port===6432,'pooled endpoint mismatch');
   requireValue(/^[_a-zA-Z][_a-zA-Z0-9]{0,62}$/.test(db.name??'') && /^spike220_runner_[a-f0-9]{12}$/.test(db.role??''),'database/role mismatch');
   requireValue(c.gates?.automationBypass===true && c.gates?.branchScopedSensitive===true && c.gates?.previewProtection===true,'protection not verified');
