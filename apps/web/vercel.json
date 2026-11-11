@@ -1,3 +1,10 @@
 {
-  "regions": ["iad1"]
+  "regions": [
+    "iad1"
+  ],
+  "git": {
+    "deploymentEnabled": {
+      "feature/dfsEV-220-planetscale-harness": false
+    }
+  }
 }

@@ -156,9 +156,9 @@ test('p95 gates allow outlier maxima and overall warm assessment never pools arm
  assert.equal(summarizeRun(slow,sha).passed,false);
 });
 
-test('Git deployment config selects one arm and no CLI-only alternate config exists',async()=>{
+test('branch registration disables harness deployment and preserves iad1',async()=>{
  const iad=JSON.parse(await readFile(new URL('../apps/web/vercel.json',import.meta.url),'utf8'));
- assert.deepEqual(iad,{regions:['iad1']});
+ assert.deepEqual(iad,{regions:['iad1'],git:{deploymentEnabled:{'feature/dfsEV-220-planetscale-harness':false}}});
  await assert.rejects(access(new URL('../apps/web/vercel.harness-pdx1.json',import.meta.url)),e=>e.code==='ENOENT');
 });
 test('immutable Preview binds the approved SHA, region metadata, Git branch and deployment ID',()=>{
