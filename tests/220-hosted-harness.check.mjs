@@ -14,7 +14,7 @@ const createHandler = ({queryFactory,...options}) => handlerFactory({
 });
 const now=Date.now(),bearer='a'.repeat(64),sha='b'.repeat(40),host='qualification-test.vercel.app';
 const binding={arm:'iad1',projectId:PROJECT_ID,nodeMajor:24,database:{provider:'planetscale',verified:true,disposable:true,syntheticOnly:true,clusterId:'test-cluster',branchId:'test-branch',host:'aws-us-east-1-test.pg.psdb.cloud',port:6432,role:'spike220_runner_123456abcdef',name:'postgres',region:'us-east-1',sku:'PS-5',topology:'single-node',postgresMajor:18},gates:{automationBypass:true,branchScopedSensitive:true,previewProtection:true},gitBranch:'feature/dfsEV-220-planetscale-harness',reviewedSha:sha,runId:'12345678-1234-1234-1234-123456789abc'};
-const env={SPIKE220_ENABLED:'1',VERCEL_ENV:'preview',VERCEL_REGION:'iad1',VERCEL_PROJECT_ID:PROJECT_ID,VERCEL_GIT_COMMIT_REF:binding.gitBranch,VERCEL_GIT_COMMIT_SHA:sha,VERCEL_URL:host,SPIKE220_BINDING:JSON.stringify(binding),SPIKE220_ISSUED_AT:new Date(now-1000).toISOString(),SPIKE220_EXPIRES_AT:new Date(now+10000).toISOString(),SPIKE220_TOKEN_SHA256:createHash('sha256').update(bearer).digest('hex'),SPIKE220_DATABASE_URL:`postgresql://${binding.database.role}:${'x'.repeat(40)}@${binding.database.host}:6432/postgres?sslmode=verify-full`};
+const env={SPIKE220_ENABLED:'1',VERCEL_ENV:'preview',VERCEL_REGION:'iad1',VERCEL_PROJECT_ID:PROJECT_ID,VERCEL_GIT_COMMIT_REF:binding.gitBranch,VERCEL_GIT_COMMIT_SHA:sha,VERCEL_URL:host,SPIKE220_BINDING:JSON.stringify(binding),SPIKE220_ISSUED_AT:new Date(now-1000).toISOString(),SPIKE220_EXPIRES_AT:new Date(now+10000).toISOString(),SPIKE220_TOKEN_SHA256:createHash('sha256').update(bearer).digest('hex'),SPIKE220_DATABASE_URL:`postgresql://${binding.database.role}.${binding.database.branchId}:${'x'.repeat(40)}@${binding.database.host}:6432/postgres?sslmode=verify-full`};
 const sample={stage:'warm',workers:20,round:0,mode:'path',index:0};
 const request=(body=sample,url=`https://${host}/api/qualification220`,token=bearer)=>new Request(url,{method:'POST',headers:{authorization:`Bearer ${token}`},body:JSON.stringify(body)});
 const deployment={source:'git',id:'dpl_test',functionMetadata:{source:'deployment-function-metadata',deploymentId:'dpl_test',path:'/api/qualification220',regions:['iad1']},projectId:PROJECT_ID,target:'preview',readyState:'READY',sha,gitBranch:binding.gitBranch,protectionVerified:true,url:`https://${host}`};
@@ -25,6 +25,15 @@ test('valid binding is accepted; Production, wrong SHA/branch/project/region/hos
  assert.equal((await handler(request())).status,404);assert.equal(calls,0);
  }
 });
+test('PlanetScale runner login must use the exact role and approved branch suffix',()=>{
+ const {role,branchId}=binding.database;
+ const login=`${role}.${branchId}`;
+ for(const invalid of [role,`${role}.other-branch`,`postgres.${branchId}`]){
+  const connection=env.SPIKE220_DATABASE_URL.replace(login,invalid);
+  assert.equal(authorize(request(),{...env,SPIKE220_DATABASE_URL:connection},now),null);
+ }
+});
+
 test('bearer and direct deployment URL checks reject query, custom host and invalid token',()=>{
  for(const req of [request(sample,`https://${host}/api/qualification220?secret=bad`),request(sample,'https://example.com/api/qualification220'),request(sample,undefined,'bad')])assert.equal(authorize(req,env,now),null);
 });

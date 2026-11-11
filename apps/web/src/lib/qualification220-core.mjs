@@ -38,8 +38,10 @@ export function authorize(request, env, now=Date.now()) {
     const match=/^Bearer ([a-f0-9]{64})$/.exec(request.headers.get('authorization')??'');
     if(!match || !/^[a-f0-9]{64}$/.test(env.SPIKE220_TOKEN_SHA256??'') || !timingSafeEqual(tokenDigest(match[1]),Buffer.from(env.SPIKE220_TOKEN_SHA256,'hex')))return null;
     const db=new URL(env.SPIKE220_DATABASE_URL??'');
+    // PlanetScale routes by the login suffix; PostgreSQL grants use the bare role.
+    const login=`${c.database.role}.${c.database.branchId}`;
     if(db.protocol!=='postgresql:' || db.hostname!==c.database.host || Number(db.port)!==c.database.port
-      || decodeURIComponent(db.pathname.slice(1))!==c.database.name || decodeURIComponent(db.username)!==c.database.role
+      || decodeURIComponent(db.pathname.slice(1))!==c.database.name || decodeURIComponent(db.username)!==login
       || !db.password || db.hash || db.search!=='?sslmode=verify-full')return null;
     return c;
   } catch {return null;}

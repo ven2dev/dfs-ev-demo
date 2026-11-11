@@ -43,7 +43,9 @@ app client and the admission proposal are unchanged.
 
 Binding pins the exact branch and SHA, Vercel project and region, candidate
 cluster and branch IDs, and exact host, port, database and runner role.
-Use the pooled connection on port 6432 with a canonical
+The pooled connection on port 6432 uses `role.branch_id` as its login.
+SQL grants and the hosted run fence use the bare role returned by
+`current_user`. Use a canonical
 `?sslmode=verify-full` query string. The adapter constructs its own strict
 TLS options. Owner-verifiable provider metadata binds the cluster and branch
 IDs to the managed endpoint. Those IDs are control-plane metadata.
@@ -104,6 +106,13 @@ rows or reuse Production credentials.
    transitions are enforced in function code. The runner technically holds
    ticket UPDATE and budget DML, so keep the DSN server-only and the cluster
    disposable.
+   Owner provisioning checks observed verified TLS, the scoped grants, and
+   statement (`57014`), lock (`55P03`) and idle transaction (`25P03`)
+   enforcement through the managed pool. A new connection recovered after the
+   idle termination. PostgreSQL applies role defaults when a backend starts.
+   Pooled backends opened before the role change keep their previous defaults,
+   including disabled timeouts. The older backend's zero values reflect those
+   pre-change defaults. A fresh pooled backend reported `5s`, `2s`, and `5s`.
 2. Push one approved commit for Git Preview. Verify Ready, deployment ID and
    URL, actual function region metadata, approved SHA, Protection Bypass
    and exact-branch Preview Secret scope. Confirm ordinary API and cron
@@ -114,6 +123,20 @@ rows or reuse Production credentials.
    than 880,000 team invocations. Stop before projected usage exceeds
    900,000, leaving 100,000 in reserve. Check CPU and memory reserves as well.
    Measure inside each function. Drain all requests before switching groups.
+
+   Before timing, retire all pre-change pooled backends by resetting the pool
+   or waiting beyond its verified server connection lifetime. Open at least a
+   full pool's worth of concurrent connections through the pooled endpoint.
+   Keep transactions open during the inspection so each connection checks a
+   distinct PostgreSQL backend, and record `pg_backend_pid()` to establish
+   coverage. Confirm every backend reports `statement_timeout=5s`,
+   `lock_timeout=2s`, and `idle_in_transaction_session_timeout=5s`.
+   Record the configured pool size, the number of distinct backends checked,
+   and the distinct timeout values in the private receipt. Stop the run if
+   any backend reports `0`, any expected value differs, or full-pool coverage
+   cannot be established. This gate prevents a pre-change backend from
+   admitting database work with disabled timeouts.
+
 4. Outside the timed matrix, create a restore point with a committed sentinel.
    Restore to a separate approved target and verify the sentinel and expected
    counts or hashes. Record observed recovery point, restore time, and billing.
