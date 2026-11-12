@@ -73,10 +73,11 @@ export function createHandler({env,queryFactory,clock=()=>performance.now(),now=
     const entry=clock(),binding=authorize(request,env,now());
     if(!binding || request.method!=='POST')return deny();
     let sample;try{sample=validateSample(await readBounded(request));}catch{return deny();}
+    let failureStage='pool-setup';
     try {
       if(!cached)cached=queryFactory(env.SPIKE220_DATABASE_URL);
       const q=cached,key=sampleKey(sample);let row,sqlMs=0,checkoutMs=0,queries=0,freeProbe=false,transportRoundTripMs=null;const queryTimings=[];
-      const run=async(text,args)=>{queries++;const t=clock();const out=await q(text,args,{fresh:sample.stage==='cold'});const elapsedMs=clock()-t;sqlMs+=elapsedMs;
+      const run=async(text,args)=>{failureStage=text==='SELECT 1'?'transport':text.match(/spike220\.([a-z_]+)/)?.[1]??'query';queries++;const t=clock();const out=await q(text,args,{fresh:sample.stage==='cold'});const elapsedMs=clock()-t;sqlMs+=elapsedMs;
         checkoutMs+=out.checkoutMs;queryTimings.push({checkoutMs:out.checkoutMs,operation:text==='SELECT 1'?'transport':text.match(/spike220\.([a-z_]+)/)?.[1]??'unknown',elapsedMs});return out.rows;};
       if(sample.mode==='baseline') {
         [row]=await run('SELECT * FROM spike220.hosted_begin($1,$2,true)',[binding.runId,key]);
@@ -112,6 +113,12 @@ export function createHandler({env,queryFactory,clock=()=>performance.now(),now=
         sqlQueries:queries,region:env.VERCEL_REGION,sha:env.VERCEL_GIT_COMMIT_SHA,
         connectionDiagnostic:sample.stage==='cold'?'fresh-client-to-warm-pooler':null},
       {headers:{'Cache-Control':'no-store'}});
-    } catch {return Response.json({error:'sample failed; do not retry ambiguous writes'}, {status:503,headers:{'Cache-Control':'no-store'}});}
+    } catch(error) {
+      // Only fixed codes and harness operation names cross this boundary. Raw
+      // driver messages may contain connection details or credentials.
+      const allowed=new Set(['28P01','28000','42501','42703','42883','42P01','P0001','57014','55P03','53300','08006','ECONNREFUSED','ECONNRESET','ETIMEDOUT','ENOTFOUND','UNABLE_TO_VERIFY_LEAF_SIGNATURE','UNABLE_TO_GET_ISSUER_CERT_LOCALLY','SELF_SIGNED_CERT_IN_CHAIN','CERT_HAS_EXPIRED']);
+      const code=allowed.has(error?.code)?error.code:'unspecified';
+      return Response.json({error:'sample failed; do not retry ambiguous writes',failureStage,code}, {status:503,headers:{'Cache-Control':'no-store'}});
+    }
   };
 }

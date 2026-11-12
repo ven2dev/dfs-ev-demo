@@ -215,3 +215,13 @@ test('benchmark path skips the proxy while ordinary APIs and cron still match',a
  assert.equal(matches('/api/cron/sync-player-stats'),true);
  assert.equal(matches('/api/live/odds'),true);
 });
+
+test('failure diagnostics expose only fixed codes and operation names',async()=>{
+ for(const [code,expected] of [['28P01','28P01'],['42501','42501'],[bearer,'unspecified']]){
+  const handler=createHandler({env,now:()=>now,queryFactory:()=>async()=>{throw Object.assign(Error(env.SPIKE220_DATABASE_URL+bearer),{code});}});
+  const response=await handler(request());assert.equal(response.status,503);
+  assert.deepEqual(await response.json(),{error:'sample failed; do not retry ambiguous writes',failureStage:'hosted_begin',code:expected});
+ }
+ const handler=createHandler({env,now:()=>now,queryFactory:()=>{throw Error(bearer);}});
+ assert.equal((await (await handler(request())).json()).failureStage,'pool-setup');
+});
