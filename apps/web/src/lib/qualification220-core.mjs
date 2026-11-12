@@ -117,8 +117,9 @@ export function createHandler({env,queryFactory,clock=()=>performance.now(),now=
       // Only fixed codes and harness operation names cross this boundary. Raw
       // driver messages may contain connection details or credentials.
       const allowed=new Set(['28P01','28000','42501','42703','42883','42P01','P0001','57014','55P03','53300','08006','ECONNREFUSED','ECONNRESET','ETIMEDOUT','ENOTFOUND','UNABLE_TO_VERIFY_LEAF_SIGNATURE','UNABLE_TO_GET_ISSUER_CERT_LOCALLY','SELF_SIGNED_CERT_IN_CHAIN','CERT_HAS_EXPIRED']);
-      const code=allowed.has(error?.code)?error.code:'unspecified';
-      return Response.json({error:'sample failed; do not retry ambiguous writes',failureStage,code}, {status:503,headers:{'Cache-Control':'no-store'}});
+      const code=allowed.has(error?.code)||/^[0-9A-Z]{5}$/.test(error?.code??'')?error.code:'unspecified';
+      const errorKind=['Error','TypeError','RangeError','AggregateError'].includes(error?.name)?error.name:'unknown';
+      return Response.json({error:'sample failed; do not retry ambiguous writes',failureStage,code,errorKind}, {status:503,headers:{'Cache-Control':'no-store'}});
     }
   };
 }

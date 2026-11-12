@@ -217,11 +217,16 @@ test('benchmark path skips the proxy while ordinary APIs and cron still match',a
 });
 
 test('failure diagnostics expose only fixed codes and operation names',async()=>{
- for(const [code,expected] of [['28P01','28P01'],['42501','42501'],[bearer,'unspecified']]){
+ for(const [code,expected] of [['28P01','28P01'],['42501','42501'],['42702','42702'],['42804','42804'],[bearer,'unspecified']]){
   const handler=createHandler({env,now:()=>now,queryFactory:()=>async()=>{throw Object.assign(Error(env.SPIKE220_DATABASE_URL+bearer),{code});}});
   const response=await handler(request());assert.equal(response.status,503);
-  assert.deepEqual(await response.json(),{error:'sample failed; do not retry ambiguous writes',failureStage:'hosted_begin',code:expected});
+  assert.deepEqual(await response.json(),{error:'sample failed; do not retry ambiguous writes',failureStage:'hosted_begin',code:expected,errorKind:'Error'});
  }
  const handler=createHandler({env,now:()=>now,queryFactory:()=>{throw Error(bearer);}});
  assert.equal((await (await handler(request())).json()).failureStage,'pool-setup');
+});
+
+test('diagnostics classify JavaScript failures without exposing their message',async()=>{
+ const handler=createHandler({env,now:()=>now,queryFactory:()=>async()=>{throw TypeError(bearer);}});
+ const body=await (await handler(request())).json();assert.equal(body.errorKind,'TypeError');assert.equal(body.code,'unspecified');assert.ok(!JSON.stringify(body).includes(bearer));
 });
