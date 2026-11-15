@@ -90,7 +90,7 @@
     "@types/pg": "8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@vitejs/plugin-react": "6.2.1",
+    "@vitejs/plugin-react": "6.3.0",
     "eslint": "^9",
     "eslint-config-next": "16.4.5",
     "firebase-tools": "15.35.0",
