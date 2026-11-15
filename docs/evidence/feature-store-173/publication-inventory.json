@@ -1,0 +1,1434 @@
+{
+  "schema": "fs173-publication-payload-inventory-v1",
+  "originalHead": "67724ae1c4ed11d0eb401e33615029126773789a",
+  "backupTag": "backup/173-pre-publication-67724ae",
+  "scope": "Every #173 archive member and every compact JSON receipt/ledger at the original head; recursive structured JSON plus JSON encoded inside strings and JSON fragments in log/source text. No payload values copied into this inventory.",
+  "policy": "docs/197-roadmap.md: new participation-derived public outputs require an output/channel decision; follow #258 by retaining exact affected archives privately.",
+  "archivesScanned": 5,
+  "membersScanned": 123,
+  "archives": [
+    {
+      "path": "docs/evidence/feature-store-173/step-2-records-20261109T075101Z.tar.gz",
+      "sha256": "9ce6fcd1786ecce26950b177d8fae3b58a6a8d9df13421506778dae938a20910",
+      "byteSize": 33928,
+      "memberCount": 18,
+      "rowPayloadMatches": 0,
+      "disposition": "retain-in-tree",
+      "members": [
+        {
+          "member": "assessment-full.json",
+          "sha256": "eed7fdab14a978925db8facc1e266220f840e20c7f7307d6a5bf43dd6b569a4c",
+          "byteSize": 12993,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 41
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "audit-166.log",
+          "sha256": "06e62d5b79c6743f212535280a81955f82237834dcec84ebc85d018cd20c2073",
+          "byteSize": 1378,
+          "jsonScan": {
+            "topLevelJsonDocuments": 8,
+            "objectsScanned": 8
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "audit-167.log",
+          "sha256": "9e94d8b2868ab6cc171f9e634e344359c1a4777e0dc1e5f1230cb32572b525f8",
+          "byteSize": 14816,
+          "jsonScan": {
+            "topLevelJsonDocuments": 72,
+            "objectsScanned": 72
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "audit-168.log",
+          "sha256": "a60ab115e300a9af2ce91253ceb9c9a854d5e8fb99d2549c64ec07d52c4c1fb5",
+          "byteSize": 6571,
+          "jsonScan": {
+            "topLevelJsonDocuments": 32,
+            "objectsScanned": 32
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "audit-169.log",
+          "sha256": "471d956e27792e464753dc46332667b42865927b80969d7dbdfd33a7ebca85e8",
+          "byteSize": 8860,
+          "jsonScan": {
+            "topLevelJsonDocuments": 44,
+            "objectsScanned": 44
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "audit-231.log",
+          "sha256": "2e169c93998d84c3fd85f0ec46c3ed937aeda90995c472c7ad9bec6ded3f54b3",
+          "byteSize": 452,
+          "jsonScan": {
+            "topLevelJsonDocuments": 3,
+            "objectsScanned": 3
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "audit-241.log",
+          "sha256": "1b6702c509e7a65cf7246f87ec831bfa2eb87ad4c3c656431a9694a359c3b19d",
+          "byteSize": 28435,
+          "jsonScan": {
+            "topLevelJsonDocuments": 136,
+            "objectsScanned": 136
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "audit-242.log",
+          "sha256": "1bf81e6f601c037c25cb4844f30f69742052be61505dd1538051d7433e514e34",
+          "byteSize": 5007,
+          "jsonScan": {
+            "topLevelJsonDocuments": 24,
+            "objectsScanned": 24
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "checks.json",
+          "sha256": "93eb63437eabab7a7dbc166b8a23283e9998918fd327a0693a7d54b58d80d658",
+          "byteSize": 5580,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 9
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "focused-integration-tests.json",
+          "sha256": "5da577ec48f84de0aee913ec3f05785665bcc5a20876e40a4524c71d107d6161",
+          "byteSize": 707,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 1
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "focused-integration-tests.log",
+          "sha256": "f80837a3ed1ecfe94b8564cf0b01e7e017aa58c68672f2c00028671e52dada97",
+          "byteSize": 821,
+          "jsonScan": {},
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "offline-details.json",
+          "sha256": "880457880ddb0f6da5a4d73d4b47140700653b4aa6eef560e1c2a0f655aaa603",
+          "byteSize": 11213,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 58
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "offline-details.py",
+          "sha256": "65156038c0024a68149b6e16f4151f6411f7463b2001c6402bb3c4427e21df1b",
+          "byteSize": 4487,
+          "jsonScan": {
+            "topLevelJsonDocuments": 7
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "offline-evidence-tests.log",
+          "sha256": "b8645a3b4300b8651ee4f6f8ee24e8e452a3085f3fb9acd0a0876220cac295bb",
+          "byteSize": 2783,
+          "jsonScan": {},
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "report-artifacts.json",
+          "sha256": "a8cba4dbe00fe8b5f0c5fb5412db9a3ea7ddccc66273cda0c603d0df924a49be",
+          "byteSize": 1518,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 5
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "report-artifacts.mts",
+          "sha256": "18d0967f5563848f5520c9f4b105ab600fe5f2325cd3ef4a84c79d3193997bee",
+          "byteSize": 2857,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run-checks.py",
+          "sha256": "73bcb3d3d2f2e71d391b739cb314264a078c45a1d15fc0d9ec7e62f59bd5c0fb",
+          "byteSize": 2753,
+          "jsonScan": {
+            "topLevelJsonDocuments": 2
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "write-assessment.py",
+          "sha256": "e4e7e4b6468ab1a304589892334b1df1a67d5c714ddecfbb3f18cadb034173ec",
+          "byteSize": 7309,
+          "jsonScan": {},
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        }
+      ]
+    },
+    {
+      "path": "docs/evidence/feature-store-173/step-3-dataset-records-20261109T085139Z.tar.gz",
+      "sha256": "5b9413ff07e6eb44cfd94c3cd788df96c1217d914893e583b2afb395e3dd3228",
+      "byteSize": 56651,
+      "memberCount": 25,
+      "rowPayloadMatches": 3,
+      "disposition": "private-ObjectStore-only",
+      "members": [
+        {
+          "member": "dataset/full-record.json",
+          "sha256": "8c422acc6e2362d438fe6b7b12fde6d627b3c05fe4d310a6ec382765b49323b4",
+          "byteSize": 138309,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 461
+          },
+          "findings": {
+            "featureOrDatasetRow": {
+              "count": 3,
+              "insideJsonString": 0,
+              "seasons": {
+                "2022": 3
+              },
+              "examplePaths": [
+                "$0.sampleRows[0]",
+                "$0.sampleRows[1]",
+                "$0.sampleRows[2]"
+              ]
+            }
+          },
+          "textIdentifierOccurrences": 32
+        },
+        {
+          "member": "dataset/receipt.json",
+          "sha256": "0bc4a97101d44bc1f205cadb8ab8d4b1ba48dfc8a285ac2954a13afabe16314f",
+          "byteSize": 23882,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 85
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "output-files.json",
+          "sha256": "120777f13a81c9b852443a417e8aa4cd6e80968c6ea87d81afac9c951b128256",
+          "byteSize": 7600,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 39
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "routing-checks.json",
+          "sha256": "e4b7de8f45e0c32859789818a8df12a04e20f48609e5f01492cca51e72958191",
+          "byteSize": 733,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 7
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/check-lane-unused.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "byteSize": 0,
+          "jsonScan": {},
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/dataset-driver-original.ts",
+          "sha256": "991cd6e8f9e1c245fcefd2462e78689635816825dedc2348fd4060d55609f87a",
+          "byteSize": 15336,
+          "jsonScan": {
+            "topLevelJsonDocuments": 34
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/dataset-driver.diff",
+          "sha256": "3e77ee1fc2446dbc10ee33343b15867002700481cf17bf524c4081880f10737c",
+          "byteSize": 13598,
+          "jsonScan": {
+            "topLevelJsonDocuments": 26
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/dataset-driver.mts",
+          "sha256": "059d49e35565debf65fc61e159f3452410f747d451739d8c9a98e9b104e4d0a4",
+          "byteSize": 12543,
+          "jsonScan": {
+            "topLevelJsonDocuments": 19
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/dataset-environment.json",
+          "sha256": "a796831f5309c556e06d98539e2d27dd0b43e02cbfbdc362106a2754e4e34402",
+          "byteSize": 5216,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 28
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/dataset-preflight.log",
+          "sha256": "8798ce0bc74256effa580ec060f231ec3522bd62e1a9634ba51fd278154824ad",
+          "byteSize": 184,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 2
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/dataset-qualification.log",
+          "sha256": "01d75970e905ae32faf0aac9a0fa943bd7e68a51e79e5a7f73aab345b03bb2e4",
+          "byteSize": 2390,
+          "jsonScan": {
+            "topLevelJsonDocuments": 33,
+            "objectsScanned": 33
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/dataset-settings.log",
+          "sha256": "52f581131f66321725c68aa66eb5268fe6bd53dd705c73c26030a0459cc62de7",
+          "byteSize": 4205,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 24
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/derive-url.log",
+          "sha256": "a79fb4d1db28e89319e8f1ccc1cb9cc836035ec0dcb33af9e21aaebe703221bd",
+          "byteSize": 65,
+          "jsonScan": {},
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/driver-adaptation.json",
+          "sha256": "46295fed2f5661fbbd3c0623eb64ae601d3562bd4dbcb1cdc64f21326f454d4d",
+          "byteSize": 978,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 1
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/lane-down.log",
+          "sha256": "806996c82dda6e07d80fdd657ddadfde2ee682bb195b4d8c74cc13b3a1f3ee3d",
+          "byteSize": 323,
+          "jsonScan": {},
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/lane-inspect.log",
+          "sha256": "d4c543028043eda7c3673e2631cdba3b01e8c37c025988f8dc719bc91817e89f",
+          "byteSize": 10894,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 29
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/lane-up.log",
+          "sha256": "14cc47f76286f926a7316ebd19077ef0cce1296ca28020983e5117b5a0037d84",
+          "byteSize": 534,
+          "jsonScan": {},
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/orchestration.json",
+          "sha256": "b31ec69eb6bf1b09f40312f5e5990811e52bbd4e84e4d410fafd9b86369fd88b",
+          "byteSize": 11451,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 39
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/orchestrator.py",
+          "sha256": "cbb4b143d4674cf897954d693f7f853de400158c2016fa7149366bc41090a6c2",
+          "byteSize": 13170,
+          "jsonScan": {
+            "topLevelJsonDocuments": 7
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/pending-documentation.diff",
+          "sha256": "26891a4a5fa582e602e708e47f34758449e2e22e8712579ccfcb0d8a81fba97d",
+          "byteSize": 19115,
+          "jsonScan": {},
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/settings-observer.mts",
+          "sha256": "01b965de26fe7383d7932ea8879648e68ab3c20989840cc37d5552118212fb63",
+          "byteSize": 1713,
+          "jsonScan": {
+            "topLevelJsonDocuments": 2
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/verify-lane-containers.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "byteSize": 0,
+          "jsonScan": {},
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/verify-lane-networks.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "byteSize": 0,
+          "jsonScan": {},
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "scripts/package-dataset.mts",
+          "sha256": "10d32c8e7add6ca411791ef78a5dbd81c2eddd28ac48e1c9106cbe1d6121fab9",
+          "byteSize": 11759,
+          "jsonScan": {
+            "topLevelJsonDocuments": 9
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "verification.json",
+          "sha256": "4fcc492dc498ca5f7584ebfa0da59d3b209c13131b34abf0a53b1f94ad23f304",
+          "byteSize": 11799,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 58
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        }
+      ]
+    },
+    {
+      "path": "docs/evidence/feature-store-173/step-3-prediction-records-20261109T084110Z.tar.gz",
+      "sha256": "a9c6acac27d007d2fb5b15c8ea7744d9d99e07d2cc04a22a1b1779e273f919d1",
+      "byteSize": 325665,
+      "memberCount": 23,
+      "rowPayloadMatches": 601,
+      "disposition": "private-ObjectStore-only",
+      "members": [
+        {
+          "member": "prediction/full-samples.json",
+          "sha256": "4ed5860f6e93fa9b278fd3d00040e753f93dd8dc3d943d31a59b74dc9cf78e55",
+          "byteSize": 4714100,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 30466,
+            "decodedJsonStrings": 603
+          },
+          "findings": {
+            "forecastResponse": {
+              "count": 601,
+              "insideJsonString": 601,
+              "seasons": {
+                "2021": 127,
+                "2025": 114,
+                "2024": 120,
+                "2022": 120,
+                "2023": 120
+              },
+              "examplePaths": [
+                "$0.samples[0].serialized<decoded-JSON>",
+                "$0.samples[1].serialized<decoded-JSON>",
+                "$0.samples[2].serialized<decoded-JSON>"
+              ]
+            }
+          },
+          "textIdentifierOccurrences": 3806
+        },
+        {
+          "member": "prediction/receipt.json",
+          "sha256": "8e58f884822c73f0288c1fc417c2303a6cea9c67e9f28cfaa7aee26b347fc576",
+          "byteSize": 615399,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 1536
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 300
+        },
+        {
+          "member": "prediction/request-list.json",
+          "sha256": "8ea2c2084f945bd81d6e32e4e5cd87e2ba579eb74eff24c6ddd291579a636865",
+          "byteSize": 52776,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 202
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 200
+        },
+        {
+          "member": "run/derive-url.log",
+          "sha256": "a79fb4d1db28e89319e8f1ccc1cb9cc836035ec0dcb33af9e21aaebe703221bd",
+          "byteSize": 65,
+          "jsonScan": {},
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/lane-down.log",
+          "sha256": "806996c82dda6e07d80fdd657ddadfde2ee682bb195b4d8c74cc13b3a1f3ee3d",
+          "byteSize": 323,
+          "jsonScan": {},
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/lane-inspect.log",
+          "sha256": "2091d69c2217a585108047a0eb8304519898fd2bc57acbe5b50ce85c34f2ee21",
+          "byteSize": 10893,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 29
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/lane-up.log",
+          "sha256": "14cc47f76286f926a7316ebd19077ef0cce1296ca28020983e5117b5a0037d84",
+          "byteSize": 534,
+          "jsonScan": {},
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/orchestration.json",
+          "sha256": "430710d241409e21522ef7d079560e33ec1bfcbc15370dca3d86e579c156e0c2",
+          "byteSize": 11599,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 39
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/pending-documentation.diff",
+          "sha256": "02f8bce1c2f8bdbaf577e25214d32663c0f52588c1441ce8047bc9c600b8b41c",
+          "byteSize": 12087,
+          "jsonScan": {},
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/prediction-environment.json",
+          "sha256": "45bc5f905b901cfd886612c9f1e49879a193c3df4d2236833812e0f012c2e957",
+          "byteSize": 5606,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 28
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/prediction-postgres-settings.log",
+          "sha256": "5dcac9bf3b73c8e60c34120f7ca0a2cf7ff48af271d37c95d970c8539efb4599",
+          "byteSize": 4205,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 24
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/prediction-preflight.log",
+          "sha256": "8798ce0bc74256effa580ec060f231ec3522bd62e1a9634ba51fd278154824ad",
+          "byteSize": 184,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 2
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/prediction-qualification.log",
+          "sha256": "2d9fa8b431b39a9eb53f281ca09bc109b8a67c5eccbed2323a989b882b5a7265",
+          "byteSize": 7674,
+          "jsonScan": {
+            "topLevelJsonDocuments": 45,
+            "objectsScanned": 80
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/verify-lane-containers.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "byteSize": 0,
+          "jsonScan": {},
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/verify-lane-networks.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "byteSize": 0,
+          "jsonScan": {},
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "scripts/dfs173-prepare-step3-large.py",
+          "sha256": "bcaf2702a28635346bdc928494356c2c98d311f05819448d92013a11ecdb08e7",
+          "byteSize": 4552,
+          "jsonScan": {
+            "topLevelJsonDocuments": 2
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "scripts/dfs173-run-step3-large.py",
+          "sha256": "e3fd304432a25bae92fde130083cb8bab46570ed938fcf24e213da7c7a6d92d3",
+          "byteSize": 6616,
+          "jsonScan": {
+            "topLevelJsonDocuments": 5,
+            "objectsScanned": 1
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "scripts/dfs173-settings.mts",
+          "sha256": "01b965de26fe7383d7932ea8879648e68ab3c20989840cc37d5552118212fb63",
+          "byteSize": 1713,
+          "jsonScan": {
+            "topLevelJsonDocuments": 2
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "unexecuted-dataset/dataset-driver-original.ts",
+          "sha256": "991cd6e8f9e1c245fcefd2462e78689635816825dedc2348fd4060d55609f87a",
+          "byteSize": 15336,
+          "jsonScan": {
+            "topLevelJsonDocuments": 34
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "unexecuted-dataset/dataset-driver.diff",
+          "sha256": "9c366ab262846e0fb3f3514bb15f1dcbf461b56c58f3732f6967ba1e9082cced",
+          "byteSize": 13592,
+          "jsonScan": {
+            "topLevelJsonDocuments": 26
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "unexecuted-dataset/dataset-driver.mts",
+          "sha256": "65f017e829549a71b2033164d7532e9595cb675a767cae6fdb2154944dcd1986",
+          "byteSize": 12537,
+          "jsonScan": {
+            "topLevelJsonDocuments": 19
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "unexecuted-dataset/driver-adaptation.json",
+          "sha256": "6d890b74be0a622bc587b9ccc12441da7040d0fcf77d671d2aa43f469e89c6c7",
+          "byteSize": 1261,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 1
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "verification.json",
+          "sha256": "c9f6b9b34b4d1a51033525d0b147e309b1d707f738ef70c4fa99f94ecaa27deb",
+          "byteSize": 18787,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 72
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 100
+        }
+      ]
+    },
+    {
+      "path": "docs/evidence/feature-store-173/step-3-requalification-records-20261109T091550Z.tar.gz",
+      "sha256": "5804fab749f8bc88676092821e1a413a5130d012baa83c7a73df341204211b98",
+      "byteSize": 366041,
+      "memberCount": 35,
+      "rowPayloadMatches": 604,
+      "disposition": "private-ObjectStore-only",
+      "members": [
+        {
+          "member": "dataset-output/dataset-driver-original.ts",
+          "sha256": "991cd6e8f9e1c245fcefd2462e78689635816825dedc2348fd4060d55609f87a",
+          "byteSize": 15336,
+          "jsonScan": {
+            "topLevelJsonDocuments": 34
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "dataset-output/dataset-driver.diff",
+          "sha256": "7e97e2fd35c640bea3d89b13e445ea8ca296aa1144b0b2397263fb231a33c42c",
+          "byteSize": 13616,
+          "jsonScan": {
+            "topLevelJsonDocuments": 26
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "dataset-output/dataset-driver.mts",
+          "sha256": "692c877602c0c30152f1dcb79ac7f99506036d74c9f8fc882401c1409ed1f8ba",
+          "byteSize": 12561,
+          "jsonScan": {
+            "topLevelJsonDocuments": 19
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "dataset-output/driver-adaptation.json",
+          "sha256": "611a4fc89bb30de63fb143317f5d49ae4ce77a47437dcb22422ccd398b533ad1",
+          "byteSize": 984,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 1
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "dataset-output/output-files.json",
+          "sha256": "83c0e8aecfd6560f790b44ee6efbf125ff533bad8b7bd9c486b7aa71a7878c04",
+          "byteSize": 5210,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 24
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "dataset/full-record.json",
+          "sha256": "2f5d6d8af8bd98845c884d489333da6946ae956df9eca6fc1d5c98ce96493919",
+          "byteSize": 138327,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 461
+          },
+          "findings": {
+            "featureOrDatasetRow": {
+              "count": 3,
+              "insideJsonString": 0,
+              "seasons": {
+                "2022": 3
+              },
+              "examplePaths": [
+                "$0.sampleRows[0]",
+                "$0.sampleRows[1]",
+                "$0.sampleRows[2]"
+              ]
+            }
+          },
+          "textIdentifierOccurrences": 32
+        },
+        {
+          "member": "dataset/receipt.json",
+          "sha256": "4308c3398c7edaae4782a19b0ddb196f04c7a8d64f1c22597f394303f0acde70",
+          "byteSize": 23916,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 85
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "prediction-output/output-files.json",
+          "sha256": "a7bb363fe817378ab8aacde4d37b2a4898c3b003eaa86b9fdae64f434708957c",
+          "byteSize": 7012,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 30
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "prediction/full-samples.json",
+          "sha256": "c1bdcc9be0ba9e6c01d088e1b612c03c78a8afce9680a589fce3f2049e220a49",
+          "byteSize": 4714275,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 30466,
+            "decodedJsonStrings": 603
+          },
+          "findings": {
+            "forecastResponse": {
+              "count": 601,
+              "insideJsonString": 601,
+              "seasons": {
+                "2021": 127,
+                "2025": 114,
+                "2024": 120,
+                "2022": 120,
+                "2023": 120
+              },
+              "examplePaths": [
+                "$0.samples[0].serialized<decoded-JSON>",
+                "$0.samples[1].serialized<decoded-JSON>",
+                "$0.samples[2].serialized<decoded-JSON>"
+              ]
+            }
+          },
+          "textIdentifierOccurrences": 3806
+        },
+        {
+          "member": "prediction/receipt.json",
+          "sha256": "d75c348627142ec8203614130105821bdd16ff2269f86fe454cce9ab52aac3ec",
+          "byteSize": 615545,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 1536
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 300
+        },
+        {
+          "member": "prediction/request-list.json",
+          "sha256": "a7511b00b1736e6fddd94a5f7da76128461b9002fb404681b2923b9fa61044b9",
+          "byteSize": 52776,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 202
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 200
+        },
+        {
+          "member": "routing-checks.json",
+          "sha256": "587ccb144bc4398e6cd1a2f7098f6e2697b95344ffb3e56bdd30837f667ad0b8",
+          "byteSize": 347,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 1
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/check-lane-2-unused.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "byteSize": 0,
+          "jsonScan": {},
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/check-lane-3-unused.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "byteSize": 0,
+          "jsonScan": {},
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/dataset-driver-support.py",
+          "sha256": "cbb4b143d4674cf897954d693f7f853de400158c2016fa7149366bc41090a6c2",
+          "byteSize": 13170,
+          "jsonScan": {
+            "topLevelJsonDocuments": 7
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/dataset-environment.json",
+          "sha256": "bba3c7547124d468ea8cd8c9a8789d61426f2f0cad882ad6bfe33cde5f912aef",
+          "byteSize": 5217,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 28
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/dataset-preflight.log",
+          "sha256": "e0ad39a395692685b71ec46d429fc4cf845465b7b0f602358601aaa54a652138",
+          "byteSize": 185,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 2
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/dataset-qualification.log",
+          "sha256": "d745708ed86d4fff7fa8eeefe0ac4d4f609186a226b34b3172956c0eae6c3599",
+          "byteSize": 2416,
+          "jsonScan": {
+            "topLevelJsonDocuments": 33,
+            "objectsScanned": 33
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/dataset-settings.log",
+          "sha256": "1e4f9b08a591a9ad6b1bac68bba70207883bbe8efae2215dc8dce34f1437e2f1",
+          "byteSize": 4205,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 24
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/derive-url.log",
+          "sha256": "a79fb4d1db28e89319e8f1ccc1cb9cc836035ec0dcb33af9e21aaebe703221bd",
+          "byteSize": 65,
+          "jsonScan": {},
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/lane-down.log",
+          "sha256": "806996c82dda6e07d80fdd657ddadfde2ee682bb195b4d8c74cc13b3a1f3ee3d",
+          "byteSize": 323,
+          "jsonScan": {},
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/lane-inspect.log",
+          "sha256": "979073b6dc4fa91e6bf0ac8e16331c8b5b247fb244a5c7ae30cf910a1291ec43",
+          "byteSize": 10893,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 29
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/lane-up.log",
+          "sha256": "14cc47f76286f926a7316ebd19077ef0cce1296ca28020983e5117b5a0037d84",
+          "byteSize": 534,
+          "jsonScan": {},
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/orchestration.json",
+          "sha256": "7043a4e469584e6736ca717671f2a6c495ec0d7134a50494ebcb38fb9cf1307c",
+          "byteSize": 20783,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 73
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/orchestrator.py",
+          "sha256": "b9ba5869fdffc2eaba0c3311eb9b67d2974cba4d232783ad5fc222474a42c6c2",
+          "byteSize": 10063,
+          "jsonScan": {
+            "topLevelJsonDocuments": 7,
+            "objectsScanned": 1
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/output-files.json",
+          "sha256": "78550770c2fd141a5c17fb2afa1c72481210973e2b34d540d5cae42b352cb07a",
+          "byteSize": 3424,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 21
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/prediction-environment.json",
+          "sha256": "803848294b49f073f35300b1015f76ceca4b08f2f982968c30bde35d980a6b1f",
+          "byteSize": 5216,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 28
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/prediction-preflight.log",
+          "sha256": "8798ce0bc74256effa580ec060f231ec3522bd62e1a9634ba51fd278154824ad",
+          "byteSize": 184,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 2
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/prediction-qualification.log",
+          "sha256": "9491ab15ffc68ec79432d144599b1b308f062932e8b0d3a184ed83fee0752355",
+          "byteSize": 7665,
+          "jsonScan": {
+            "topLevelJsonDocuments": 45,
+            "objectsScanned": 80
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/prediction-settings.log",
+          "sha256": "9ec88e6777718131afed4358b97dbb8df2a445f633a4a6b787c03dee0365578c",
+          "byteSize": 4205,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 24
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/settings-observer.mts",
+          "sha256": "01b965de26fe7383d7932ea8879648e68ab3c20989840cc37d5552118212fb63",
+          "byteSize": 1713,
+          "jsonScan": {
+            "topLevelJsonDocuments": 2
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/verify-lane-containers.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "byteSize": 0,
+          "jsonScan": {},
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/verify-lane-networks.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "byteSize": 0,
+          "jsonScan": {},
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "scripts/package-checkpoint.mts",
+          "sha256": "20eee5936d2488edb67d8608dfabb4e84009e2ec27c318aac01b5b1ba3d2412a",
+          "byteSize": 16725,
+          "jsonScan": {
+            "topLevelJsonDocuments": 8
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "verification.json",
+          "sha256": "871f2230d7f85d31868aacf139fc233c697d157c1131a7ae426d7c5531990047",
+          "byteSize": 76922,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 329
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 100
+        }
+      ]
+    },
+    {
+      "path": "docs/evidence/feature-store-173/step-3-stopped-records-20261109T081107Z.tar.gz",
+      "sha256": "c49b179a1cd841a8010d9ff55f4050616a9f57bad23b786d1a1c980cdddcf3ba",
+      "byteSize": 28251,
+      "memberCount": 22,
+      "rowPayloadMatches": 0,
+      "disposition": "retain-in-tree",
+      "members": [
+        {
+          "member": "prediction/full-samples.json",
+          "sha256": "79e530eb348d1a81be936f5e74bd720fb4d9c403918c0c6503283ef894ca5f59",
+          "byteSize": 22912,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 13
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "prediction/receipt.json",
+          "sha256": "95c8ad0ec993610c0d77f132b3fdcb0a7bebef808a3cacd6a12773e3df882247",
+          "byteSize": 23320,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 16
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/dataset-driver-original.ts",
+          "sha256": "991cd6e8f9e1c245fcefd2462e78689635816825dedc2348fd4060d55609f87a",
+          "byteSize": 15336,
+          "jsonScan": {
+            "topLevelJsonDocuments": 34
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/dataset-driver.diff",
+          "sha256": "abfc1fd2c3d8a7081c9acceb6f78cf48813d43e3661a007472613a9a7f236e53",
+          "byteSize": 13540,
+          "jsonScan": {
+            "topLevelJsonDocuments": 26
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/dataset-driver.mts",
+          "sha256": "0c9de52a55903ea1acea91c47bf0223a0d73384be3bad492bcac5cc619404d8d",
+          "byteSize": 12485,
+          "jsonScan": {
+            "topLevelJsonDocuments": 19
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/derive-url.log",
+          "sha256": "a79fb4d1db28e89319e8f1ccc1cb9cc836035ec0dcb33af9e21aaebe703221bd",
+          "byteSize": 65,
+          "jsonScan": {},
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/driver-adaptation.json",
+          "sha256": "db0b2330599cb7fb76ecdc0bc5d02ea9c0a587d5f3561f75f52e307e773c17a9",
+          "byteSize": 1255,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 1
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/lane-down.log",
+          "sha256": "806996c82dda6e07d80fdd657ddadfde2ee682bb195b4d8c74cc13b3a1f3ee3d",
+          "byteSize": 323,
+          "jsonScan": {},
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/lane-inspect.log",
+          "sha256": "42f41fa22250c8ed1de186736432ad29ffa1b1e0b241dfd7181a448ac4ac508f",
+          "byteSize": 11482,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 29
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/lane-up.log",
+          "sha256": "14cc47f76286f926a7316ebd19077ef0cce1296ca28020983e5117b5a0037d84",
+          "byteSize": 534,
+          "jsonScan": {},
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/orchestration.json",
+          "sha256": "b0fae400d068b485c24963f986508b06867daf1d8d12309f5cbf45d73b46feeb",
+          "byteSize": 4403,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 9
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/prediction-preflight.log",
+          "sha256": "2e7e8392ccea71add6afc25dc579326d89b60cd00355b41666271a27571d585a",
+          "byteSize": 185,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 2
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/prediction-qualification.log",
+          "sha256": "bad343dcab9bd3d4a8f4256476df059917c917294a91cf198bec3ae02b17605a",
+          "byteSize": 2549,
+          "jsonScan": {
+            "topLevelJsonDocuments": 25,
+            "objectsScanned": 33
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/verify-lane-containers.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "byteSize": 0,
+          "jsonScan": {},
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "run/verify-lane-networks.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "byteSize": 0,
+          "jsonScan": {},
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "sandbox-denied/derive-url.log",
+          "sha256": "a79fb4d1db28e89319e8f1ccc1cb9cc836035ec0dcb33af9e21aaebe703221bd",
+          "byteSize": 65,
+          "jsonScan": {},
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "sandbox-denied/lane-down.log",
+          "sha256": "eb2195de39e409231cba499e7f9890d0c3c57694b9bfc2a3b2cf20b382afe469",
+          "byteSize": 114,
+          "jsonScan": {},
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "sandbox-denied/lane-up.log",
+          "sha256": "a56e89ee47aaa1a0b4f55a46b78f1e42ee81e4a11a2a1b5bb880d60864f67ce4",
+          "byteSize": 419,
+          "jsonScan": {},
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "sandbox-denied/orchestration.json",
+          "sha256": "391644796f540b0202ca66b0f55df60e58e71d5b043421f27434514c444b5959",
+          "byteSize": 1845,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 4
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "scripts/prepare-step3.py",
+          "sha256": "d082b729b837ef7b34728878f5f5aeaa525c25570496f3c5b484c0174e336d08",
+          "byteSize": 4506,
+          "jsonScan": {
+            "topLevelJsonDocuments": 2
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "scripts/run-step3.py",
+          "sha256": "f5933466115793f7a8c456635db191b76deef0e9c9ea5369ca2a4289def38a75",
+          "byteSize": 4531,
+          "jsonScan": {
+            "topLevelJsonDocuments": 3
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        },
+        {
+          "member": "source-verification.json",
+          "sha256": "902c083e85e50778db433e94a359e2ee5054dc4e62f067ed09c37d48459ffc1a",
+          "byteSize": 14610,
+          "jsonScan": {
+            "topLevelJsonDocuments": 1,
+            "objectsScanned": 65
+          },
+          "findings": {},
+          "textIdentifierOccurrences": 0
+        }
+      ]
+    }
+  ],
+  "compactJson": [
+    {
+      "path": "docs/evidence/feature-store-173/step-1-ledger.json",
+      "member": "docs/evidence/feature-store-173/step-1-ledger.json",
+      "sha256": "4c7050d687befa182eba89e1626529829e0f3140c7632421d945021db25a3fe2",
+      "byteSize": 67301,
+      "jsonScan": {
+        "topLevelJsonDocuments": 1,
+        "objectsScanned": 243
+      },
+      "findings": {},
+      "textIdentifierOccurrences": 0
+    },
+    {
+      "path": "docs/evidence/feature-store-173/step-2-assessment-20261109T075101Z.json",
+      "member": "docs/evidence/feature-store-173/step-2-assessment-20261109T075101Z.json",
+      "sha256": "f7717167a75ab695fc4ddc7511cb82f8439d559443ec73ecd1904cedb6ab1105",
+      "byteSize": 13956,
+      "jsonScan": {
+        "topLevelJsonDocuments": 1,
+        "objectsScanned": 38
+      },
+      "findings": {},
+      "textIdentifierOccurrences": 0
+    },
+    {
+      "path": "docs/evidence/feature-store-173/step-3-dataset-20261109T085139Z.json",
+      "member": "docs/evidence/feature-store-173/step-3-dataset-20261109T085139Z.json",
+      "sha256": "0b2098536783d19a827cc444f34d71554986c8afd56421efaa540e48532b0b3e",
+      "byteSize": 27389,
+      "jsonScan": {
+        "topLevelJsonDocuments": 1,
+        "objectsScanned": 118
+      },
+      "findings": {},
+      "textIdentifierOccurrences": 0
+    },
+    {
+      "path": "docs/evidence/feature-store-173/step-3-prediction-20261109T084110Z.json",
+      "member": "docs/evidence/feature-store-173/step-3-prediction-20261109T084110Z.json",
+      "sha256": "b90c15598e21f8cf53b858a74db63e0ee1340881f4fd5bf975d6388d475fe278",
+      "byteSize": 49701,
+      "jsonScan": {
+        "topLevelJsonDocuments": 1,
+        "objectsScanned": 153
+      },
+      "findings": {},
+      "textIdentifierOccurrences": 100
+    },
+    {
+      "path": "docs/evidence/feature-store-173/step-3-requalification-20261109T091550Z.json",
+      "member": "docs/evidence/feature-store-173/step-3-requalification-20261109T091550Z.json",
+      "sha256": "f865695575a9bd174a20b66d1cc34930594d08ae18d82c616fffc77e2594314f",
+      "byteSize": 89482,
+      "jsonScan": {
+        "topLevelJsonDocuments": 1,
+        "objectsScanned": 304
+      },
+      "findings": {},
+      "textIdentifierOccurrences": 200
+    },
+    {
+      "path": "docs/evidence/feature-store-173/step-3-stopped-20261109T081107Z.json",
+      "member": "docs/evidence/feature-store-173/step-3-stopped-20261109T081107Z.json",
+      "sha256": "54543d9907c6b77106f3825a689625f55f5eea72be707dce7cd449e96d08ec09",
+      "byteSize": 9325,
+      "jsonScan": {
+        "topLevelJsonDocuments": 1,
+        "objectsScanned": 33
+      },
+      "findings": {},
+      "textIdentifierOccurrences": 0
+    }
+  ],
+  "decodedJsonStrings": 1206,
+  "nonGoals": "No benchmark rerun, altered measured values, altered verdicts, relabelled source identity or legal clearance."
+}

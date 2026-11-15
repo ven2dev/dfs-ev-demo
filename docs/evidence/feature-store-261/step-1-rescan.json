@@ -1,0 +1,181 @@
+{
+  "schema": "published-payload-inventory-validation-v1",
+  "checkpoint": "f30b93f23a30316213f07ba346e4a301550d57b0",
+  "inventory": {
+    "path": "docs/evidence/feature-store-261/tracked-payload-inventory-f30b93f.json",
+    "sha256": "a62b76e1b1c9d8cb9e01a951466c8dccf51411541fef30875c7c51e1730c1572",
+    "byteSize": 754003
+  },
+  "independentIntakeOracle": {
+    "sha256": "abc94bc86af4e77a5e6e10647f33a58c9d206d83ca887944353eb5ada8459646",
+    "byteSize": 660863,
+    "implementation": "disposable Python; permanent TypeScript written fresh"
+  },
+  "comparison": {
+    "rootIdentitiesMatched": 901,
+    "gitBlobsAndCurrentPathIntroductionsMatched": 901,
+    "archiveLeafIdentitiesMatched": 360,
+    "findingPathsAndCategoryCountsMatched": 11,
+    "unclassifiedFindings": []
+  },
+  "expandedByteAccounting": {
+    "trackedGzipExpandedBytes": 212182262,
+    "decodedBase64Bytes": 17984322,
+    "permanentBudgetChargedBytes": 230166584,
+    "intakeReportedGzipBytes": 212202742,
+    "intakeControlBytesIncluded": 20480,
+    "reason": "The intake incremented its global expansion counter during its synthetic nested-archive control after scanning main. Permanent inventory charges main only and also charges decoded base64 bytes."
+  },
+  "manualTextReview": [
+    {
+      "path": "docs/feature-store-spike-sources.md",
+      "sha256": "a76b1dc4bfa2a4162eddbc5fbc717cec4832e6ad0b08e8117f85af3ce35af94d",
+      "classification": "existing-197-notice",
+      "basis": "Already listed in #197; same participation-gap excerpt, with notice added."
+    },
+    {
+      "path": "docs/feature-store-spike.md",
+      "sha256": "3aff55d74c468a70f55baa3c1510628a54bab77cd8177ffc3f95e96d1d83e409",
+      "classification": "existing-197-notice",
+      "basis": "Already listed in #197; same participation-gap and malformed-play excerpts, with scoped notice."
+    },
+    {
+      "path": "docs/predictive-feature-contract.md",
+      "sha256": "6e94a6d2dee1ac61f698a44b1da3ee34ff4b48da9d2aa232a279d49c67387863",
+      "classification": "existing-independent-stats-example",
+      "basis": "Exact hash still matches #197 independentlySourcedRowExamples; the walkthrough distinguishes actual weekly stats from synthetic capture/event context."
+    },
+    {
+      "path": "docs/predictive-data-sources.md",
+      "sha256": "340af2167fab6ebff5334b775ea96b31426893aa8f23f8c9edf69d24963beba4",
+      "classification": "independent-weather-observations",
+      "basis": "Three NOAA weather observations keyed by schedule game; no participation, label, history or forecast row."
+    },
+    {
+      "path": "docs/predictive-source-prototype.md",
+      "sha256": "ebb1abd298482ed70b2783dc0f408595b666f70daace7e28fd9d068dcc306c17",
+      "classification": "selection-identifiers-and-aggregate-metadata",
+      "basis": "Target-game command/qualification examples and aggregate source counts; no row-level player values."
+    }
+  ],
+  "syntheticControlReview": [
+    {
+      "path": "docs/evidence/domain-189/step-1-resolution.json",
+      "sha256": "c83968e29379794a087052c13029cd768f52e0ed49195bc11458e229792da8f0",
+      "basis": "Existing explicitly synthetic in-memory adapter replies named in #261; no real row or database. Exact-hash control only."
+    }
+  ],
+  "binaryEnumeration": [
+    {
+      "path": "apps/web/public/icons/edgetrace-192.png",
+      "sha256": "2bfb7f3c43e63dafb400b1f864af4c7a59695e5dce081e12a7edac4710273656",
+      "byteSize": 4624,
+      "format": "png"
+    },
+    {
+      "path": "apps/web/public/icons/edgetrace-512.png",
+      "sha256": "5e790201891d7317466f7cc7238d1e6012e450cc7c3e1ed447892a80c416a6b5",
+      "byteSize": 16232,
+      "format": "png"
+    },
+    {
+      "path": "apps/web/public/icons/edgetrace-maskable-512.png",
+      "sha256": "e487a0f376aca53042cc2dd696adc64a4ce644fd9d37c95a164cf443433df1d0",
+      "byteSize": 11251,
+      "format": "png"
+    },
+    {
+      "path": "apps/web/src/app/apple-icon.png",
+      "sha256": "edcb118ac5d424f4d8f9779787a44d50f9c338f9545636a1192e0d9412cdeebf",
+      "byteSize": 3277,
+      "format": "png"
+    },
+    {
+      "path": "apps/web/src/app/favicon.ico",
+      "sha256": "9b98b02c13b7757d13b353263260c816ca0637d0ad3d5869a0286308b75ec5f8",
+      "byteSize": 732,
+      "format": "ico"
+    }
+  ],
+  "exact169Copies": [
+    {
+      "archive": {
+        "path": "docs/evidence/feature-store-169/records-20261109T050208Z.tar.gz",
+        "sha256": "99fa7a58f3d73e41b3c7f0d08c0350ece1442e16e567c35d951adca8d4eba230",
+        "byteSize": 1617198
+      },
+      "exactOriginal": {
+        "path": "docs/evidence/feature-store-138/step-3-real-ingestion.json",
+        "sha256": "a08d54d2c8a53eb550a900a81ad32ce70d7fc9e44683fea7dcfd2f310e743db9",
+        "byteSize": 22624
+      },
+      "decodedCopies": [
+        {
+          "jsonPath": "$[\"records\"][\"sources.json\"][\"docs/evidence/feature-store-138/step-3-real-ingestion.json\"]",
+          "path": "docs/evidence/feature-store-138/step-3-real-ingestion.json",
+          "sha256": "a08d54d2c8a53eb550a900a81ad32ce70d7fc9e44683fea7dcfd2f310e743db9",
+          "byteSize": 22624
+        }
+      ]
+    },
+    {
+      "archive": {
+        "path": "docs/evidence/feature-store-169/records-20261109T061738Z.tar.gz",
+        "sha256": "0a119dfed3b46860631ef912aa2db2e88c931ca76601edf87254dc3d9876fcd0",
+        "byteSize": 1619599
+      },
+      "exactOriginal": {
+        "path": "docs/evidence/feature-store-138/step-3-real-ingestion.json",
+        "sha256": "a08d54d2c8a53eb550a900a81ad32ce70d7fc9e44683fea7dcfd2f310e743db9",
+        "byteSize": 22624
+      },
+      "decodedCopies": [
+        {
+          "jsonPath": "$[\"records\"][\"sources.json\"][\"docs/evidence/feature-store-138/step-3-real-ingestion.json\"]",
+          "path": "docs/evidence/feature-store-138/step-3-real-ingestion.json",
+          "sha256": "a08d54d2c8a53eb550a900a81ad32ce70d7fc9e44683fea7dcfd2f310e743db9",
+          "byteSize": 22624
+        }
+      ]
+    }
+  ],
+  "validation": {
+    "node": "24.18.1",
+    "focusedTests": 23,
+    "typeScriptNoEmit": "pass",
+    "focusedEslint": "pass",
+    "importBoundaryTests": 12,
+    "databaseUsed": false,
+    "newCapacityRun": false,
+    "archivesChangedOrRemoved": false
+  },
+  "controls": [
+    "structured",
+    "encoded",
+    "double-encoded",
+    "log-fragment",
+    "producer-base64-source-map",
+    "nested-archive",
+    "timing-only-negative",
+    "feature-label-dataset-history",
+    "CSV/TSV",
+    "JSONL",
+    "malformed-and-unsupported-input",
+    "unsafe-duplicate-and-link-members",
+    "decompression-recursion-work-limits",
+    "exact-disposition-and-original-dependency",
+    "pinned-Git-provenance"
+  ],
+  "baselineAudits": {
+    "168": 32,
+    "242": 24,
+    "169": 44,
+    "verdict": "all pass during intake; no evidence consumer changed in step 1"
+  },
+  "limitations": [
+    "Heuristic candidates require explicit classification; absence is not rights clearance.",
+    "PNG/ICO are hashed/enumerated; no OCR, steganography or encrypted-container inspection.",
+    "Introductions are at the current path; monorepo relocations need earlier-path provenance separately.",
+    "Current tree only; owner accepted public history exposure for the selected removals."
+  ]
+}

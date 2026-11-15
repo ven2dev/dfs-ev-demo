@@ -1,10 +1,10 @@
 // @vitest-environment node
-import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { mkdtemp, readFile, readdir, rm, stat, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { runTestProcess, startTestProcess } from "../../tests/support/runTestProcess.ts";
 import { parseCaptureLog } from "../../src/creator/creatorCaptures.ts";
 import { NOW, discoveryFor, record } from "./testSupport.ts";
 
@@ -23,33 +23,36 @@ afterEach(async () => {
 });
 
 const goPath = () => join(shared, "go");
+const startNode = (args: string[], timeoutMs: number) =>
+  startTestProcess(process.execPath, args, { cwd: process.cwd(), env: process.env, timeoutMs });
+
 const runWorkers = async (count: number, mode: string, target: string, extra?: string) => {
-  const outputs = Array.from({ length: count }, () => {
-    const child = spawn(
-      process.execPath,
-      ["--disable-warning=MODULE_TYPELESS_PACKAGE_JSON", WORKER, mode, target, goPath(), shared, ...(extra ? [extra] : [])],
-      { stdio: ["ignore", "pipe", "pipe"] }
-    );
-    let stdout = "";
-    let stderr = "";
-    child.stdout.on("data", (chunk) => (stdout += chunk));
-    child.stderr.on("data", (chunk) => (stderr += chunk));
-    return new Promise<{ code: number | null; stdout: string; stderr: string }>((done) =>
-      child.on("close", (code) => done({ code, stdout: stdout.trim(), stderr }))
-    );
-  });
-  // Give every child time to start and reach the barrier, then release them together.
-  await new Promise((done) => setTimeout(done, 1500));
-  await writeFile(goPath(), "go");
-  return Promise.all(outputs);
+  const workers = Array.from({ length: count }, () => startNode(
+    ["--disable-warning=MODULE_TYPELESS_PACKAGE_JSON", WORKER, mode, target, goPath(), shared, ...(extra ? [extra] : [])],
+    mode === "try" ? 5_000 : 35_000,
+  ));
+  const releaseBarrier = async () => {
+    // Give every child time to start and reach the barrier, then release them together.
+    await new Promise((done) => setTimeout(done, 1500));
+    await writeFile(goPath(), "go");
+  };
+  const barrier = releaseBarrier();
+  try {
+    const [, ...results] = await Promise.all([barrier, ...workers.map(worker => worker.result)] as const);
+    return results.map(({ stdout, stderr }) => ({ stdout: stdout.trim(), stderr }));
+  } finally {
+    await Promise.allSettled([barrier, ...workers.map(worker => worker.stop())]);
+  }
 };
 
 // A pid that is certainly gone: a child that has already exited.
-const deadPid = () =>
-  new Promise<number>((done) => {
-    const child = spawn(process.execPath, ["-e", ""]);
-    child.on("close", () => done(child.pid as number));
+const deadPid = async () => {
+  const result = await runTestProcess(process.execPath, ["-e", "console.log(process.pid)"], {
+    cwd: process.cwd(), env: process.env, timeoutMs: 2_000,
   });
+  expect(result.status, result.stderr).toBe(0);
+  return Number(result.stdout);
+};
 const staleLock = async (target: string) =>
   writeFile(join(directory, `.${target}.lock`), JSON.stringify({ pid: await deadPid(), at: Date.now() - 1000, token: randomUUID() }), { mode: 0o600 });
 
@@ -57,13 +60,14 @@ describe("the file lock across processes", () => {
   it("never displaces a paused takeover claimant, however long it is paused, and then stops and asks for cleanup once it is gone", async () => {
     // A live process stands in for a claimant that is paused (machine sleep, a debugger):
     // it holds the claim for the stale lock and is not running its takeover.
-    const paused = spawn(process.execPath, ["-e", "setTimeout(() => {}, 120000)"], { stdio: "ignore" });
+    const paused = startNode(["-e", "setTimeout(() => {}, 50000)"], 50_000);
+    void paused.result.catch(() => undefined);
     try {
       const lockPath = join(directory, ".log.json.lock");
       const stale = { pid: await deadPid(), at: Date.now() - 1000, token: randomUUID() };
       await writeFile(lockPath, JSON.stringify(stale), { mode: 0o600 });
       const claimPath = `${lockPath}.reap-${stale.token}`;
-      const claim = JSON.stringify({ pid: paused.pid, at: Date.now() - 3_600_000, token: randomUUID() });
+      const claim = JSON.stringify({ pid: paused.child.pid, at: Date.now() - 3_600_000, token: randomUUID() });
       await writeFile(claimPath, claim, { mode: 0o600 });
       const old = new Date(Date.now() - 3_600_000);
       await utimes(claimPath, old, old);
@@ -74,8 +78,9 @@ describe("the file lock across processes", () => {
       expect(JSON.parse(await readFile(lockPath, "utf8")).token).toBe(stale.token);
 
       // Once the claimant is gone, contenders stop and say so, touching nothing.
-      paused.kill("SIGKILL");
-      await new Promise((done) => paused.once("close", done));
+      expect(paused.child.exitCode).toBeNull();
+      expect(paused.child.signalCode).toBeNull();
+      await paused.stop();
       await rm(goPath(), { force: true });
       const abandoned = await runWorkers(6, "try", join(directory, "log.json"));
       expect(abandoned.map((result) => result.stdout)).toEqual(Array(6).fill("takeover-claim-abandoned"));
@@ -92,9 +97,9 @@ describe("the file lock across processes", () => {
       expect(await readFile(join(shared, "counter.txt"), "utf8")).toBe("6");
       expect(await readdir(directory)).toEqual([]);
     } finally {
-      paused.kill("SIGKILL");
+      await paused.stop();
     }
-  }, 120_000);
+  });
 
   it("lets one process at a time into the protected section, even when it starts from a stale lock", async () => {
     const count = 16;
@@ -106,8 +111,9 @@ describe("the file lock across processes", () => {
     await expect(stat(join(shared, "violations.txt"))).rejects.toMatchObject({ code: "ENOENT" });
     expect(await readFile(join(shared, "counter.txt"), "utf8")).toBe(String(count));
     expect(await readdir(directory)).toEqual([]);
-  }, 60_000);
+  });
 
+  // Three serial worker batches each allow 35 s for the lock and process exit.
   it("lets one process at a time in from a clean start too, and from a repeated stale takeover", async () => {
     for (const round of [1, 2, 3]) {
       await rm(goPath(), { force: true });
@@ -133,5 +139,5 @@ describe("the file lock across processes", () => {
     expect(events).toHaveLength(1);
     expect((await stat(target)).mode & 0o777).toBe(0o600);
     expect(await readdir(directory)).toEqual(["captures.jsonl"]);
-  }, 60_000);
+  });
 });

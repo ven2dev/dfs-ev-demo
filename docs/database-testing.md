@@ -55,6 +55,23 @@ Compose project. Coordinate ownership within a lane, including manual starts
 and stops. Separate servers still share host CPU and memory. Keep heavy work
 out of another lane's benchmark window.
 
+## App test timeouts
+
+The browser and Node Vitest configs each run unit and process projects.
+Unit tests keep the 5 s default, including small temporary-directory tests.
+The dot in `*.process.test.ts` selects the 60 s process class for tests that
+start real children or are slow by design. Existing `*-process.test.ts`
+files use mocked children and stay in the unit class.
+
+Give asynchronous child processes deadlines below the test limit and leave
+time for serial phases and cleanup. On timeout, the shared test helper stops
+the POSIX process group and reports captured output. The repeated stale-lock
+case retains 120 s because three serial worker batches each allow 35 s. The
+live R2 contract runs only through the opt-in `npm run test:r2:live` command
+or its explicit environment flag. The offline ObjectStore tests use the
+unit class. These timeouts apply to App checks. The PostgreSQL suites use
+their own harness limits.
+
 ## Environment boundary
 
 No real application credentials are needed. The relay worktree's `.env.local`
@@ -109,7 +126,7 @@ remain deliberate; see the [dependency review guide](dependency-updates.md).
 | Tier | Data tmpfs | Required free space at admission | Workload |
 | --- | ---: | ---: | --- |
 | Standard | 512 MiB | 272 MiB | Migration and catalog suites, feature-store CI, focused integration checks, and repeats |
-| Large | 2 GiB | 608 MiB | Full-season materialization plans, producer capacity timing, #244 recompute replay, and #169 capacity matrices |
+| Large | 2 GiB | 608 MiB | Full-season materialization plans, producer capacity timing, #244 recompute replay, #169 capacity matrices, prediction-capacity matrices and fresh-process dataset matrices |
 
 The standard tier sets WAL max/min to 96/32 MiB, disables `fsync`,
 `synchronous_commit` and `full_page_writes`, and sets `temp_file_limit=128MB`.
@@ -118,6 +135,14 @@ It is disposable and should be recreated after a crash. `wal_level` stays at
 WAL can skip logging for some bulk operations and would change the workload
 behind the recorded WAL measurements. The 2 GiB tier retains the existing
 durability and WAL defaults used by #241.
+
+The prediction-capacity and dataset matrices prepare full-season fixtures, so
+they use the large tier even though the measured requests are small. #242 was
+measured before #247 introduced the standard tier's 128 MiB temporary-file
+limit; the large tier is closer to that original PostgreSQL environment.
+Record the selected tier, actual mount and PostgreSQL settings with each
+qualification receipt. This classification changes no workload target, work
+budget or deadline.
 
 `max_wal_size` is a soft checkpoint target. `temp_file_limit` applies per
 PostgreSQL process, so concurrent backends can allocate separate allowances.

@@ -36,6 +36,7 @@ jobs:
       test_mode: ${{ steps.tests.outputs.mode }}
       test_work: ${{ steps.tests.outputs.work }}
       matrix_result: ${{ steps.matrix.outcome }}
+      payload_result: ${{ steps.payloads.outcome }}
 
     steps:
       - name: Check out repository
@@ -79,6 +80,10 @@ jobs:
           else
             git diff --check "$BASE_SHA" "$HEAD_SHA"
           fi
+
+      - name: Check published evidence payloads
+        id: payloads
+        run: npm run test:evidence-publication
 
       - name: Check types
         run: npm run typecheck
@@ -284,6 +289,7 @@ jobs:
           APP_TEST_MODE: ${{ needs.app.outputs.test_mode }}
           APP_TEST_WORK: ${{ needs.app.outputs.test_work }}
           APP_MATRIX_RESULT: ${{ needs.app.outputs.matrix_result }}
+          APP_PAYLOAD_RESULT: ${{ needs.app.outputs.payload_result }}
           DB_PLAN_RESULT: ${{ needs.db_core.outputs.plan_result }}
           DB_SELECTION_GUARD_RESULT: ${{ needs.db_core.outputs.selection_guard_result }}
           DB_GUARD_RESULT: ${{ needs.db_core.outputs.guard_result }}
@@ -313,7 +319,7 @@ jobs:
             fi
           }
           # Raw outcomes retain failures even if continue-on-error is introduced.
-          for outcome in "$APP_TEST_RESULT" "$APP_MATRIX_RESULT" "$DB_PLAN_RESULT" "$DB_SELECTION_GUARD_RESULT" "$DB_GUARD_RESULT" "$DB_CLEANUP_RESULT" "$FEATURE_PLAN_RESULT" "$FEATURE_SELECTION_GUARD_RESULT" "$FEATURE_CLEANUP_RESULT"; do
+          for outcome in "$APP_TEST_RESULT" "$APP_MATRIX_RESULT" "$APP_PAYLOAD_RESULT" "$DB_PLAN_RESULT" "$DB_SELECTION_GUARD_RESULT" "$DB_GUARD_RESULT" "$DB_CLEANUP_RESULT" "$FEATURE_PLAN_RESULT" "$FEATURE_SELECTION_GUARD_RESULT" "$FEATURE_CLEANUP_RESULT"; do
             require_outcome "Mandatory execution" "$outcome" "success"
           done
           if [[ "$DB_MODE" != "$FEATURE_MODE" || "$DB_LOCAL_SELECTED" != "$FEATURE_PLAN_DB_LOCAL" || "$FEATURE_STORE_SELECTED" != "$FEATURE_PLAN_FEATURE_STORE" ]]; then

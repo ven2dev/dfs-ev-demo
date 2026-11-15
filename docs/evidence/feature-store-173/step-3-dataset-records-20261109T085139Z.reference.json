@@ -1,0 +1,15 @@
+{
+  "schema": "fs173-private-archive-reference-v1",
+  "originalArchivePath": "docs/evidence/feature-store-173/step-3-dataset-records-20261109T085139Z.tar.gz",
+  "sha256": "5b9413ff07e6eb44cfd94c3cd788df96c1217d914893e583b2afb395e3dd3228",
+  "byteSize": 56651,
+  "memberCount": 25,
+  "objectStore": {
+    "objectKey": "audits/5b9413ff07e6eb44cfd94c3cd788df96c1217d914893e583b2afb395e3dd3228",
+    "sha256": "5b9413ff07e6eb44cfd94c3cd788df96c1217d914893e583b2afb395e3dd3228",
+    "byteSize": 56651
+  },
+  "disposition": "Exact original bytes retained privately through ObjectStore; not included in public Git history.",
+  "reason": "#197 holds new participation-dependent public outputs pending an output/channel decision; owner approved private retention following #258.",
+  "receiptContract": "Original compact receipts, member hashes, measured values, verdicts and source identities are unchanged. Their storage.bundle.path identifies this original private archive, not an in-tree file."
+}

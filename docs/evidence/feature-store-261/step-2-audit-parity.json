@@ -1,0 +1,289 @@
+{
+  "schema": "published-payload-audit-parity-v1",
+  "step1Commit": "e521d24ae840b8c2266237d5244a8df6a94e7170",
+  "node": "24.18.1",
+  "references": [
+    {
+      "reference": "docs/evidence/feature-store-168/final-benchmark-full-records-20261106T161720Z.reference.json",
+      "archive": {
+        "name": "final-benchmark-full-records-20261106T161720Z.tar.gz",
+        "sha256": "fd084c933d1ce975e4656105d0baae28b50668ff0fb80be846de062c4f310e47",
+        "byteSize": 211356,
+        "key": "audits/fd084c933d1ce975e4656105d0baae28b50668ff0fb80be846de062c4f310e47"
+      },
+      "projectedResponses": 603,
+      "available": 601,
+      "unavailable": 2
+    },
+    {
+      "reference": "docs/evidence/feature-store-168/step-1-full-records-20261106T021755Z.reference.json",
+      "archive": {
+        "name": "step-1-full-records-20261106T021755Z.tar.gz",
+        "sha256": "cc1996df505186829fc164f7e55bc9173259e6aa1c8e9027c2475bd9f1aa4983",
+        "byteSize": 130277,
+        "key": "audits/cc1996df505186829fc164f7e55bc9173259e6aa1c8e9027c2475bd9f1aa4983"
+      },
+      "projectedResponses": 20,
+      "available": 12,
+      "unavailable": 8
+    },
+    {
+      "reference": "docs/evidence/feature-store-242/final-benchmark-full-records-20261108T064349Z.reference.json",
+      "archive": {
+        "name": "final-benchmark-full-records-20261108T064349Z.tar.gz",
+        "sha256": "3a37ddc23b7cfbd3f8420d1dbe6e3862c4c262c2b856315b4a4899db7904c778",
+        "byteSize": 213413,
+        "key": "audits/3a37ddc23b7cfbd3f8420d1dbe6e3862c4c262c2b856315b4a4899db7904c778"
+      },
+      "projectedResponses": 603,
+      "available": 601,
+      "unavailable": 2
+    }
+  ],
+  "originalCompactReceiptsUnchanged": [
+    {
+      "path": "docs/evidence/feature-store-168/final-benchmark-20261106T161720Z.json",
+      "sha256": "08f849c9c077febe2eb1801cf27fcaca3b673b9355a105a039498af00407d9f6",
+      "byteSize": 611055
+    },
+    {
+      "path": "docs/evidence/feature-store-168/final-validation-20261106T163555Z.json",
+      "sha256": "0eb70fec22b045a257e0be791c76ffaa04ebd47078d5a3cab12b44664fd9c42d",
+      "byteSize": 21639
+    },
+    {
+      "path": "docs/evidence/feature-store-168/step-0-handler-20261106T013729Z.json",
+      "sha256": "ec8948d3bcd914a1953e2550d5a5ae3fce1cddbe1b7a6b4e43e4f3ba5ba00d0d",
+      "byteSize": 7654
+    },
+    {
+      "path": "docs/evidence/feature-store-168/step-0-owner-20261106T013729Z.json",
+      "sha256": "7e0cf79b15020b4c91d9da89e66aadf478a8c45d7d087f71e1fee4e6f44d7c60",
+      "byteSize": 3343
+    },
+    {
+      "path": "docs/evidence/feature-store-168/step-1-controls-20261106T021755Z.json",
+      "sha256": "21b1e5817f9b64685bc18fcca85378c20134d42beed1290c0c05e2006ff2d5e0",
+      "byteSize": 138909
+    },
+    {
+      "path": "docs/evidence/feature-store-168/step-1-validation-20261106T021755Z.json",
+      "sha256": "22d5f24bf853bd5b5dc8d810523bb1a6e074bb21d5729f79ea25574121e5ab9b",
+      "byteSize": 20013
+    },
+    {
+      "path": "docs/evidence/feature-store-242/final-benchmark-20261108T064349Z.json",
+      "sha256": "1e31f10710d6028eeb87a2753ff9538c2659ea3d550668053a91b1e654cbe6f5",
+      "byteSize": 615238
+    },
+    {
+      "path": "docs/evidence/feature-store-242/final-validation-20261108T064903Z.json",
+      "sha256": "5ac7ee7c947d1037da4fd6e58bbcd1606b9d604247f1483c43b36b24fab8a511",
+      "byteSize": 27634
+    }
+  ],
+  "publicAudits": [
+    {
+      "issue": 166,
+      "records": 8,
+      "fullBytes": 8,
+      "publicMetadata": 0,
+      "verdict": "pass"
+    },
+    {
+      "issue": 231,
+      "records": 3,
+      "fullBytes": 3,
+      "publicMetadata": 0,
+      "verdict": "pass"
+    },
+    {
+      "issue": 167,
+      "records": 72,
+      "fullBytes": 72,
+      "publicMetadata": 0,
+      "verdict": "pass"
+    },
+    {
+      "issue": 168,
+      "records": 32,
+      "fullBytes": 14,
+      "publicMetadata": 18,
+      "verdict": "pass"
+    },
+    {
+      "issue": 241,
+      "records": 136,
+      "fullBytes": 136,
+      "publicMetadata": 0,
+      "verdict": "pass"
+    },
+    {
+      "issue": 242,
+      "records": 24,
+      "fullBytes": 23,
+      "publicMetadata": 1,
+      "verdict": "pass"
+    },
+    {
+      "issue": 169,
+      "records": 44,
+      "fullBytes": 44,
+      "publicMetadata": 0,
+      "verdict": "pass"
+    }
+  ],
+  "privateByteAuditsAfterRemoval": [
+    {
+      "issue": 168,
+      "records": 32,
+      "verdict": "pass",
+      "audit": "full-bytes"
+    },
+    {
+      "issue": 242,
+      "records": 24,
+      "verdict": "pass",
+      "audit": "full-bytes"
+    },
+    {
+      "issue": 169,
+      "records": 44,
+      "verdict": "pass",
+      "audit": "full-bytes"
+    }
+  ],
+  "capabilities": {
+    "public": [
+      "reference/projection/receipt identity and safe membership",
+      "available statuses/refusals",
+      "original schedule, coverage, process and source metadata",
+      "3 SQL / 2 checks / 1 GET, 2P rights counts",
+      "phase arithmetic and versioned p95/max/tails"
+    ],
+    "privateOnly": [
+      "original archive/member byte hashes",
+      "full receipt recomputation",
+      "forecast/context/value linkage",
+      "raw per-table SQL oracle counters",
+      "original validation/log bytes"
+    ],
+    "hashOnlyIsNotForecastValueVerification": true
+  },
+  "validation": {
+    "focusedTests": 136,
+    "offlineEvidenceChecks": 27,
+    "importBoundaryChecks": 12,
+    "typeScriptNoEmit": "pass",
+    "focusedEslint": "pass",
+    "standaloneWithoutNodeModules": "168:32 and 242:24 pass",
+    "workingTreeScanBeforeReportEmission": {
+      "paths": 919,
+      "findings": [
+        {
+          "path": "docs/evidence/feature-store-138/source-inventory.json",
+          "counts": {
+            "otherRowLevelValues": 1
+          }
+        },
+        {
+          "path": "docs/evidence/feature-store-138/step-3-checkpoint.json",
+          "counts": {
+            "otherRowLevelValues": 1,
+            "sourcePlayDiagnostics": 1
+          }
+        },
+        {
+          "path": "docs/evidence/feature-store-138/step-3-participation-anomaly.json",
+          "counts": {
+            "sourcePlayDiagnostics": 1
+          }
+        },
+        {
+          "path": "docs/evidence/feature-store-138/step-3-real-ingestion-initial.json",
+          "counts": {
+            "otherRowLevelValues": 1
+          }
+        },
+        {
+          "path": "docs/evidence/feature-store-138/step-3-real-ingestion.json",
+          "counts": {
+            "otherRowLevelValues": 1
+          }
+        },
+        {
+          "path": "docs/evidence/feature-store-169/records-20261109T050208Z.tar.gz",
+          "counts": {
+            "otherRowLevelValues": 1
+          }
+        },
+        {
+          "path": "docs/evidence/feature-store-169/records-20261109T061738Z.tar.gz",
+          "counts": {
+            "otherRowLevelValues": 1
+          }
+        },
+        {
+          "path": "services/pipeline/tests/feature-store/fixtures/job-visibility-work-v1.json.gz",
+          "counts": {
+            "otherRowLevelValues": 3279,
+            "normalizedParticipation": 89443,
+            "featureOrDatasetRow": 18762,
+            "historyRow": 71330,
+            "labelRow": 18762,
+            "materializedLabels": 18762
+          }
+        }
+      ],
+      "unapprovedFindings": 0,
+      "removed": 3,
+      "newCapacityRuns": 0
+    },
+    "169AuditorAndCheckUnchanged": true,
+    "197InventoryUnchanged": true,
+    "newCapacityRuns": 0,
+    "databaseLanesUsed": 0
+  },
+  "sources": [
+    {
+      "path": "services/pipeline/scripts/feature-store/evidence-archive.ts",
+      "sha256": "dc4de3d2da79f9acc7e9255a250cf5bda6b3e7656ed1208e64b429186ed75241",
+      "byteSize": 3045
+    },
+    {
+      "path": "services/pipeline/scripts/feature-store/evidence-records.ts",
+      "sha256": "82977e686e3d3dcc89eb8e5c5e4dc87e6651d9d31db770e4a4a41b13c513a926",
+      "byteSize": 6586
+    },
+    {
+      "path": "services/pipeline/scripts/feature-store/evidence-public-projection.ts",
+      "sha256": "b73794f69aeac971cb02b10da3374a38f767a942857650154fde18cde18889ce",
+      "byteSize": 6741
+    },
+    {
+      "path": "services/pipeline/scripts/feature-store/evidence-retention.ts",
+      "sha256": "d80258e121d7d4e155b75660265676c1ea42d6d57369a20ef8d44115fff58984",
+      "byteSize": 3605
+    },
+    {
+      "path": "services/pipeline/scripts/feature-store/evidence-payload-scan.ts",
+      "sha256": "29645678b779ce94770c99e7500a0f48966d29817d57faef153034036684c37d",
+      "byteSize": 13861
+    },
+    {
+      "path": "services/pipeline/scripts/feature-store/evidence-payload-inventory.ts",
+      "sha256": "9666528d02ac3deca5b69f796ab888d6263a6196540970d212df23d5e51d4527",
+      "byteSize": 5696
+    },
+    {
+      "path": "services/pipeline/scripts/feature-store/prediction-capacity-evidence.ts",
+      "sha256": "3cfa554d8f9e9e5e37b77f86db33eda6b60326d5ca3d9cbecacc771680b5eb5e",
+      "byteSize": 15114
+    },
+    {
+      "path": "services/pipeline/scripts/feature-store/artifact-governance-evidence.ts",
+      "sha256": "d04063570f80ac8541b49f9e1385d32ff640b4cf86a9acf55526ebeda709eb33",
+      "byteSize": 40587
+    }
+  ]
+}

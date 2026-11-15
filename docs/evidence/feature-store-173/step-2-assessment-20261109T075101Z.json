@@ -1,0 +1,280 @@
+{
+  "schema": "fs173-offline-assessment-receipt-v1",
+  "issue": 173,
+  "step": 2,
+  "recordedAt": "2026-11-09T07:51:01.535Z",
+  "checkpoint": "286f4d05d5d1eb34ec085a1a772f7e21afb40a27",
+  "assessedFrom": "be533870f90ada45fce13ff76968e5db23d365fb",
+  "scope": "Agent integration assessment and offline historical evidence validation; not independent review, fresh database execution, renewed capacity, release approval or final go verdict",
+  "patternVerdict": "Existing set-based dataflow, immutable ObjectStore boundaries and functional prediction core fit the approved operation; no new blocking runtime wrong-pattern finding. Legacy qualification-driver containment is required before use.",
+  "findings": [
+    {
+      "area": "Prediction and connection ownership",
+      "verdict": "no-blocking-finding",
+      "assessment": "Query-only handler, one same-process deadline through serialization, owner-only exactly-once disposal; selected feature sampleSize and Q2 context with both receipts; private refusal and interruption latch. Existing behavior receipts are not re-executed by this assessment.",
+      "capacity": "blocked-pending-approved-current-source-rerun",
+      "assessedPaths": [
+        "services/pipeline/src/featureStore/predict.ts",
+        "services/pipeline/src/featureStore/predictionOwner.ts",
+        "services/pipeline/src/featureStore/predictionClock.ts",
+        "services/pipeline/src/featureStore/modelArtifacts.ts",
+        "services/pipeline/src/featureStore/predictionHelpers.ts"
+      ]
+    },
+    {
+      "area": "Dataset selection and job visibility",
+      "verdict": "no-blocking-finding",
+      "assessment": "Set-based cutoff-qualified pins, current completed-job freshness, two batched rights/status boundaries, upload before BEGIN and metadata-only publication. Shared relational visibility helper remains inlineable; repeated CASE at joins intentionally retained. Terminal UPDATE-to-COMMIT limitation accepted.",
+      "capacity": "blocked-pending-approved-fresh-process-matrix",
+      "assessedPaths": [
+        "services/pipeline/src/featureStore/datasets.ts",
+        "packages/db/proposals/241_job_visibility.sql",
+        "services/pipeline/scripts/feature-store/fixture-proposals.ts"
+      ]
+    },
+    {
+      "area": "Verified wire, scrub and replay",
+      "verdict": "no-blocking-finding",
+      "assessment": "Same dedicated ArrayBuffer is registered without another payload copy; detached/released and replacement allocations are refused. Scrub stays bounded with two rights boundaries. Replay shares normalization, hashes keys/values before staging, retains source clocks, and now rejects tracked edits plus untracked replay inputs. Focused checks cover the changed guard and allocation contract; historical replay/scrub are not re-run.",
+      "assessedPaths": [
+        "services/pipeline/src/featureStore/objectStore.ts",
+        "services/pipeline/src/featureStore/verifiedWireAccess.ts",
+        "services/pipeline/src/featureStore/localObjectStore.ts",
+        "services/pipeline/src/featureStore/integrityScrub.ts",
+        "services/pipeline/scripts/feature-store/replay-normalized.ts",
+        "services/pipeline/scripts/feature-store/replay-audit.ts"
+      ]
+    },
+    {
+      "area": "R2 qualification scope",
+      "verdict": "limit-retained",
+      "assessment": "Original synthetic live adapter contract is historical proof at its recorded blobs. Later getVerified/listPage additions have local/mock qualification, not live qualification. No default-store, hosted-capacity or remote-lock-latency claim is added.",
+      "assessedPaths": [
+        "services/pipeline/src/featureStore/r2ObjectStore.ts"
+      ]
+    },
+    {
+      "area": "Scoring",
+      "verdict": "historical-proof-verified",
+      "assessment": "Domain math matches final #164 head. Corrected report objects and logical hashes verified; 2504 retrospective folds and zero strict folds retained. No fresh scoring/capacity result or predictive-superiority claim is added.",
+      "assessedPaths": [
+        "packages/domain/src/projection/baseline.ts",
+        "packages/domain/src/projection/empirical.ts",
+        "packages/domain/src/projection/evaluation.ts",
+        "packages/domain/src/projection/qb-evaluation.ts",
+        "services/pipeline/src/featureStore/qbReports.ts"
+      ]
+    },
+    {
+      "area": "Qualification harness containment",
+      "verdict": "required-before-rerun",
+      "assessment": "Legacy dataset driver writes #138 evidence and continues after numeric-only sample failure. Step 3 requires an isolated disposable copy/output redirection and fail-fast check immediately after each saved sample, before a next sample. Retain original and adapted driver hashes/diff; preserve the exact timed build/worker path, fixture, targets, counts and cache boundary. Do not execute legacy driver directly. Prediction explicitly selects a new output directory and trial-p95-v2.",
+      "assessedPaths": [
+        "services/pipeline/scripts/feature-store/dataset-spike.ts",
+        "services/pipeline/scripts/feature-store/dataset-cold.ts",
+        "services/pipeline/scripts/feature-store/prediction-capacity-benchmark.ts"
+      ]
+    }
+  ],
+  "validation": {
+    "node": "v24.18.1",
+    "genericAuditRecords": 319,
+    "offlineEvidenceTests": 24,
+    "focusedIntegrationTests": 4,
+    "archive138Records": 52,
+    "calibrationReceiptReferences": 3,
+    "scrubWrapper": {
+      "wrapperHashMatches": true,
+      "counts": {
+        "listed": 16,
+        "snapshotReferences": 16,
+        "withdrawnReferences": 0,
+        "verifiedObjects": 16,
+        "verifiedReferences": 16,
+        "verifiedWireBytes": 246304787
+      },
+      "boundaryStateUnchanged": true,
+      "measuredCommit": "47e7ffe8d130d53c105f98fd92b3dd276a8324f5"
+    },
+    "replayWrappers": {
+      "wrapperHashesMatch": true,
+      "runs": 2,
+      "normalizedRows": 103468,
+      "derivedContexts": 20,
+      "parityRecordsEqualAcrossRuns": true,
+      "boundaryStatesUnchanged": true,
+      "measuredCommit": "a946c823d3a93ed9c66c311f01782293c863ed3c"
+    },
+    "scoringArtifacts": {
+      "scope": "Read-only verification through local ObjectStore; no rescoring, DB query or timing renewal",
+      "storageRoot": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-164-data/objects",
+      "status": "pass",
+      "objects": [
+        {
+          "objectKey": "audits/c6f1e18c3426b0917f456101de04534ae78995ccbffcdf3f5eef5adfd80fda56",
+          "sha256": "c6f1e18c3426b0917f456101de04534ae78995ccbffcdf3f5eef5adfd80fda56",
+          "byteSize": 9783,
+          "verified": true
+        },
+        {
+          "objectKey": "audits/05a8a4cf9c906c234e7be7501f1c07778de3403dd7587bd8409cfa9aa917baf4",
+          "sha256": "05a8a4cf9c906c234e7be7501f1c07778de3403dd7587bd8409cfa9aa917baf4",
+          "byteSize": 11498,
+          "verified": true
+        },
+        {
+          "objectKey": "audits/07ede5c2d95897479d9033a98722dd569f6fa46f8b30a7bf124da1ab99366ddf",
+          "sha256": "07ede5c2d95897479d9033a98722dd569f6fa46f8b30a7bf124da1ab99366ddf",
+          "byteSize": 9290168,
+          "verified": true,
+          "logicalSha256": "e46c856c8efcff008e6b8d2fadd1291994cc7678a3c3b384d6852871810ba3d3",
+          "folds": 2504,
+          "evidenceMode": "retrospective-reconstruction-v1"
+        },
+        {
+          "objectKey": "audits/40d29a3533d1534915703d6739a84eb279f62771f6ae78ff3b7c6ae0e7679b1d",
+          "sha256": "40d29a3533d1534915703d6739a84eb279f62771f6ae78ff3b7c6ae0e7679b1d",
+          "byteSize": 306544,
+          "verified": true,
+          "logicalSha256": "5e7673b10b88f945bc7cfdd2a0d062de9217ecf2d8ecd00ae69b9a9a6bdd2d0e",
+          "folds": 0,
+          "evidenceMode": "strict-point-in-time-v1"
+        }
+      ]
+    }
+  },
+  "ci": {
+    "checkpointUnchangedOnRemoteMain": true,
+    "checkedAt": "2026-11-09T07:50:37.205600+00:00",
+    "status": "Owner-accepted App/CI failure at 286f4d0 from domainPackage.test.ts 5000 ms timeout; both DB jobs pass. 7d1883f runtime is identical and green. Separate fix has not merged; recheck before final verdict."
+  },
+  "toolingObservation": {
+    "initialVerifierDiagnostic": "The initial archive verifier counted newline delimiters as lines and rejected step-2-objects.json (one unterminated line). Its SHA-256 and byte size matched. Changed the disposable verifier to splitlines; all 52 archive entries match hashes, bytes and logical line counts. No benchmark was run or retried."
+  },
+  "noLaneOrTimingRun": true,
+  "remaining": [
+    "Owner commit approval for step 2",
+    "Owner-confirmed quiet window for prediction then dataset reruns",
+    "Current-source qualification and final scoped verdict",
+    "Independent review before any fresh push consent"
+  ],
+  "storage": {
+    "storageRoot": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-164/codex-briefs/173-step2-20261109T074644Z/objects",
+    "bundle": {
+      "path": "step-2-records-20261109T075101Z.tar.gz",
+      "objectKey": "audits/9ce6fcd1786ecce26950b177d8fae3b58a6a8d9df13421506778dae938a20910",
+      "sha256": "9ce6fcd1786ecce26950b177d8fae3b58a6a8d9df13421506778dae938a20910",
+      "byteSize": 33928
+    },
+    "members": [
+      {
+        "member": "checks.json",
+        "objectKey": "audits/93eb63437eabab7a7dbc166b8a23283e9998918fd327a0693a7d54b58d80d658",
+        "sha256": "93eb63437eabab7a7dbc166b8a23283e9998918fd327a0693a7d54b58d80d658",
+        "byteSize": 5580
+      },
+      {
+        "member": "assessment-full.json",
+        "objectKey": "audits/eed7fdab14a978925db8facc1e266220f840e20c7f7307d6a5bf43dd6b569a4c",
+        "sha256": "eed7fdab14a978925db8facc1e266220f840e20c7f7307d6a5bf43dd6b569a4c",
+        "byteSize": 12993
+      },
+      {
+        "member": "offline-details.json",
+        "objectKey": "audits/880457880ddb0f6da5a4d73d4b47140700653b4aa6eef560e1c2a0f655aaa603",
+        "sha256": "880457880ddb0f6da5a4d73d4b47140700653b4aa6eef560e1c2a0f655aaa603",
+        "byteSize": 11213
+      },
+      {
+        "member": "report-artifacts.json",
+        "objectKey": "audits/a8cba4dbe00fe8b5f0c5fb5412db9a3ea7ddccc66273cda0c603d0df924a49be",
+        "sha256": "a8cba4dbe00fe8b5f0c5fb5412db9a3ea7ddccc66273cda0c603d0df924a49be",
+        "byteSize": 1518
+      },
+      {
+        "member": "focused-integration-tests.json",
+        "objectKey": "audits/5da577ec48f84de0aee913ec3f05785665bcc5a20876e40a4524c71d107d6161",
+        "sha256": "5da577ec48f84de0aee913ec3f05785665bcc5a20876e40a4524c71d107d6161",
+        "byteSize": 707
+      },
+      {
+        "member": "focused-integration-tests.log",
+        "objectKey": "audits/f80837a3ed1ecfe94b8564cf0b01e7e017aa58c68672f2c00028671e52dada97",
+        "sha256": "f80837a3ed1ecfe94b8564cf0b01e7e017aa58c68672f2c00028671e52dada97",
+        "byteSize": 821
+      },
+      {
+        "member": "offline-evidence-tests.log",
+        "objectKey": "audits/b8645a3b4300b8651ee4f6f8ee24e8e452a3085f3fb9acd0a0876220cac295bb",
+        "sha256": "b8645a3b4300b8651ee4f6f8ee24e8e452a3085f3fb9acd0a0876220cac295bb",
+        "byteSize": 2783
+      },
+      {
+        "member": "audit-166.log",
+        "objectKey": "audits/06e62d5b79c6743f212535280a81955f82237834dcec84ebc85d018cd20c2073",
+        "sha256": "06e62d5b79c6743f212535280a81955f82237834dcec84ebc85d018cd20c2073",
+        "byteSize": 1378
+      },
+      {
+        "member": "audit-231.log",
+        "objectKey": "audits/2e169c93998d84c3fd85f0ec46c3ed937aeda90995c472c7ad9bec6ded3f54b3",
+        "sha256": "2e169c93998d84c3fd85f0ec46c3ed937aeda90995c472c7ad9bec6ded3f54b3",
+        "byteSize": 452
+      },
+      {
+        "member": "audit-167.log",
+        "objectKey": "audits/9e94d8b2868ab6cc171f9e634e344359c1a4777e0dc1e5f1230cb32572b525f8",
+        "sha256": "9e94d8b2868ab6cc171f9e634e344359c1a4777e0dc1e5f1230cb32572b525f8",
+        "byteSize": 14816
+      },
+      {
+        "member": "audit-168.log",
+        "objectKey": "audits/a60ab115e300a9af2ce91253ceb9c9a854d5e8fb99d2549c64ec07d52c4c1fb5",
+        "sha256": "a60ab115e300a9af2ce91253ceb9c9a854d5e8fb99d2549c64ec07d52c4c1fb5",
+        "byteSize": 6571
+      },
+      {
+        "member": "audit-241.log",
+        "objectKey": "audits/1b6702c509e7a65cf7246f87ec831bfa2eb87ad4c3c656431a9694a359c3b19d",
+        "sha256": "1b6702c509e7a65cf7246f87ec831bfa2eb87ad4c3c656431a9694a359c3b19d",
+        "byteSize": 28435
+      },
+      {
+        "member": "audit-242.log",
+        "objectKey": "audits/1bf81e6f601c037c25cb4844f30f69742052be61505dd1538051d7433e514e34",
+        "sha256": "1bf81e6f601c037c25cb4844f30f69742052be61505dd1538051d7433e514e34",
+        "byteSize": 5007
+      },
+      {
+        "member": "audit-169.log",
+        "objectKey": "audits/471d956e27792e464753dc46332667b42865927b80969d7dbdfd33a7ebca85e8",
+        "sha256": "471d956e27792e464753dc46332667b42865927b80969d7dbdfd33a7ebca85e8",
+        "byteSize": 8860
+      },
+      {
+        "member": "offline-details.py",
+        "objectKey": "audits/65156038c0024a68149b6e16f4151f6411f7463b2001c6402bb3c4427e21df1b",
+        "sha256": "65156038c0024a68149b6e16f4151f6411f7463b2001c6402bb3c4427e21df1b",
+        "byteSize": 4487
+      },
+      {
+        "member": "report-artifacts.mts",
+        "objectKey": "audits/18d0967f5563848f5520c9f4b105ab600fe5f2325cd3ef4a84c79d3193997bee",
+        "sha256": "18d0967f5563848f5520c9f4b105ab600fe5f2325cd3ef4a84c79d3193997bee",
+        "byteSize": 2857
+      },
+      {
+        "member": "write-assessment.py",
+        "objectKey": "audits/e4e7e4b6468ab1a304589892334b1df1a67d5c714ddecfbb3f18cadb034173ec",
+        "sha256": "e4e7e4b6468ab1a304589892334b1df1a67d5c714ddecfbb3f18cadb034173ec",
+        "byteSize": 7309
+      },
+      {
+        "member": "run-checks.py",
+        "objectKey": "audits/73bcb3d3d2f2e71d391b739cb314264a078c45a1d15fc0d9ec7e62f59bd5c0fb",
+        "sha256": "73bcb3d3d2f2e71d391b739cb314264a078c45a1d15fc0d9ec7e62f59bd5c0fb",
+        "byteSize": 2753
+      }
+    ]
+  }
+}
