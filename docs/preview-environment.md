@@ -5,6 +5,11 @@ or spending Production Odds API quota. This boundary is enforced in both
 deployment configuration and application code; it is not inferred from a
 missing key.
 
+Credential classification, environment authority and copy handling follow the
+[inventory](secrets-inventory.md) and [delivery design](secrets-delivery-design.md).
+Their approval does not authorize changing hosted configuration or rotating a
+credential; those operations retain their separate owner approval boundary.
+
 ## Environment contract
 
 | Environment | Odds source | Neon | Firebase | Collection |
