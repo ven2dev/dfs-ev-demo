@@ -14,13 +14,18 @@ The [catalog](secrets-inventory.json) is the single structured inventory.
 It contains no current values, actual provider resource identifiers, private
 file contents, or fingerprints derived from credentials. A source-code commit
 identifies what was inspected; it does not identify any secret value.
+`sourceCommit` retains the initial inspection checkpoint; the offline checks
+reevaluate the current tracked source, rather than claiming deployed state at
+that checkpoint.
 
 ## Design basis
 
 - **Pattern:** a value-free configuration catalog with source references and
   shared handling profiles. A row names its consumers and overrides a profile
   only when its handling differs. This inventories supplied inputs without
-  introducing a secret broker. #99's future typed server configuration schema
+  introducing a secret broker. An offline policy validator and bounded syntax
+  discovery check it in CI; no source code is imported or executed for discovery.
+  #99's future typed server configuration schema
   will own the executable input definition; catalog coverage will be generated
   from or checked against it, rather than maintained as an independent schema.
 - **Alternatives:** an unstructured prose-only list makes completeness and
@@ -198,7 +203,84 @@ justified Bitwarden adoption; none is selected today. #101 owns separately
 approved migration/rotation, live-scope verification and retirement of copies.
 
 No runtime code, workflow, template, deployment, IAM or credential has changed
-in Steps 1–2. Synthetic catalog validation can establish field/reference coverage;
+in Steps 1–2. Step 3 changes template comments and runbook setup references,
+and adds the offline checks described below. Synthetic validation can establish field/reference coverage;
 it cannot establish real authentication, effective permissions, secret access
 auditing, billing state, outage performance or recovery readiness. Those
 claims require their separately approved evidence.
+
+## Setup and change checklist
+
+1. Find the exact input in the catalog, resolve its profile/overrides, and use
+   the delivery design's environment, authority and copy rules. Missing
+   ownership or an unknown caller is a review item, not permission to create
+   a new copy. This prevents untracked consumers from retaining access.
+2. Start local/test work from the blank credential names and fixture defaults
+   in [the web template](../apps/web/.env.example), or the explicit synthetic
+   R2 contract's [pipeline template](../services/pipeline/.env.example).
+   These are not instructions to retrieve deployed credentials. Owner-only
+   operations keep their existing explicit input/target checks; Production
+   values stay outside ordinary CI, Preview and agent sessions.
+3. For deployed setup, the owner confirms Secret type, exact environment scope,
+   provider identity and permissions without exporting values. Provider-managed
+   Neon integration changes, actual delivery/rotation, caller coordination and
+   old deployment retirement require the separately approved #101 operation,
+   because a setting change alone does not update a running deployment.
+4. Update input rows, policy and intentional-copy metadata when configuration
+   changes. Keep source paths and name occurrences current. Reasons in
+   `discoveryExclusions` document out-of-scope artifact/workflow/generated
+   state; editing an exclusion is a scope decision and deserves review.
+5. Run `npm run test:ci-gate` on Node 24. For the focused offline check, use
+   `node --test tests/secrets-inventory.check.mjs`. Full #98 verification also
+   runs typecheck, lint, the normal test suite and a production build with
+   synthetic/empty inputs; no provider authentication is needed. The checker
+   is included in CI's unconditional App gate verification step so affected
+   task selection cannot bypass it.
+
+Relevant runbooks: [Preview](preview-environment.md),
+[collector/Hostinger](odds-collector-operations.md),
+[security operations](security-operations.md),
+[owner creator operations](creator-corpus-operations.md) and
+[migration/recovery boundary](database-migrations.md). #100 and #101 own any
+new local store or actual credential migration. Neither merging #98 nor
+running its checks provisions a store, grants permissions or rotates a value.
+
+## Offline check scope and test evidence
+
+[The checker](../scripts/security/secrets-inventory.mjs) validates the format,
+the eleven required fields, profile resolution, classifications, unique names,
+source paths/name occurrences and the runtime copy ledger. It reads tracked
+source files only, excludes private `.env*` files and evidence/fixture trees,
+and refuses source symlinks before reading to prevent traversal into private
+material. It does not inspect process environment values or contact providers.
+New source files enter discovery when tracked; a pre-staging run cannot claim
+coverage for arbitrary untracked files.
+
+Discovery covers literal dot/bracket environment access, destructuring, known
+environment adapters (`env`, `environment`, `values`, `runtimeEnv`,
+`runtimeEnvironment`), collector `integerSetting` calls, template assignments
+and workflow `secrets`/`vars` references and secret aliases. It ignores source
+comments and string examples. It is not whole-program data flow: new adapter
+forms, dynamic name construction, runbook-only/CLI names, effective grants and
+copy completeness still need review. #99's typed module will replace the
+runtime discovery contract with schema alignment; no separate handwritten
+executable runtime schema is introduced here.
+
+The eight Node tests use the real repository/checker plus synthetic mutations:
+
+| Check | Failure it exposes |
+| --- | --- |
+| Repository catalog and blank secret template slots | Missing policy/source/ledger coverage or a filled credential example |
+| Remove actual `ODDS_API_KEY` and its ledger row | Source discovery finds a missing real consumer even when both catalog records are deleted |
+| Remove policy, shrink required fields, duplicate input, unknown format | Incomplete/ambiguous policy cannot pass by weakening the catalog's own field list |
+| Move lines, rename input, wrong/unsafe reference | Line movement stays valid; a stale name, line-pinned or private/outside path fails |
+| Add supported source/template/workflow input | An uncataloged input fails discovery; comments/string examples do not create fake inputs |
+| Duplicate authority, wrong/missing alias, reclassify credential/public input | Copy drift and secret/public classification errors fail against actual source aliases |
+| New excluded-looking name or malformed exclusion | New names need an entry or a reason; an exclusion cannot hide an already cataloged credential |
+| Tracked synthetic private env file and source symlink | Source reading omits private files and refuses a symlink instead of following it |
+
+These prove catalog handling and detection of the named regressions. They do
+not prove deployment isolation, key validity, redaction throughout application
+routes, effective IAM or runtime secret-use auditing. Existing server-only
+guards and synthetic app tests remain separate; #99 implements and tests the
+missing unified runtime validation contract.
