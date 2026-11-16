@@ -14,6 +14,11 @@ the owner reports successful read-only Neon transport checks. The dated
 Production adoption, recovery evidence and remote activation review remain
 pending; the owner explicitly instructed that `up` must not run yet.
 
+For configuration classification and owner delivery boundaries, use the
+[inventory](secrets-inventory.md) and [delivery design](secrets-delivery-design.md).
+They keep `MIGRATION_DATABASE_URL` separate from app/runtime and disposable-test
+inputs; #98 grants no additional remote operation or credential access.
+
 The roadmap and these instructions use the same step numbers:
 
 | Step | Deliverable |

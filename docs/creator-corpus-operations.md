@@ -6,6 +6,11 @@ transcripts by hand (#89). They are **local, owner-run tools**.
 They are not part of the deployed app, a build, CI or any scheduled job, and
 nothing here is imported by the application.
 
+Credential names and owner-only delivery are recorded in the
+[inventory](secrets-inventory.md) and [delivery design](secrets-delivery-design.md).
+They retain explicit owner input for these tools; no vault adoption or transfer
+of actual credentials to agents is implied by #98.
+
 They operate under the #40 internal-POC exception and its guardrails. Read the
 [amendment on #40](https://github.com/ven2dev/dfs-ev-demo/issues/40) before
 use. The tools fetch **metadata only** (video IDs, titles, descriptions,
