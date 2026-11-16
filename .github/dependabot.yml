@@ -32,7 +32,6 @@ updates:
         patterns:
           - next
           - eslint-config-next
-          - "@next/env"
       react:
         applies-to: version-updates
         patterns:
