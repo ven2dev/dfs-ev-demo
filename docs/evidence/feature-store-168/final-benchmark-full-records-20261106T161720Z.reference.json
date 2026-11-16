@@ -1,0 +1,21 @@
+{
+  "schema": "private-evidence-archive-v1",
+  "archive": {
+    "name": "final-benchmark-full-records-20261106T161720Z.tar.gz",
+    "sha256": "fd084c933d1ce975e4656105d0baae28b50668ff0fb80be846de062c4f310e47",
+    "byteSize": 211356,
+    "key": "audits/fd084c933d1ce975e4656105d0baae28b50668ff0fb80be846de062c4f310e47"
+  },
+  "members": [
+    {
+      "path": "final-benchmark/full-samples.json",
+      "sha256": "2e97bb8ec7cef19e40e4678542ddc8a7d36e88cd2bf713a374cc70eeef0acee3",
+      "byteSize": 4708455
+    }
+  ],
+  "publicProjection": {
+    "path": "final-benchmark-full-records-20261106T161720Z.public.json",
+    "sha256": "dda8606bd5ef4be20cf3bef7bcc71f3865dceae7e28d65848779875433bba531",
+    "byteSize": 617546
+  }
+}

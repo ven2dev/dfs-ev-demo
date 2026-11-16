@@ -1,0 +1,131 @@
+{
+  "schema": "fs173-checkpoint-ci-verification-v1",
+  "issue": 173,
+  "checkedAt": "2026-11-09T16:44:29.457Z",
+  "verdict": "pass",
+  "checkpoint": "5639790517f5f66e38a40d6a1e6e00df3aec1580",
+  "previousCheckpoint": "d661b022780e243dff9e0f126351f43a9e3fc2da",
+  "branchMergeCommit": "c442929a6b873dd2f59fe2f0fd9bf8b1e4e94ad8",
+  "mergedPr": "https://github.com/ven2dev/dfs-ev-demo/pull/262",
+  "ci": {
+    "scope": "GitHub main push at the adopted checkpoint; not a #173 branch CI run",
+    "runId": 42656760214,
+    "url": "https://github.com/ven2dev/dfs-ev-demo/actions/runs/42656760214",
+    "headSha": "5639790517f5f66e38a40d6a1e6e00df3aec1580",
+    "event": "push",
+    "status": "completed",
+    "conclusion": "success",
+    "jobs": [
+      {
+        "name": "DB integration / Core",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/ven2dev/dfs-ev-demo/actions/runs/42656760214/job/129297183388",
+        "startedAt": "2026-11-09T16:38:09Z",
+        "completedAt": "2026-11-09T16:40:31Z"
+      },
+      {
+        "name": "DB integration / Feature store",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/ven2dev/dfs-ev-demo/actions/runs/42656760214/job/129297183697",
+        "startedAt": "2026-11-09T16:38:09Z",
+        "completedAt": "2026-11-09T16:40:53Z"
+      },
+      {
+        "name": "App checks",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/ven2dev/dfs-ev-demo/actions/runs/42656760214/job/129297183708",
+        "startedAt": "2026-11-09T16:38:09Z",
+        "completedAt": "2026-11-09T16:41:11Z"
+      },
+      {
+        "name": "CI",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/ven2dev/dfs-ev-demo/actions/runs/42656760214/job/129298980545",
+        "startedAt": "2026-11-09T16:41:13Z",
+        "completedAt": "2026-11-09T16:41:16Z"
+      }
+    ],
+    "rawMetadata": {
+      "objectKey": "audits/ccf5e257525256d74c6f765bf4aa4f9d940609138305c91056ca4434ed010e69",
+      "sha256": "ccf5e257525256d74c6f765bf4aa4f9d940609138305c91056ca4434ed010e69",
+      "byteSize": 9075,
+      "privateObjectStore": true,
+      "verifiedReadBack": true
+    }
+  },
+  "sourceVerification": {
+    "originalReceipt": {
+      "path": "docs/evidence/feature-store-173/step-3-requalification-20261109T091550Z.json",
+      "sha256": "f865695575a9bd174a20b66d1cc34930594d08ae18d82c616fffc77e2594314f",
+      "byteSize": 89482,
+      "measuredCheckpoint": "d661b022780e243dff9e0f126351f43a9e3fc2da",
+      "measuredSourceCommit": "83bb28f329fcb8b457dff9eba2119dea8ca02b98"
+    },
+    "originalPrivateArchive": {
+      "objectKey": "audits/5804fab749f8bc88676092821e1a413a5130d012baa83c7a73df341204211b98",
+      "sha256": "5804fab749f8bc88676092821e1a413a5130d012baa83c7a73df341204211b98",
+      "byteSize": 366041
+    },
+    "sourceInventory": {
+      "member": "verification.json",
+      "sha256": "871f2230d7f85d31868aacf139fc233c697d157c1131a7ae426d7c5531990047",
+      "byteSize": 76922
+    },
+    "distinctSourceFiles": 125,
+    "predictionSourcePins": 64,
+    "datasetSourcePins": 48,
+    "producerSourcePins": 77,
+    "allHashesAndGitBlobIdsMatchPreviousCheckpointNewCheckpointAndBranchMerge": true,
+    "producerReceiptPinsSeparatelyChecked": 77,
+    "incomingPaths": [
+      "docs/domain-package-extraction.md",
+      "services/pipeline/tests/feature-store/domainPackage.process.test.ts",
+      "services/pipeline/tests/feature-store/runTestProcess.process.test.ts",
+      "services/pipeline/tests/support/runTestProcess.ts",
+      "vitest.config.ts",
+      "vitest.node.config.ts",
+      "vitest.process.config.mts"
+    ],
+    "incomingChangesIntersectMeasuredSources": false,
+    "existingCompactJsonFilesUnchanged": 10,
+    "excludedPayloadArchiveBlobsReachableFromBranch": false,
+    "localBackupTagUnchanged": true,
+    "decision": "Retain the existing four capacity passes by exact source identity; no new capacity measurement or relabelling of old receipt sources."
+  },
+  "localChecks": {
+    "runtime": "v24.18.1",
+    "processChecks": {
+      "files": 2,
+      "tests": 4,
+      "pass": 4,
+      "fail": 0,
+      "command": "node node_modules/vitest/vitest.mjs run --config vitest.node.config.ts --exclude 'codex-briefs/**' services/pipeline/tests/feature-store/domainPackage.process.test.ts services/pipeline/tests/feature-store/runTestProcess.process.test.ts",
+      "sandboxAttempt": {
+        "tests": 4,
+        "pass": 3,
+        "fail": 1,
+        "code": "EPERM",
+        "operation": "listen 127.0.0.1",
+        "disposition": "Repeated outside the sandbox with permission; no source change."
+      }
+    },
+    "ciGateAndLayout": {
+      "command": "npm run test:ci-gate",
+      "tests": 24,
+      "pass": 24,
+      "fail": 0
+    }
+  },
+  "scope": {
+    "newBenchmark": false,
+    "databaseLaneStarted": false,
+    "hostedWrite": false,
+    "pushed": false,
+    "prOpened": false,
+    "finalReview": "pending"
+  }
+}

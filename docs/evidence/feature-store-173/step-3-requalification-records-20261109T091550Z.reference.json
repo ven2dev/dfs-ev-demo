@@ -1,0 +1,15 @@
+{
+  "schema": "fs173-private-archive-reference-v1",
+  "originalArchivePath": "docs/evidence/feature-store-173/step-3-requalification-records-20261109T091550Z.tar.gz",
+  "sha256": "5804fab749f8bc88676092821e1a413a5130d012baa83c7a73df341204211b98",
+  "byteSize": 366041,
+  "memberCount": 35,
+  "objectStore": {
+    "objectKey": "audits/5804fab749f8bc88676092821e1a413a5130d012baa83c7a73df341204211b98",
+    "sha256": "5804fab749f8bc88676092821e1a413a5130d012baa83c7a73df341204211b98",
+    "byteSize": 366041
+  },
+  "disposition": "Exact original bytes retained privately through ObjectStore; not included in public Git history.",
+  "reason": "#197 holds new participation-dependent public outputs pending an output/channel decision; owner approved private retention following #258.",
+  "receiptContract": "Original compact receipts, member hashes, measured values, verdicts and source identities are unchanged. Their storage.bundle.path identifies this original private archive, not an in-tree file."
+}

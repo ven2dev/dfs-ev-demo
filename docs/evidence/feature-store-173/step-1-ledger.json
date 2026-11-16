@@ -1,0 +1,1677 @@
+{
+  "schemaVersion": 1,
+  "issue": 173,
+  "step": 1,
+  "kind": "thin-slice-criterion-evidence-ledger",
+  "recordedAt": "2026-11-09T07:21:56.616122+00:00",
+  "checkpoint": "286f4d05d5d1eb34ec085a1a772f7e21afb40a27",
+  "roadmapComment": "https://github.com/ven2dev/dfs-ev-demo/issues/173#issuecomment-6734499691",
+  "status": "preliminary-not-a-full-thin-slice-pass",
+  "fixture": {
+    "wireFiles": 16,
+    "seasons": [
+      2021,
+      2022,
+      2023,
+      2024,
+      2025
+    ],
+    "warmup": [
+      2021
+    ],
+    "evaluation": [
+      2022,
+      2023,
+      2024,
+      2025
+    ],
+    "retrospectiveExamples": 2504,
+    "naturalContentSha256": "a4de10aaefec7ec33d1c913fc255ee3527108f9d1f53e22afb79b82a9f9c607d",
+    "historicalAvailability": "unverified",
+    "populationCompleteness": false
+  },
+  "checkpointCi": [
+    {
+      "commit": "7d1883f5f6839e476125ba8091d0261fd1b1cd27",
+      "app": "success",
+      "coreDb": "success",
+      "featureStoreDb": "success",
+      "ci": "success",
+      "scope": "Earlier integrated runtime checkpoint"
+    },
+    {
+      "commit": "286f4d05d5d1eb34ec085a1a772f7e21afb40a27",
+      "app": "failure",
+      "coreDb": "success",
+      "featureStoreDb": "success",
+      "ci": "failure",
+      "runUrl": "https://github.com/ven2dev/dfs-ev-demo/actions/runs/42575488546",
+      "failure": "domainPackage.test.ts:8 reached the 5000 ms test timeout; aggregate failed because App failed",
+      "ownerDisposition": "Pin accepted; timeout handled separately; move pin if fix merges before completion"
+    }
+  ],
+  "checkpointEquivalence": {
+    "from": "7d1883f",
+    "to": "286f4d05d5d1eb34ec085a1a772f7e21afb40a27",
+    "runtimeChanges": false,
+    "changedPaths": [
+      "docs/197-roadmap.md",
+      "docs/53-public-serving-roadmap.md",
+      "docs/evidence/feature-store-138/NOTICE.participation.md",
+      "docs/evidence/feature-store-197/tracked-payload-inventory.json",
+      "docs/feature-store-spike-sources.md",
+      "docs/feature-store-spike.md",
+      "services/pipeline/tests/feature-store/fixtures/NOTICE.participation.md"
+    ],
+    "scope": "Documentation, notices and inventory only; earlier green is not a pass at the later SHA"
+  },
+  "requirements": [
+    {
+      "id": "C01",
+      "requirement": "Approved feature-store/ELT design and source inventory before implementation",
+      "issues": [
+        138
+      ],
+      "verdict": "pass",
+      "qualificationScope": "Pinned historical behavior/work evidence; integrated assessment pending",
+      "evidence": [
+        "docs/evidence/feature-store-138/source-inventory.json",
+        "docs/evidence/feature-store-138/foundation-pr-checkpoint.json"
+      ]
+    },
+    {
+      "id": "C02",
+      "requirement": "Commit fixed scoring preregistration before evaluation",
+      "issues": [
+        138,
+        164
+      ],
+      "verdict": "pass",
+      "qualificationScope": "Preregistered historical experiment",
+      "evidence": [
+        "docs/feature-store-spike-preregistration.md",
+        "docs/evidence/feature-store-164/step-4-checkpoint.json"
+      ],
+      "note": "Thresholds 199.5/224.5/249.5/274.5/299.5 and integer RPS; preregistration commit 6aa7953."
+    },
+    {
+      "id": "C03",
+      "requirement": "Main-based proposal SQL; frozen migrations unchanged; no hosted/Production or retired implementation work",
+      "issues": [
+        138,
+        173
+      ],
+      "verdict": "pass",
+      "qualificationScope": "Foundation boundary and #173 documentation scope",
+      "evidence": [
+        "docs/evidence/feature-store-138/foundation-pr-checkpoint.json"
+      ],
+      "note": "Current proposal path packages/db/proposals/; no migration freeze or deployment implied."
+    },
+    {
+      "id": "C04",
+      "requirement": "All persisted source and pipeline artifact bytes use ObjectStore putIfAbsent/get/head/list/delete",
+      "issues": [
+        138,
+        165,
+        166,
+        170,
+        172
+      ],
+      "verdict": "pass",
+      "qualificationScope": "Pinned historical behavior/work evidence; integrated assessment pending",
+      "evidence": [
+        "docs/evidence/feature-store-138/step-2-objects.json",
+        "docs/evidence/feature-store-165/review-corrections.json",
+        "docs/evidence/feature-store-166/final-read-boundary.json",
+        "docs/evidence/feature-store-170/checkpoint-4-machine-receipt.json",
+        "docs/evidence/feature-store-172/adapter-contract-review-fix.json"
+      ]
+    },
+    {
+      "id": "C05",
+      "requirement": "Hash exact original bytes, atomic create-once, corrupt download cannot replace good evidence",
+      "issues": [
+        138,
+        170,
+        251
+      ],
+      "verdict": "pass",
+      "qualificationScope": "Pinned historical behavior/work evidence; integrated assessment pending",
+      "evidence": [
+        "docs/evidence/feature-store-138/step-2-objects.json",
+        "docs/evidence/feature-store-138/step-3-integration.json",
+        "docs/evidence/feature-store-170/checkpoint-4-machine-receipt.json",
+        "services/pipeline/tests/feature-store/transfer-fixture.check.mts"
+      ]
+    },
+    {
+      "id": "C06",
+      "requirement": "Trusted pipeline-only idempotent derived writes and database-owned actual knowledge clocks",
+      "issues": [
+        138,
+        241
+      ],
+      "verdict": "pass",
+      "qualificationScope": "Pinned historical behavior/work evidence; integrated assessment pending",
+      "evidence": [
+        "docs/evidence/feature-store-138/step-2-schema.json",
+        "docs/evidence/feature-store-138/step-3-integration.json",
+        "docs/evidence/feature-store-241/step-1-validation-20261107T214813Z.json"
+      ]
+    },
+    {
+      "id": "C07",
+      "requirement": "Typed normalization/as-of selection; missing, ambiguous and unsupported versions fail closed",
+      "issues": [
+        138,
+        163,
+        241
+      ],
+      "verdict": "pass",
+      "qualificationScope": "Pinned historical behavior/work evidence; integrated assessment pending",
+      "evidence": [
+        "docs/evidence/feature-store-138/step-3-integration.json",
+        "docs/evidence/feature-store-163/review-1-correctness.json",
+        "docs/evidence/feature-store-241/step-1-validation-20261107T214813Z.json",
+        "docs/evidence/feature-store-241/step-3-resumed-20261107T225754Z.json"
+      ]
+    },
+    {
+      "id": "C08",
+      "requirement": "History latest at most 16 eligible prior REG games, minimum 2, deterministic identity/order",
+      "issues": [
+        138,
+        163,
+        164,
+        241
+      ],
+      "verdict": "pass",
+      "qualificationScope": "Pinned historical behavior/work evidence; integrated assessment pending",
+      "evidence": [
+        "docs/evidence/feature-store-138/step-4-integration.json",
+        "docs/evidence/feature-store-163/review-1-correctness.json",
+        "docs/evidence/feature-store-164/step-4-checkpoint.json",
+        "docs/evidence/feature-store-241/step-3-resumed-20261107T225754Z.json"
+      ]
+    },
+    {
+      "id": "C09",
+      "requirement": "Cutoff kickoff minus one hour; exclude target/equal-cutoff/future games in both evidence modes",
+      "issues": [
+        138,
+        164,
+        241
+      ],
+      "verdict": "pass",
+      "qualificationScope": "Pinned historical behavior/work evidence; integrated assessment pending",
+      "evidence": [
+        "docs/evidence/feature-store-138/step-4-integration.json",
+        "docs/evidence/feature-store-164/step-4-checkpoint.json",
+        "docs/evidence/feature-store-241/step-3-resumed-20261107T225754Z.json"
+      ]
+    },
+    {
+      "id": "C10",
+      "requirement": "Missing labels/participation remain unavailable rather than fabricated zero outcomes; report gaps",
+      "issues": [
+        138,
+        164
+      ],
+      "verdict": "pass",
+      "qualificationScope": "Pinned historical behavior/work evidence; integrated assessment pending",
+      "evidence": [
+        "docs/evidence/feature-store-138/step-4-integration.json",
+        "docs/evidence/feature-store-164/step-4-checkpoint.json",
+        "docs/evidence/feature-store-164/step-3-score-summary.json"
+      ]
+    },
+    {
+      "id": "C11",
+      "requirement": "Corrections retain versions and permitted last-valid values; explicit stale/superseded flags",
+      "issues": [
+        138,
+        241
+      ],
+      "verdict": "pass",
+      "qualificationScope": "Pinned historical behavior/work evidence; integrated assessment pending",
+      "evidence": [
+        "docs/evidence/feature-store-138/step-4-integration.json",
+        "docs/evidence/feature-store-241/step-1-validation-20261107T214813Z.json",
+        "docs/evidence/feature-store-241/step-2-resumed-20261107T221412Z.json",
+        "docs/feature-store-job-visibility.md"
+      ],
+      "note": "Dataset stale describes today’s newest completed value; a historical fallback alone is no longer stale."
+    },
+    {
+      "id": "C12",
+      "requirement": "Season-scoped conservative snapshot lineage and source-level rights governance",
+      "issues": [
+        138,
+        166,
+        241
+      ],
+      "verdict": "pass",
+      "qualificationScope": "Pinned historical behavior/work evidence; integrated assessment pending",
+      "evidence": [
+        "docs/evidence/feature-store-138/step-5-real-dataset.json",
+        "docs/evidence/feature-store-166/final-lifecycle.json",
+        "docs/evidence/feature-store-241/step-2-resumed-20261107T221412Z.json"
+      ],
+      "note": "No new row-exact lineage requirement; earlier-season deletion can conservatively affect later outputs."
+    },
+    {
+      "id": "C13",
+      "requirement": "Immutable dataset feature/label version pins, exact-file and natural-key/value hashes, flagged-value policy",
+      "issues": [
+        138,
+        241
+      ],
+      "verdict": "pass",
+      "qualificationScope": "Pinned historical behavior/work evidence; integrated assessment pending",
+      "evidence": [
+        "docs/evidence/feature-store-138/step-5-real-dataset.json",
+        "docs/evidence/feature-store-241/step-2-resumed-20261107T221412Z.json",
+        "docs/evidence/feature-store-241/step-4-final-benchmark-20261108T011159Z.json"
+      ]
+    },
+    {
+      "id": "C14",
+      "requirement": "2021 warm-up only; 2022–2025 chronological evaluation and 2,504-row pinned cohort",
+      "issues": [
+        138,
+        164,
+        241
+      ],
+      "verdict": "pass",
+      "qualificationScope": "Pinned historical behavior/work evidence; integrated assessment pending",
+      "evidence": [
+        "docs/evidence/feature-store-138/step-5-real-dataset.json",
+        "docs/evidence/feature-store-164/step-4-checkpoint.json",
+        "docs/evidence/feature-store-241/step-4-final-benchmark-20261108T011159Z.json"
+      ]
+    },
+    {
+      "id": "C15",
+      "requirement": "One authorization batch and one pre-delivery batch, constant rows/calls; dataset build 8 SQL, no per-row verification",
+      "issues": [
+        138,
+        166,
+        231,
+        241
+      ],
+      "verdict": "pass",
+      "qualificationScope": "Pinned historical behavior/work evidence; integrated assessment pending",
+      "evidence": [
+        "docs/evidence/feature-store-138/step-5-integration.json",
+        "docs/evidence/feature-store-166/final-read-boundary.json",
+        "docs/evidence/feature-store-231/final-composite.json",
+        "docs/evidence/feature-store-241/step-2-resumed-20261107T221412Z.json"
+      ]
+    },
+    {
+      "id": "C16",
+      "requirement": "Dataset build/write/hash at most 21 s under 30 s, at least three fresh-process cold and three warm trials",
+      "issues": [
+        138,
+        241,
+        173
+      ],
+      "verdict": "blocked",
+      "qualificationScope": "Current-source absolute capacity pending approved rerun",
+      "evidence": [
+        "docs/evidence/feature-store-138/step-5-real-dataset.json",
+        "docs/evidence/feature-store-241/step-4-final-benchmark-20261108T011159Z.json"
+      ],
+      "note": "Historical #138 six-trial pass; #241 ABBA six candidates pass but only connection-cold in one process; seven source-map changes."
+    },
+    {
+      "id": "C17",
+      "requirement": "Revocation/deletion during I/O/calculation refuses delivery without partial results",
+      "issues": [
+        138,
+        166,
+        167
+      ],
+      "verdict": "pass",
+      "qualificationScope": "Pinned historical behavior/work evidence; integrated assessment pending",
+      "evidence": [
+        "docs/evidence/feature-store-138/step-5-integration.json",
+        "docs/evidence/feature-store-166/final-read-boundary.json",
+        "docs/evidence/feature-store-167/step-2-behavior-20261105T0310Z.json"
+      ]
+    },
+    {
+      "id": "C18",
+      "requirement": "Upload before BEGIN; short publication under cleaner address lock; metadata-only HEAD with hash and size",
+      "issues": [
+        138,
+        165,
+        228
+      ],
+      "verdict": "pass",
+      "qualificationScope": "Pinned historical behavior/work evidence; integrated assessment pending",
+      "evidence": [
+        "docs/evidence/feature-store-138/step-5-integration.json",
+        "docs/evidence/feature-store-165/review-corrections.json",
+        "docs/evidence/feature-store-165/review-benchmark.json",
+        "docs/evidence/feature-store-228/local-work-budget-review-fix.json"
+      ]
+    },
+    {
+      "id": "C19",
+      "requirement": "No explicit reader coordination locks or transactions across I/O/calculation",
+      "issues": [
+        138,
+        166,
+        231
+      ],
+      "verdict": "pass",
+      "qualificationScope": "Pinned historical behavior/work evidence; integrated assessment pending",
+      "evidence": [
+        "docs/evidence/feature-store-138/step-5-integration.json",
+        "docs/evidence/feature-store-166/final-read-boundary.json",
+        "docs/evidence/feature-store-231/final-composite.json"
+      ]
+    },
+    {
+      "id": "C20",
+      "requirement": "Logical invalidation before grace-delayed resumable removal and pruning preserving latest/last-valid/pinned values",
+      "issues": [
+        138,
+        166,
+        229
+      ],
+      "verdict": "pass",
+      "qualificationScope": "Pinned historical behavior/work evidence; integrated assessment pending",
+      "evidence": [
+        "docs/evidence/feature-store-138/step-5-integration.json",
+        "docs/evidence/feature-store-166/final-lifecycle.json",
+        "docs/evidence/feature-store-166/final-cleaner.json",
+        "docs/evidence/229-recovery/step-4-final-validation.json"
+      ],
+      "note": "Default grace 300 s; tests explicitly shorten it. Recovery retirement is distinct from removal grace."
+    },
+    {
+      "id": "C21",
+      "requirement": "Scoped 2025 deletion invalidates 1,948 features, 1,948 labels and six datasets; 5,517 earlier rows each unchanged without recompute",
+      "issues": [
+        138
+      ],
+      "verdict": "pass",
+      "qualificationScope": "Historical exact deletion fixture",
+      "evidence": [
+        "docs/evidence/feature-store-138/step-5-real-dataset.json"
+      ],
+      "note": "Rebuild after 2025 deletion has 1,871 examples; conservative season lineage retained."
+    },
+    {
+      "id": "C22",
+      "requirement": "Immutable SQL-owned model/report dataset/version/code/clock pins and trusted short publication",
+      "issues": [
+        165,
+        166
+      ],
+      "verdict": "pass",
+      "qualificationScope": "Pinned historical behavior/work evidence; integrated assessment pending",
+      "evidence": [
+        "docs/evidence/feature-store-165/review-corrections.json",
+        "docs/evidence/feature-store-166/final-validation.json"
+      ]
+    },
+    {
+      "id": "C23",
+      "requirement": "Descriptor get-or-create and rollback/retry/shared-address/orphan recovery preserve provenance and bound cleanup metadata",
+      "issues": [
+        165,
+        166,
+        229
+      ],
+      "verdict": "pass",
+      "qualificationScope": "Pinned historical behavior/work evidence; integrated assessment pending",
+      "evidence": [
+        "docs/evidence/feature-store-165/review-corrections.json",
+        "docs/evidence/feature-store-165/recreated-object.json",
+        "docs/evidence/feature-store-166/final-lifecycle.json",
+        "docs/evidence/229-recovery/step-4-final-validation.json"
+      ],
+      "note": "Normal publication 5 SQL (4 transactional), plus bounded exceptional re-creation enrollments outside BEGIN; 24 h retirement versus 300 s grace."
+    },
+    {
+      "id": "C24",
+      "requirement": "Model-only reads retain two SQL and one GET per selected artifact with no example-table work",
+      "issues": [
+        166,
+        231
+      ],
+      "verdict": "pass",
+      "qualificationScope": "Pinned historical behavior/work evidence; integrated assessment pending",
+      "evidence": [
+        "docs/evidence/feature-store-166/final-read-boundary.json",
+        "docs/evidence/feature-store-231/final-composite.json",
+        "docs/evidence/feature-store-242/final-benchmark-20261108T064349Z.json"
+      ]
+    },
+    {
+      "id": "C25",
+      "requirement": "Walk-forward empirical baseline uses chronological player/game folds and registered threshold and whole-distribution scores",
+      "issues": [
+        164
+      ],
+      "verdict": "pass",
+      "qualificationScope": "Historical pinned evaluation; no new current-code scoring run",
+      "evidence": [
+        "docs/evidence/feature-store-164/step-4-checkpoint.json",
+        "docs/feature-store-spike-preregistration.md",
+        "docs/evidence/feature-store-164/calibration-correction.json"
+      ]
+    },
+    {
+      "id": "C26",
+      "requirement": "Report pooled/per-season n=2–4, 5–8, 9–16, coverage/exclusions/empty cells; keep infinite log loss",
+      "issues": [
+        164
+      ],
+      "verdict": "pass",
+      "qualificationScope": "Historical pinned evaluation",
+      "evidence": [
+        "docs/evidence/feature-store-164/step-3-score-summary.json",
+        "docs/evidence/feature-store-164/calibration-correction.json",
+        "docs/evidence/feature-store-164/step-4-checkpoint.json"
+      ],
+      "note": "183 infinite-loss cases remain positive-infinity; calibration correction moved 369 placements, other fields unchanged."
+    },
+    {
+      "id": "C27",
+      "requirement": "Separate strict from flagged retrospective reconstruction; genuine captured market comparison only; no invented accuracy gate",
+      "issues": [
+        138,
+        164,
+        173
+      ],
+      "verdict": "pass",
+      "qualificationScope": "Historical evidence disclosure",
+      "evidence": [
+        "docs/feature-store-spike-preregistration.md",
+        "docs/evidence/feature-store-164/step-4-checkpoint.json",
+        "docs/source-license-neon-qualification.md"
+      ],
+      "note": "2,504 retrospective forecasts and zero strict forecasts; market unavailable. Empirical method itself is naive baseline; no independent win/ROI claim."
+    },
+    {
+      "id": "C28",
+      "requirement": "Governed context prediction uses selected feature sampleSize, history compatibility and Q2 context plus both distinct receipts",
+      "issues": [
+        167,
+        235
+      ],
+      "verdict": "pass",
+      "qualificationScope": "Pinned historical behavior/work evidence; integrated assessment pending",
+      "evidence": [
+        "docs/evidence/feature-store-167/step-2-behavior-20261105T0310Z.json",
+        "docs/evidence/feature-store-231/final-composite.json"
+      ]
+    },
+    {
+      "id": "C29",
+      "requirement": "Evidence-mode refusal, one operation deadline, no late query/delivery and no partial output on refusal",
+      "issues": [
+        167,
+        168
+      ],
+      "verdict": "pass",
+      "qualificationScope": "Pinned historical behavior/work evidence; integrated assessment pending",
+      "evidence": [
+        "docs/evidence/feature-store-167/step-2-behavior-20261105T0310Z.json",
+        "docs/evidence/feature-store-168/step-0-handler-20261106T013729Z.json"
+      ]
+    },
+    {
+      "id": "C30",
+      "requirement": "Response excludes internal connection state; same-process caller deadline only shortens default; query-only handler and exactly-once owner disposal",
+      "issues": [
+        168
+      ],
+      "verdict": "pass",
+      "qualificationScope": "Pinned historical behavior/work evidence; integrated assessment pending",
+      "evidence": [
+        "docs/evidence/feature-store-168/step-0-owner-20261106T013729Z.json",
+        "docs/evidence/feature-store-168/step-0-handler-20261106T013729Z.json"
+      ],
+      "note": "Owner opens statement_timeout 1–300 ms; pool release/release(true) or standalone end; discard interrupts abandoned work without handler-owned disposal."
+    },
+    {
+      "id": "C31",
+      "requirement": "Prediction six 100-sample trials on full fixture; distinct fresh cold processes/connections; pinned season/n/player/team diversity",
+      "issues": [
+        168,
+        242,
+        173
+      ],
+      "verdict": "blocked",
+      "qualificationScope": "Current-source prediction capacity pending approved rerun",
+      "evidence": [
+        "docs/evidence/feature-store-168/final-benchmark-20261106T161720Z.json",
+        "docs/evidence/feature-store-242/final-benchmark-20261108T064349Z.json"
+      ],
+      "note": "Historical #242 p95 maximum 170.547 ms; 300 cold processes, 100 QBs, 32 teams, player max 1%, all 15 season-band cells and n=2..16."
+    },
+    {
+      "id": "C32",
+      "requirement": "Startup trial p95 at most 210 ms and each startup/full-path sample at most 300 ms; versioned shared runner/auditor rule",
+      "issues": [
+        242,
+        173
+      ],
+      "verdict": "blocked",
+      "qualificationScope": "Current-source trial-p95-v2 qualification pending approved rerun",
+      "evidence": [
+        "docs/evidence/feature-store-242/final-benchmark-20261108T064349Z.json",
+        "docs/evidence/feature-store-242/final-validation-20261108T064903Z.json"
+      ],
+      "note": "Five startup values between 210 and 300 ms can pass at N=100; six fail p95. Preserve original #168 sample-max-v1 format unchanged."
+    },
+    {
+      "id": "C33",
+      "requirement": "At least three cold/three warm full recomputations with process/connection/server/cache boundaries disclosed, no idempotent no-op substitution",
+      "issues": [
+        138,
+        169,
+        173
+      ],
+      "verdict": "pass",
+      "qualificationScope": "Current matching-source producer qualification; dataset/prediction pending",
+      "evidence": [
+        "docs/evidence/feature-store-138/step-5-real-dataset.json",
+        "docs/evidence/feature-store-169/benchmark-20261109T061738Z.json"
+      ],
+      "note": "#169 server restart once per cold/warm block; tmpfs/OS caches are not claimed cold."
+    },
+    {
+      "id": "C34",
+      "requirement": "Keep every attempt and censored timeout; refusal never success; ABBA required only for optimization comparisons",
+      "issues": [
+        138,
+        169,
+        241,
+        242
+      ],
+      "verdict": "pass",
+      "qualificationScope": "Historical attempt/evidence policy",
+      "evidence": [
+        "docs/evidence/feature-store-169/benchmark-20261109T061738Z.json",
+        "docs/evidence/feature-store-169/benchmark-20261109T050208Z.json",
+        "docs/evidence/feature-store-241/step-4-final-benchmark-20261108T011159Z.json",
+        "docs/evidence/feature-store-241/cleanup-stopped-20261108T045418Z.json",
+        "docs/evidence/feature-store-242/final-benchmark-20261108T064349Z.json"
+      ],
+      "note": "No retries/replacements in approved #173 matrices; stop on first failure."
+    },
+    {
+      "id": "C35",
+      "requirement": "Ingestion at most 42 s including network; fixed 12 SQL; full-season feature job at most 84 s with 8 SQL",
+      "issues": [
+        169,
+        251
+      ],
+      "verdict": "pass",
+      "qualificationScope": "Current-source #169 30-attempt qualification",
+      "evidence": [
+        "docs/evidence/feature-store-169/benchmark-20261109T061738Z.json",
+        "services/pipeline/tests/feature-store/transfer-fixture.check.mts"
+      ],
+      "note": "24 ingest attempts and six features. Owner-approved conservative sum of live GitHub transfer and exact pinned-byte loopback ingestion. Each leg under 60 s; upstream drift observation is not failure, protocol/transport/timeout is failure. Raw trial downloads removed after checks."
+    },
+    {
+      "id": "C36",
+      "requirement": "Bounded local integrity inventory and each eligible raw address verified once, missing/corrupt/orphan refusal",
+      "issues": [
+        170
+      ],
+      "verdict": "pass",
+      "qualificationScope": "Historical 16-object qualification; shared-source assessment pending",
+      "evidence": [
+        "docs/evidence/feature-store-170/checkpoint-4-machine-receipt.json",
+        "docs/evidence/feature-store-170/checkpoint-4-qualification.json",
+        "docs/evidence/feature-store-170/checkpoint-4-memory.json"
+      ],
+      "note": "16 objects, 246,304,787 bytes; bounded payload evidence with and without forced GC; quiesced disposable catalog uses synthetic grants."
+    },
+    {
+      "id": "C37",
+      "requirement": "Independent exact-raw recompute replay preserves input owner clocks and matches normalization/derived lineage/values before success receipt",
+      "issues": [
+        244
+      ],
+      "verdict": "pass",
+      "qualificationScope": "Two committed historical CLI runs; later guard and shared-source assessment pending",
+      "evidence": [
+        "docs/evidence/feature-store-244/checkpoint-3-qualification.json",
+        "docs/evidence/feature-store-244/checkpoint-3-replay-1.json",
+        "docs/evidence/feature-store-244/checkpoint-3-replay-2.json"
+      ],
+      "note": "103,468 normalized rows, 20 contexts, 18,762 feature and 18,762 label rows. Missing/corrupt refusals have no success receipt; no elapsed gate."
+    },
+    {
+      "id": "C38",
+      "requirement": "Verify 16 source declarations and qualified schedule release scope, distinguish obligations and direct upstream uncertainty",
+      "issues": [
+        171
+      ],
+      "verdict": "pass",
+      "qualificationScope": "Dated source-declaration record, not fresh legal clearance",
+      "evidence": [
+        "docs/evidence/feature-store-171/qualification-receipt.json",
+        "docs/source-license-neon-qualification.md"
+      ]
+    },
+    {
+      "id": "C39",
+      "requirement": "Public participation-derived outputs need output/channel-specific ShareAlike disposition and tested delivery gate",
+      "issues": [
+        197,
+        53
+      ],
+      "verdict": "blocked",
+      "qualificationScope": "New public output release",
+      "evidence": [
+        "docs/197-roadmap.md",
+        "docs/53-public-serving-roadmap.md"
+      ],
+      "note": "Existing listed Git fixture/excerpt notices approved; new public outputs held. #197 decision/documentation closed; #53 owns enforcement, no blanket release."
+    },
+    {
+      "id": "C40",
+      "requirement": "Distinguish provider defaults/console observations from actual intended pipeline role/driver effective settings",
+      "issues": [
+        171
+      ],
+      "verdict": "blocked",
+      "qualificationScope": "Hosted pipeline configuration unverified",
+      "evidence": [
+        "docs/evidence/feature-store-171/qualification-receipt.json",
+        "docs/source-license-neon-qualification.md"
+      ],
+      "note": "Historical authorized read-only console observation is not pipeline-role proof; no hosted read performed in #173."
+    },
+    {
+      "id": "C41",
+      "requirement": "Dedicated synthetic-only R2 conditional create and SHA/size metadata contract supersedes original GCS/Blaze gate",
+      "issues": [
+        172
+      ],
+      "verdict": "pass",
+      "qualificationScope": "Historical tested adapter blobs and synthetic live contract",
+      "evidence": [
+        "docs/evidence/feature-store-172/adapter-contract-review-fix.json",
+        "docs/evidence/feature-store-172/live-spike.json",
+        "docs/172-r2-object-store.md"
+      ],
+      "note": "No ETag-as-SHA, default-store switch or hosted capacity claim. Remote HEAD lock time requalification precedes default use; later bounded adapter methods require scoped assessment."
+    },
+    {
+      "id": "C42",
+      "requirement": "Independent premise/code review tied to affected code, not inferred from issue closure or merged heads",
+      "issues": [
+        138,
+        173
+      ],
+      "verdict": "blocked",
+      "qualificationScope": "Review-provenance ledger and final #173 review pending",
+      "evidence": [
+        "docs/evidence/feature-store-138/foundation-pr-checkpoint.json",
+        "docs/evidence/feature-store-164/step-4-checkpoint.json",
+        "docs/evidence/feature-store-166/final-validation.json"
+      ],
+      "note": "Owner-confirmed ranges recorded separately. Older pending-review records and missing exact final reviewed SHAs remain gaps."
+    },
+    {
+      "id": "C43",
+      "requirement": "Final integrated checkpoint has explicit CI disposition without reusing earlier green approval across changed affected code",
+      "issues": [
+        138,
+        173
+      ],
+      "verdict": "blocked",
+      "qualificationScope": "286f4d0 App/CI fail; owner accepts separate timeout handling for checkpoint",
+      "evidence": [
+        "docs/evidence/feature-store-138/foundation-pr-checkpoint.json"
+      ],
+      "note": "7d1883f identical runtime code green. 286f4d0 sole App failure is 5 s domainPackage test timeout; both DB jobs pass. Move pin if fix merges before completion."
+    },
+    {
+      "id": "C44",
+      "requirement": "Original week-scale spike split into owner-approved bounded successors without discarding history or weakening targets",
+      "issues": [
+        138,
+        173
+      ],
+      "verdict": "pass",
+      "qualificationScope": "Recorded scope decision",
+      "evidence": [
+        "docs/evidence/feature-store-138/foundation-pr-checkpoint.json"
+      ],
+      "note": "#138 closes foundation steps 1–5 only. #173 approved 3.5–5 h; split before expansion beyond 5 h."
+    },
+    {
+      "id": "C45",
+      "requirement": "Explicit full thin-slice go/no-go with limits, no deployment/freeze/UI/public release or #54 implication",
+      "issues": [
+        173
+      ],
+      "verdict": "blocked",
+      "qualificationScope": "Final verdict pending assessment and approved reruns",
+      "evidence": []
+    },
+    {
+      "id": "C46",
+      "requirement": "Document accepted terminal-UPDATE finished_at to COMMIT visibility gap",
+      "issues": [
+        231,
+        241
+      ],
+      "verdict": "pass",
+      "qualificationScope": "Owner-accepted residual limitation",
+      "evidence": [
+        "docs/evidence/feature-store-241/step-1-validation-20261107T214813Z.json",
+        "docs/feature-store-job-visibility.md"
+      ],
+      "note": "A knownAsOf 0.5 ms after finished_at can select a different revision after COMMIT. No commit-timestamp clock or gap repair added."
+    },
+    {
+      "id": "C47",
+      "requirement": "Identify host/database cross-clock captured_at <= ingested_at limitation without clock/timestamp adjustment",
+      "issues": [
+        258
+      ],
+      "verdict": "pass",
+      "qualificationScope": "Disclosure; repair remains open in #258",
+      "evidence": [
+        "docs/evidence/feature-store-169/benchmark-20261109T050208Z.json",
+        "docs/feature-store-job-visibility.md"
+      ],
+      "note": "No separate repair or change to database constraint in #173."
+    }
+  ],
+  "issueProvenance": [
+    {
+      "issue": 138,
+      "pr": 174,
+      "finalPrHead": "545c606b52efc462f96eb1c48ec163f5fea65f53",
+      "review": {
+        "status": "exact-final-independent-reviewed-sha-not-established",
+        "scope": "Final merged head is not an independent-review assertion; see original receipts and owner decisions"
+      }
+    },
+    {
+      "issue": 163,
+      "pr": 178,
+      "finalPrHead": "7b35183cff0b3b1e4590bc250dccd89dff9bcccc",
+      "review": {
+        "status": "exact-final-independent-reviewed-sha-not-established",
+        "scope": "Final merged head is not an independent-review assertion; see original receipts and owner decisions"
+      }
+    },
+    {
+      "issue": 164,
+      "pr": 202,
+      "finalPrHead": "14bf01277643c8301f1a7c1a3d52095fb36a9aa2",
+      "review": {
+        "status": "exact-final-independent-reviewed-sha-not-established",
+        "scope": "Final merged head is not an independent-review assertion; see original receipts and owner decisions"
+      }
+    },
+    {
+      "issue": 165,
+      "pr": 227,
+      "finalPrHead": "6894aa2ff2e74935d35c6a26cdfbdf4c52dd0f48",
+      "review": {
+        "status": "exact-final-independent-reviewed-sha-not-established",
+        "scope": "Final merged head is not an independent-review assertion; see original receipts and owner decisions"
+      }
+    },
+    {
+      "issue": 166,
+      "pr": 230,
+      "finalPrHead": "8c971632fd8d5f396c4e1de6744a5649d98f59da",
+      "review": {
+        "status": "exact-final-independent-reviewed-sha-not-established",
+        "scope": "Final merged head is not an independent-review assertion; see original receipts and owner decisions"
+      }
+    },
+    {
+      "issue": 167,
+      "pr": 239,
+      "finalPrHead": "f12af171a1ad63b7ecbea6fdc2c90b8c7dc54f7c",
+      "review": {
+        "status": "owner-session-confirmed",
+        "scope": "Step 0 both reviews and handler review; owner approved push of f12af17",
+        "exactRange": null
+      }
+    },
+    {
+      "issue": 168,
+      "pr": 240,
+      "finalPrHead": "d371981c0b03f8083b6b01eb15dc9e1838e8ad94",
+      "review": {
+        "status": "owner-session-confirmed",
+        "scope": "Owner independently checked 17e07d6..d371981, all 59 final source identities and 600 samples",
+        "exactRange": "17e07d6..d371981"
+      }
+    },
+    {
+      "issue": 169,
+      "pr": 255,
+      "finalPrHead": "7013a43a80c8735a448c483405ae4bae653328c2",
+      "review": {
+        "status": "owner-confirmed",
+        "exactRange": "9ef323e..cd9fe66",
+        "additionalMeasuredCommit": "42ef49090748dc947e305a309dd2e3d698d0667e",
+        "scope": "Requalification independently checked; final evidence-only commit separate"
+      }
+    },
+    {
+      "issue": 170,
+      "pr": 245,
+      "finalPrHead": "12250ec531b572a96568539051f41628dc496c58",
+      "review": {
+        "status": "exact-final-independent-reviewed-sha-not-established",
+        "scope": "Final merged head is not an independent-review assertion; see original receipts and owner decisions"
+      }
+    },
+    {
+      "issue": 171,
+      "pr": 199,
+      "finalPrHead": "74a5d482bef47b1939f8b370dc384cb1a5b3ab35",
+      "review": {
+        "status": "exact-final-independent-reviewed-sha-not-established",
+        "scope": "Final merged head is not an independent-review assertion; see original receipts and owner decisions"
+      }
+    },
+    {
+      "issue": 172,
+      "pr": 243,
+      "finalPrHead": "cf705de13319a80dca364ae1416c9f521f583072",
+      "review": {
+        "status": "exact-final-independent-reviewed-sha-not-established",
+        "scope": "Final merged head is not an independent-review assertion; see original receipts and owner decisions"
+      }
+    },
+    {
+      "issue": 197,
+      "pr": 257,
+      "finalPrHead": "af5c828ee7dbfade1c6a32caea0c9a013bbb854c",
+      "review": {
+        "status": "exact-final-independent-reviewed-sha-not-established",
+        "scope": "Final merged head is not an independent-review assertion; see original receipts and owner decisions"
+      }
+    },
+    {
+      "issue": 228,
+      "pr": 237,
+      "finalPrHead": "8160bd742c3ff83f86413b3ff700a9aef5a08a02",
+      "review": {
+        "status": "exact-final-independent-reviewed-sha-not-established",
+        "scope": "Final merged head is not an independent-review assertion; see original receipts and owner decisions"
+      }
+    },
+    {
+      "issue": 229,
+      "pr": 234,
+      "finalPrHead": "0010477b312fb78ea7a51bd19c02780e10e2a0d4",
+      "review": {
+        "status": "exact-final-independent-reviewed-sha-not-established",
+        "scope": "Final merged head is not an independent-review assertion; see original receipts and owner decisions"
+      }
+    },
+    {
+      "issue": 231,
+      "pr": 233,
+      "finalPrHead": "3b5d59ae563466ef005e2447f819f6b9fbcca5b9",
+      "review": {
+        "status": "exact-final-independent-reviewed-sha-not-established",
+        "scope": "Final merged head is not an independent-review assertion; see original receipts and owner decisions"
+      }
+    },
+    {
+      "issue": 235,
+      "pr": 236,
+      "finalPrHead": "9e545cb242f986bdcb4f376f452e173c533714a8",
+      "review": {
+        "status": "exact-final-independent-reviewed-sha-not-established",
+        "scope": "Final merged head is not an independent-review assertion; see original receipts and owner decisions"
+      }
+    },
+    {
+      "issue": 241,
+      "pr": 246,
+      "finalPrHead": "1d4a33c154524dcb2b461df9290757750afe3923",
+      "review": {
+        "status": "owner-confirmed",
+        "exactRange": null,
+        "scope": "Owner explicitly confirms #241 review; exact reviewed range not supplied"
+      }
+    },
+    {
+      "issue": 242,
+      "pr": 248,
+      "finalPrHead": "96f7e21e12d66bd2c4b06b26d44afac6a28d07c2",
+      "review": {
+        "status": "owner-confirmed",
+        "exactRange": "03fac00..96f7e21"
+      }
+    },
+    {
+      "issue": 244,
+      "pr": 253,
+      "finalPrHead": "42f974002d1fca943c05accf80ad5810384fdc4c",
+      "review": {
+        "status": "exact-final-independent-reviewed-sha-not-established",
+        "scope": "Final merged head is not an independent-review assertion; see original receipts and owner decisions"
+      }
+    },
+    {
+      "issue": 251,
+      "pr": 252,
+      "finalPrHead": "00ced71919cc8c45bf53a06c532329f040dc15d8",
+      "review": {
+        "status": "owner-confirmed",
+        "exactRange": "4ce685a..00ced71"
+      }
+    }
+  ],
+  "evidenceIndex": [
+    {
+      "path": "docs/172-r2-object-store.md",
+      "sha256": "f933ff6f3f62ffdb9cc42944f706951db055e034f86610a59f3a67e611150403",
+      "byteSize": 849,
+      "blobId": "7c5496cbedc41855e5bae505f30306ce0bd8bd16"
+    },
+    {
+      "path": "docs/197-roadmap.md",
+      "sha256": "631eebde63b3062783893b40f597812e59f6cea3d8ade7bc326a8d09327d7e0e",
+      "byteSize": 17000,
+      "blobId": "2f8c5b7089e058c59bcbe632c0924da4714a2609"
+    },
+    {
+      "path": "docs/53-public-serving-roadmap.md",
+      "sha256": "a79dc4082ccf8e3f2b1411ec9b0f09af124b012323f4b3a455635d8fd9ebe865",
+      "byteSize": 4063,
+      "blobId": "70792440f893622502750dfac0274bba77df43a7"
+    },
+    {
+      "path": "docs/evidence/229-recovery/step-4-final-validation.json",
+      "sha256": "61451fef1d2f6a8f5b8698d95ba9638ffdb760a19166488aa99273a36d56324c",
+      "byteSize": 10852,
+      "blobId": "9e22d5c0c90d880d71bc4885bb1e8852216ec894",
+      "recordedIdentity": {
+        "source": {}
+      }
+    },
+    {
+      "path": "docs/evidence/feature-store-138/foundation-pr-checkpoint.json",
+      "sha256": "42e368df756e196b4fda913555b3e7feaec2f363dded21a1d2104d4318ae02a7",
+      "byteSize": 6186,
+      "blobId": "c8ad914d1f63514bf34ea784379dd008354e320a",
+      "recordedIdentity": {
+        "testedCodeCommit": "05bf12ce26102af19121e1c5efe3485a4cbb64d3",
+        "approvedImplementation": "420710f1126a793e486e29c83d8b8abc9a42740d"
+      }
+    },
+    {
+      "path": "docs/evidence/feature-store-138/source-inventory.json",
+      "sha256": "8b5444545354f3cfb16473ca88ddf1cc4f59fe19c54ee6f6c282e12f63c289b9",
+      "byteSize": 40967,
+      "blobId": "f333e69f5ac97475eb7c7680e0992a0379dd99b3",
+      "recordedIdentity": {}
+    },
+    {
+      "path": "docs/evidence/feature-store-138/step-2-objects.json",
+      "sha256": "8dbf93ab7a3647b18a43ac6dcfa87b539bdff36f820211b0053b1d0db56d566a",
+      "byteSize": 827,
+      "blobId": "d8876771d5b9c9fb13a7eac6309964c55267453e",
+      "recordedIdentity": {}
+    },
+    {
+      "path": "docs/evidence/feature-store-138/step-2-schema.json",
+      "sha256": "569eb8b042acded8272d7fc54e5c39ac5683d4e17423015fd4f5995d337422d2",
+      "byteSize": 2372,
+      "blobId": "6d7e8fa9aed9e477d98c42950d798c6b9eae7140",
+      "recordedIdentity": {}
+    },
+    {
+      "path": "docs/evidence/feature-store-138/step-3-integration.json",
+      "sha256": "8ddf07e7232c34df8ba9c19f27bfbc79a54d5592ad764ef1f6ab685be37345fc",
+      "byteSize": 1092,
+      "blobId": "28abf7959f13ade1a64a4cf7cd962018f1324233",
+      "recordedIdentity": {}
+    },
+    {
+      "path": "docs/evidence/feature-store-138/step-3-source-manifest.json",
+      "sha256": "2086cbbde03664d99eccbec64c12f659262f848c31ccb97d90aaff2c1c601f30",
+      "byteSize": 30781,
+      "blobId": "4b299fedde6c82d7ed061ac68ee6b03f59be7dc5",
+      "recordedIdentity": {}
+    },
+    {
+      "path": "docs/evidence/feature-store-138/step-4-integration.json",
+      "sha256": "1779a65da3b6b1bfdf4fc6e10b4ac3881dd4aa83bcf43189882a8f2f011079e9",
+      "byteSize": 2403,
+      "blobId": "cf79153dee8f7b0af901c00d52642f85ad7688ee",
+      "recordedIdentity": {}
+    },
+    {
+      "path": "docs/evidence/feature-store-138/step-5-integration.json",
+      "sha256": "72500d1f35921571684220cc3f26aa42883147dfa16b3568e8543e27a8eead3f",
+      "byteSize": 6268,
+      "blobId": "2cec43e5e9f24c04fbbffdaaa892a90b2e8140ee",
+      "recordedIdentity": {}
+    },
+    {
+      "path": "docs/evidence/feature-store-138/step-5-real-dataset.json",
+      "sha256": "08c02e725ba355fbd20579651258ffc05dfcde174723911af0b093c6041918c6",
+      "byteSize": 12451,
+      "blobId": "1fd0895ba31e7b90dba805a936618b6afeb4713e",
+      "recordedIdentity": {}
+    },
+    {
+      "path": "docs/evidence/feature-store-163/review-1-correctness.json",
+      "sha256": "8e7e5b1bf105f14c410ddc09caf812fcf96f05c81dec863c8149bcc8db2d2caf",
+      "byteSize": 4321,
+      "blobId": "44b10e2c4b81e13c376cbf07233cccdb210c1392",
+      "recordedIdentity": {}
+    },
+    {
+      "path": "docs/evidence/feature-store-163/review-1-hot-path.json",
+      "sha256": "6a55a23c68a986466d9f894e8ca385ca7fdf3e28cc0df580934b5c753355628a",
+      "byteSize": 24388,
+      "blobId": "52bce1335eb5c8997ba1c3e9ed19542635de5f06",
+      "recordedIdentity": {
+        "code": {
+          "gitSha": "938d398e493c274b8bf00bbc01a9fffc4d07cd35",
+          "contentSha256": "55d440631e8041969fb7e22abdc074923c232402c4e43aaf280e5d6090a9835a"
+        }
+      }
+    },
+    {
+      "path": "docs/evidence/feature-store-164/calibration-correction.json",
+      "sha256": "22a5a4c9b4c17bb3bf84607a274aa410ed39795c46850c07e02585a32d12e48c",
+      "byteSize": 5679,
+      "blobId": "780a337cd65164dba603fa042a6dc193494b7ccd",
+      "recordedIdentity": {
+        "measuredImplementation": {
+          "gitSha": "ff87274f3edddb978e55f3e721ab06492ca56687",
+          "contentSha256": "d31548cddf7eb898096a287a4735675e42d6f6d7cb4d91f470b5be6373efeb7c"
+        }
+      }
+    },
+    {
+      "path": "docs/evidence/feature-store-164/step-3-score-summary.json",
+      "sha256": "c46d4a715d041f4ac9a46cd08ebf7341f5da836dbe8d75952b144ca89d4a089b",
+      "byteSize": 21028,
+      "blobId": "a70aaa5da71319b88a5d550f1c839d2696be0abf",
+      "recordedIdentity": {}
+    },
+    {
+      "path": "docs/evidence/feature-store-164/step-4-capacity.json",
+      "sha256": "4a291157b2f70c80083f379626260f43f5f9fc2fc15aadbac73857b0729f7a63",
+      "byteSize": 8635,
+      "blobId": "317f6a7ff4d748a86b40308c75881d26472cd2e6",
+      "recordedIdentity": {
+        "code": {
+          "gitSha": "ff87274f3edddb978e55f3e721ab06492ca56687",
+          "contentSha256": "d31548cddf7eb898096a287a4735675e42d6f6d7cb4d91f470b5be6373efeb7c"
+        }
+      }
+    },
+    {
+      "path": "docs/evidence/feature-store-164/step-4-checkpoint.json",
+      "sha256": "a3e548767e5c7041fc5639c46dd8c2545dbaf9a2b6fbd5757ecac6a894a4cf76",
+      "byteSize": 11101,
+      "blobId": "acece2f48271e0a378620fe2f10224c08ba18406",
+      "recordedIdentity": {
+        "baseCommit": "edb5981c7561f12a6777a4ab7b7dd65b991815a1",
+        "measuredImplementation": {
+          "gitSha": "ff87274f3edddb978e55f3e721ab06492ca56687",
+          "contentSha256": "d31548cddf7eb898096a287a4735675e42d6f6d7cb4d91f470b5be6373efeb7c"
+        }
+      }
+    },
+    {
+      "path": "docs/evidence/feature-store-165/recreated-object.json",
+      "sha256": "5176b989b53f1bf6818f36e221e7ea4c30cf81cbdc50bca161f35228b73778a1",
+      "byteSize": 8254,
+      "blobId": "5fa74741984cd7fc0b210001e255b59d22e52ea9",
+      "recordedIdentity": {
+        "correctionBase": "6db1a4cf617634e0c83c148d78a4e61a436eb7f2"
+      }
+    },
+    {
+      "path": "docs/evidence/feature-store-165/review-benchmark.json",
+      "sha256": "1ef79478283cc2830e3453ba07ec7781204f1f88a0e318c67e8bf90398e04498",
+      "byteSize": 82350,
+      "blobId": "2e0fa75336d8844df4c05f984fd5f3b6c78600e4",
+      "recordedIdentity": {
+        "code": {
+          "gitSha": "967f3370002748258783bf121100a55bb0c79674",
+          "contentSha256": "fdd5a4257d5b2df2fafa393dfc9fe5bf687af69c8d988edff739360204fa451f"
+        }
+      }
+    },
+    {
+      "path": "docs/evidence/feature-store-165/review-corrections.json",
+      "sha256": "cf703ea778b9cab4bfca114201e56fa8dac693fbcd6bd2c5f943655f299be2bf",
+      "byteSize": 14272,
+      "blobId": "86081c07a2f773c9b9e423b20bcec66419d24916",
+      "recordedIdentity": {
+        "correctionBase": "967f337"
+      }
+    },
+    {
+      "path": "docs/evidence/feature-store-166/final-cleaner.json",
+      "sha256": "98198d3e5168d099931609b371206231be9c50858572ae445307a05bf968bd27",
+      "byteSize": 23758,
+      "blobId": "2baa5cc8a9acde5217d9617f8cc51c8a7a478a8d",
+      "recordedIdentity": {}
+    },
+    {
+      "path": "docs/evidence/feature-store-166/final-lifecycle.json",
+      "sha256": "29737e07cd035d798980d6f43690f1104478560652a4ca237401d9a1db437e3f",
+      "byteSize": 8881,
+      "blobId": "b55c62732b70994f2597bf4e30cdc177d7a5f30e",
+      "recordedIdentity": {}
+    },
+    {
+      "path": "docs/evidence/feature-store-166/final-read-boundary.json",
+      "sha256": "74264223f5388015d3d15bb2e2d131b556753bd95ca8f494f3c25dfb49e740c0",
+      "byteSize": 26972,
+      "blobId": "d52265aafffa9228f95882a473b160a36d7f5cfc",
+      "recordedIdentity": {}
+    },
+    {
+      "path": "docs/evidence/feature-store-166/final-validation.json",
+      "sha256": "83f67b3c29b98dcbaa1e39170aaf0cbe368bf43a9b5264ff388b6008f6b07763",
+      "byteSize": 12445,
+      "blobId": "34788a3e506bdc5f319bafe37119f28eb5bce2a2",
+      "recordedIdentity": {
+        "baseCommit": "8167af387a3863b867e71c2d830f2ddabe68987b",
+        "reviewedHead": "da46a72754cd64875b4e79296fb3a528308d0127",
+        "correctionCommit": "eb0562b6b3a4ef5fabd471eea8c38583c82cce03"
+      }
+    },
+    {
+      "path": "docs/evidence/feature-store-167/step-0-composite-relabel-20261104T0459Z.json",
+      "sha256": "da6d014668f8c13868df754223bfc718a2dfaebd81b486ad57f2ee45dd5965ab",
+      "byteSize": 6039,
+      "blobId": "b26dd3d99df8fa531f233f3d77ae4bec4a5a6e68",
+      "recordedIdentity": {}
+    },
+    {
+      "path": "docs/evidence/feature-store-167/step-0-context-20261104T0352Z.json",
+      "sha256": "740f0b6e4de2f9fa0db95f47d1ef53fe984939067bd1ca44af9016ff59735e1e",
+      "byteSize": 4046,
+      "blobId": "175b0a2bc1bbb74cd58175687f9cb7e0ba70da7a",
+      "recordedIdentity": {}
+    },
+    {
+      "path": "docs/evidence/feature-store-167/step-2-behavior-20261105T0310Z.json",
+      "sha256": "c14290323207f6a572cc6c836b0b9907d8209ccf4a9f7b3c60f1ea2606249c59",
+      "byteSize": 6088,
+      "blobId": "7efa339fbb14a07fb5199fd14455a128fd5d2abc",
+      "recordedIdentity": {}
+    },
+    {
+      "path": "docs/evidence/feature-store-168/final-benchmark-20261106T161720Z.json",
+      "sha256": "08f849c9c077febe2eb1801cf27fcaca3b673b9355a105a039498af00407d9f6",
+      "byteSize": 611055,
+      "blobId": "90c8d724db11cdf46e8c92aed6a094424b756844",
+      "recordedIdentity": {
+        "code": {
+          "gitSha": "a9a81e1ade238deb61df6491f1332ecc692c71f4",
+          "contentSha256": "63f3f88e82a8b71725f5788b69e08f376c2d7b698afdd8e6452073c86bc47280"
+        }
+      }
+    },
+    {
+      "path": "docs/evidence/feature-store-168/step-0-handler-20261106T013729Z.json",
+      "sha256": "ec8948d3bcd914a1953e2550d5a5ae3fce1cddbe1b7a6b4e43e4f3ba5ba00d0d",
+      "byteSize": 7654,
+      "blobId": "7180d1bc151335a8ed1c7b4425e37d53f6144945",
+      "recordedIdentity": {}
+    },
+    {
+      "path": "docs/evidence/feature-store-168/step-0-owner-20261106T013729Z.json",
+      "sha256": "7e0cf79b15020b4c91d9da89e66aadf478a8c45d7d087f71e1fee4e6f44d7c60",
+      "byteSize": 3343,
+      "blobId": "1a9cf81bf21ef6613b867ba27e4665938e553e5b",
+      "recordedIdentity": {}
+    },
+    {
+      "path": "docs/evidence/feature-store-169/benchmark-20261109T050208Z.json",
+      "sha256": "9330d5a2f8698b980177c340a32955cf3affe9273b0024246469ca11e6d00efb",
+      "byteSize": 29112,
+      "blobId": "f0aeb569a96838e634368d28ed7e7be3b82596ee",
+      "recordedIdentity": {
+        "source": {
+          "gitSha": "55d512b15c3e340c128d8b4195783faa00e29385",
+          "contentSha256": "f09e37d704ae021853e10a445528bf2f773e0c22c41e9d0947270b66896ccd97"
+        }
+      }
+    },
+    {
+      "path": "docs/evidence/feature-store-169/benchmark-20261109T061738Z.json",
+      "sha256": "d641f8ffe4b40847ad1123c7f61a660dd223a279be9bf374fa27b3ccd584d99e",
+      "byteSize": 29129,
+      "blobId": "a494266b69a30cd82756eef5509c1e8b8732614d",
+      "recordedIdentity": {
+        "source": {
+          "gitSha": "42ef49090748dc947e305a309dd2e3d698d0667e",
+          "contentSha256": "53ecba7e72742aa7fedf56088585dddea0ec05465d14b10377c24d4e231e21ee"
+        }
+      }
+    },
+    {
+      "path": "docs/evidence/feature-store-170/checkpoint-4-machine-receipt.json",
+      "sha256": "a36b909c395e177104baa2eeaa65e5268758383035821c9e6d3fbde5ea078cc1",
+      "byteSize": 1471,
+      "blobId": "6ef9c5154c5d7073269c6856ee579c4a52618240",
+      "recordedIdentity": {
+        "code": {
+          "gitSha": "47e7ffe8d130d53c105f98fd92b3dd276a8324f5",
+          "contentSha256": "894b8240645e760a4fea75aad8e4a4ba45926361fa11ffee4abf2d82d1849270"
+        }
+      }
+    },
+    {
+      "path": "docs/evidence/feature-store-170/checkpoint-4-memory.json",
+      "sha256": "64fdea60fbbecfcf2d578b7eee0bfd51d1fe380afdd947177d8c642b6537d8f5",
+      "byteSize": 7638,
+      "blobId": "0b48fb919e39a4b174453047aca6853de220f3fd",
+      "recordedIdentity": {}
+    },
+    {
+      "path": "docs/evidence/feature-store-170/checkpoint-4-qualification.json",
+      "sha256": "2eb2913b7a564d25d02b6c9bdd0bd72a8f184b5608e4076cf0164eed99ec24af",
+      "byteSize": 527,
+      "blobId": "72a1df4e59c78b5c50b21e3e185a03dfc8a50063",
+      "recordedIdentity": {}
+    },
+    {
+      "path": "docs/evidence/feature-store-171/qualification-receipt.json",
+      "sha256": "4339a6d10bcfb60445783b3e39749891795a82b4905bc16d336c73b3f65db595",
+      "byteSize": 22863,
+      "blobId": "c503c072ab5c81c298653f629401651786b7c53c",
+      "recordedIdentity": {
+        "baseCommit": "3b9d946cd57054803d1af892d62dd4413d82d43a"
+      }
+    },
+    {
+      "path": "docs/evidence/feature-store-172/adapter-contract-review-fix.json",
+      "sha256": "6a85edc5ed62addf3f573c60debcb62812e47c2b8c2db2895169090f5e6032d7",
+      "byteSize": 1004,
+      "blobId": "824af6c9f8b8c383ccc7c0f044aeb1a04e3fca4c",
+      "recordedIdentity": {
+        "candidateBaseCommit": "f9757c88f63b148436cc0a2aa52ec3f071f5dac4",
+        "blobs": {
+          "services/pipeline/src/featureStore/r2ObjectStore.ts": "d87be636dafdf0026386a6701aa92900fa650d37",
+          "services/pipeline/tests/support/r2TestConfig.ts": "e7d27d953f6d4596e53c6a9d82bc763249216543",
+          "services/pipeline/tests/feature-store/featureStoreObjectStore.test.ts": "c9e2803d673128f41a7aee1f986f835f17e99bd0"
+        }
+      }
+    },
+    {
+      "path": "docs/evidence/feature-store-172/live-spike.json",
+      "sha256": "612d01f3526c81109c27a04888a7d5d5fa181e3598fb73bd20a139692924168b",
+      "byteSize": 972,
+      "blobId": "a5a488eca83a888fb035a57b16d27d67803db927",
+      "recordedIdentity": {
+        "baseCommit": "17e07d624b212573e067a291ddf83ee0b0b7e225"
+      }
+    },
+    {
+      "path": "docs/evidence/feature-store-228/local-work-budget-review-fix.json",
+      "sha256": "0321200ff9f6dc7353418f964770d80b6a4bd86dac0183f9634caf1cde017ee1",
+      "byteSize": 3085,
+      "blobId": "bb0a59b315a4c7b99eb8e4a79fcea9e271253127",
+      "recordedIdentity": {
+        "source": {}
+      }
+    },
+    {
+      "path": "docs/evidence/feature-store-231/final-composite.json",
+      "sha256": "47a5fa7be3edb875c176c4a56c1f7e3badcfc79c33bcc398928a5300ca243772",
+      "byteSize": 5478,
+      "blobId": "c9e44e6abc32486a0b92ada8e4ed39af2bd4a729",
+      "recordedIdentity": {}
+    },
+    {
+      "path": "docs/evidence/feature-store-231/final-context.json",
+      "sha256": "5994f312943a159556db4aa7a6ee6124ccb3f9a036777b70f9c9197280dd0e81",
+      "byteSize": 4017,
+      "blobId": "0c3a0aaedf83530227178917e3db122ceaee92d3",
+      "recordedIdentity": {}
+    },
+    {
+      "path": "docs/evidence/feature-store-241/cleanup-restored-20261108T045912Z.json",
+      "sha256": "21c97c217fb2837cb0a341a1a312cfd23b9483dd78e25019b92c930637d8cfc6",
+      "byteSize": 6342,
+      "blobId": "0104740797341c22aa87fd47457d26ef5a256f37",
+      "recordedIdentity": {
+        "baseCommit": "e78e1753955baf16cacd2b9fe8229af5391c3a5c"
+      }
+    },
+    {
+      "path": "docs/evidence/feature-store-241/cleanup-stopped-20261108T045418Z.json",
+      "sha256": "c3821fbaa2c9982c8ef7012be1bc5915f178e87b2b11ff391878cd6d7130d968",
+      "byteSize": 5751,
+      "blobId": "7288c29de35c403eb480dcbee2cd18e0496b0140",
+      "recordedIdentity": {
+        "baseCommit": "e78e1753955baf16cacd2b9fe8229af5391c3a5c"
+      }
+    },
+    {
+      "path": "docs/evidence/feature-store-241/step-1-validation-20261107T214813Z.json",
+      "sha256": "57a86e80613e156efb7c3ec69c0fedd3cbd98157b18162b88f0d46c81d547a46",
+      "byteSize": 6384,
+      "blobId": "42fddbd3fb11865ff144324bea2a50077acfc625",
+      "recordedIdentity": {
+        "baseCommit": "dc0050a6a9f071c149098047d1428757245829cd"
+      }
+    },
+    {
+      "path": "docs/evidence/feature-store-241/step-2-resumed-20261107T221412Z.json",
+      "sha256": "72dd56159700a58e2267f7daf34ce3dddf1ecf0123077a5badac21c5e3c2a36d",
+      "byteSize": 17069,
+      "blobId": "a4fbd1ef702554022bffa427f55ff1a293c58d9d",
+      "recordedIdentity": {
+        "baseCommit": "53970ca3432f1b4d3ed06029bf431af433d222d7"
+      }
+    },
+    {
+      "path": "docs/evidence/feature-store-241/step-3-resumed-20261107T225754Z.json",
+      "sha256": "784fe3a9b4aebcd1e042ca635166a548d31ead8349498342bc83a2d141243365",
+      "byteSize": 22817,
+      "blobId": "7fb58b3d3133eea5954c8cc414d48345aae2d59f",
+      "recordedIdentity": {
+        "baseCommit": "865b6a14001406eadd2623e062f1701729ce7f69"
+      }
+    },
+    {
+      "path": "docs/evidence/feature-store-241/step-4-audit-20261108T011318Z.json",
+      "sha256": "930f79609b8fa96f1f33513def3370dc20bbd97be3f4c8d5a980647f9bc2703d",
+      "byteSize": 3659,
+      "blobId": "bf87ca7827fe318ffef23bbd151eaede8858c828",
+      "recordedIdentity": {}
+    },
+    {
+      "path": "docs/evidence/feature-store-241/step-4-final-benchmark-20261108T011159Z.json",
+      "sha256": "6592865b606ad744580d4a40d8dd3c62bff0320ccf9e0258ac7d8838231ea23c",
+      "byteSize": 135499,
+      "blobId": "e76a63572726fd0edd483d7c1ad2d8e79be32766",
+      "recordedIdentity": {
+        "baseCommit": "441aaf96941e31f7a7f67a5edce906c79cc74ed1"
+      }
+    },
+    {
+      "path": "docs/evidence/feature-store-242/final-benchmark-20261108T064349Z.json",
+      "sha256": "1e31f10710d6028eeb87a2753ff9538c2659ea3d550668053a91b1e654cbe6f5",
+      "byteSize": 615238,
+      "blobId": "6be914e79c8f61544ecb2324353a3251faf86a31",
+      "recordedIdentity": {
+        "code": {
+          "gitSha": "4edb69881e0ebb2388ae4b81be7d319a9b78626e",
+          "contentSha256": "1f9491ce8bab3b3329a28223df2c7bc2193539b7b7960430eb58251fbde8ed6c"
+        }
+      }
+    },
+    {
+      "path": "docs/evidence/feature-store-242/final-validation-20261108T064903Z.json",
+      "sha256": "5ac7ee7c947d1037da4fd6e58bbcd1606b9d604247f1483c43b36b24fab8a511",
+      "byteSize": 27634,
+      "blobId": "9c5be00ba21808d5e61f25df4483d925364115f8",
+      "recordedIdentity": {
+        "code": {
+          "gitSha": "4edb69881e0ebb2388ae4b81be7d319a9b78626e",
+          "contentSha256": "1f9491ce8bab3b3329a28223df2c7bc2193539b7b7960430eb58251fbde8ed6c"
+        }
+      }
+    },
+    {
+      "path": "docs/evidence/feature-store-244/checkpoint-3-qualification.json",
+      "sha256": "88e8c49f50b2442805378e36ef189a42868e22e10794f1fa30a3267221a627d4",
+      "byteSize": 1649,
+      "blobId": "4123b5cbf82415a39260e310f1a3634e879bac7b",
+      "recordedIdentity": {}
+    },
+    {
+      "path": "docs/evidence/feature-store-244/checkpoint-3-replay-1.json",
+      "sha256": "372a4c9635fb8c4e3613b854acfc0073f06b1ab725ad7c97efb6e57606f0113b",
+      "byteSize": 23829,
+      "blobId": "d9a8a13badcdc98020fcd1dd3fd7370ed6a657b8",
+      "recordedIdentity": {
+        "code": {
+          "gitSha": "a946c823d3a93ed9c66c311f01782293c863ed3c",
+          "dirty": false,
+          "contentSha256": "6f56e7d2e319488d8d2ebaa03ac8a47ebc8058db1437737ba626bb33b858a57d"
+        }
+      }
+    },
+    {
+      "path": "docs/evidence/feature-store-244/checkpoint-3-replay-2.json",
+      "sha256": "216efd563b55885d312b4792c1ce0a8968a6cc9d084feeed85c72cc0f67cb1b5",
+      "byteSize": 23829,
+      "blobId": "557d422b1680635e0fd15094a0751d5459e30d91",
+      "recordedIdentity": {
+        "code": {
+          "gitSha": "a946c823d3a93ed9c66c311f01782293c863ed3c",
+          "dirty": false,
+          "contentSha256": "6f56e7d2e319488d8d2ebaa03ac8a47ebc8058db1437737ba626bb33b858a57d"
+        }
+      }
+    },
+    {
+      "path": "docs/feature-store-job-visibility.md",
+      "sha256": "5b32327ba020917f95a4b26d5411650601672099d8311c5dc02b1bd11944ff5f",
+      "byteSize": 30931,
+      "blobId": "e59c68025697f56602832d3911dd2044f9439d17"
+    },
+    {
+      "path": "docs/feature-store-spike-preregistration.md",
+      "sha256": "dc6bf2e044bcbdd6de4b1d6f91db9c623f630ad1eaf7bf1b8abdfe1f3c05c97d",
+      "byteSize": 8251,
+      "blobId": "e79ad64fd0fe61202b0a15680a4d5bd2c53e5cf3"
+    },
+    {
+      "path": "docs/source-license-neon-qualification.md",
+      "sha256": "40496bb033fbcd38f6cdd959379ee96220a6b5ad191f746c5a74ffcef73e51f6",
+      "byteSize": 21362,
+      "blobId": "dd3f428a62f5d744768f6300743c09cdccdf638d"
+    },
+    {
+      "path": "services/pipeline/tests/feature-store/transfer-fixture.check.mts",
+      "sha256": "0ae139bfd2400c6cfad93398b130c6338597c8a03bec483600953769dbb85d5d",
+      "byteSize": 4698,
+      "blobId": "38809d6cd0df09df88877c5f27ebeb1ba73b70b9"
+    }
+  ],
+  "sourceComparisons": [
+    {
+      "issue": 169,
+      "receipt": "docs/evidence/feature-store-169/benchmark-20261109T061738Z.json",
+      "comparedFiles": 77,
+      "matchingFiles": 77,
+      "changed": [],
+      "interpretation": "All 77 sources match; do not repeat producer timing."
+    },
+    {
+      "issue": 241,
+      "receipt": "docs/evidence/feature-store-241/step-4-final-benchmark-20261108T011159Z.json",
+      "comparedFiles": 27,
+      "matchingFiles": 20,
+      "changed": [
+        {
+          "path": "compose.feature-store-spike.yml",
+          "measuredSha256": "65abd96dd3849676b69485c0c0186fd100b31aa5545177dfe82a022c1884b8e8",
+          "checkpointSha256": "035f93c5e49def485c5ac0c632d11bf5234ba27234ee5f2637ba05ed98b383e8",
+          "checkpointBlobId": "e82bdc45efc8fc33a50e69959fc3cd02d13f8b64"
+        },
+        {
+          "path": "compose.test.yml",
+          "measuredSha256": "44798ea481282096048bf44d02c33cf338eed4520165559dc1115e3e769e40b7",
+          "checkpointSha256": "c930cb6f2cc7c624e579ed9ca6cf93c88c1d37c2b435b2b5a83d30d97922ef70",
+          "checkpointBlobId": "6e0ef09a84ffda78c48f5840d9633ae51d68f230"
+        },
+        {
+          "path": "packages/db/proposals/241_job_visibility.sql",
+          "measuredSha256": "13c7cedb65a2dcce133d8e1daff07bcd8f27f7330dca097c5390df66b6d3007a",
+          "checkpointSha256": "bfddb84b4305c09469e7ae2bf85813157ee40fb4b175cc02e8b088ca257b4869",
+          "checkpointBlobId": "f6732f70a70364f074c30315da7231021d2dc95a"
+        },
+        {
+          "path": "services/pipeline/scripts/feature-store/artifact-governance-evidence.ts",
+          "measuredSha256": "2f508bc7207551c5e6b5188ac492e931f028249533a16b4d6e78235313af3f42",
+          "checkpointSha256": "38af6692d43a0c5ea35d9dbf7888e3776aa47fa5e7ed86f40dc4801c64fea27d",
+          "checkpointBlobId": "d4928a45f90359306e16017f8d5404d4c1e6a378"
+        },
+        {
+          "path": "services/pipeline/scripts/feature-store/harness.ts",
+          "measuredSha256": "2fa87332d950277941acfd1a43a51e39f9d986b0a695f4bdaec36373a36520d9",
+          "checkpointSha256": "52730d21a397a01e20e9e6c9375781d8edbfa64b0c1c0820c952ac0cff74f97e",
+          "checkpointBlobId": "705866890d1cf390d0cdee0236fefdcc0c5df7e9"
+        },
+        {
+          "path": "services/pipeline/src/featureStore/localObjectStore.ts",
+          "measuredSha256": "66176be60146f0a73ceab9a004b5951dcfd227b88ba9bc521e7f23b466bf5fd1",
+          "checkpointSha256": "0fe1fbe2c6907e6438c096b80fe864da96ac125906798db1f051ef9b5396c231",
+          "checkpointBlobId": "d07a39608ec7fde4b0a910b1abd0000de4780ca6"
+        },
+        {
+          "path": "services/pipeline/src/featureStore/objectStore.ts",
+          "measuredSha256": "e467ee210821416ca595349dee4eaaa415c4f1e0d305155d6591fce8283bb3ae",
+          "checkpointSha256": "1774c82bac1d38b7aff0d65e0984e2a851eb2aba00a0892885961e01edb1c8be",
+          "checkpointBlobId": "6ec035ed58b1ff7b9e1d83249cae3add7aa54cf1"
+        }
+      ],
+      "interpretation": "Comment-only visibility SQL; dataset implementation matches. Storage imports/methods and setup/environment changed. Original fresh-process boundary needs approved rerun."
+    },
+    {
+      "issue": 242,
+      "receipt": "docs/evidence/feature-store-242/final-benchmark-20261108T064349Z.json",
+      "comparedFiles": 62,
+      "matchingFiles": 55,
+      "changed": [
+        {
+          "path": "compose.test.yml",
+          "measuredSha256": "44798ea481282096048bf44d02c33cf338eed4520165559dc1115e3e769e40b7",
+          "checkpointSha256": "c930cb6f2cc7c624e579ed9ca6cf93c88c1d37c2b435b2b5a83d30d97922ef70",
+          "checkpointBlobId": "6e0ef09a84ffda78c48f5840d9633ae51d68f230"
+        },
+        {
+          "path": "services/pipeline/scripts/feature-store/artifact-governance-evidence.ts",
+          "measuredSha256": "2f508bc7207551c5e6b5188ac492e931f028249533a16b4d6e78235313af3f42",
+          "checkpointSha256": "38af6692d43a0c5ea35d9dbf7888e3776aa47fa5e7ed86f40dc4801c64fea27d",
+          "checkpointBlobId": "d4928a45f90359306e16017f8d5404d4c1e6a378"
+        },
+        {
+          "path": "services/pipeline/scripts/feature-store/harness.ts",
+          "measuredSha256": "2fa87332d950277941acfd1a43a51e39f9d986b0a695f4bdaec36373a36520d9",
+          "checkpointSha256": "52730d21a397a01e20e9e6c9375781d8edbfa64b0c1c0820c952ac0cff74f97e",
+          "checkpointBlobId": "705866890d1cf390d0cdee0236fefdcc0c5df7e9"
+        },
+        {
+          "path": "services/pipeline/src/featureStore/ingest.ts",
+          "measuredSha256": "414a006f7ab82be6e3c5370458d3e3ad0c08a7f7283c61c55595ef33667dd5ca",
+          "checkpointSha256": "a631e8177dc3e13bbce0e8ec2fe3a7636eced02b7517c98682c65595d7d015f5",
+          "checkpointBlobId": "9f9f4bb0b61614c58b8ce7ea9549f5414c5c5cc6"
+        },
+        {
+          "path": "services/pipeline/src/featureStore/normalize.ts",
+          "measuredSha256": "2fcff2903786e2b4e4948f7d20f16cc167d246c868490c4c6a1d43361184bdcc",
+          "checkpointSha256": "dc2fdfdca667ab023d7565dbf273211d505921690a772b791f728c2f856d39cd",
+          "checkpointBlobId": "6d6ef2866c2f4e14ee3574af120755a1b85fa70d"
+        },
+        {
+          "path": "services/pipeline/src/featureStore/objectStore.ts",
+          "measuredSha256": "bd6cb81a22a74e8831e5d9cd7545c897b364ce8a38d715151f6b43de6a5f6b57",
+          "checkpointSha256": "1774c82bac1d38b7aff0d65e0984e2a851eb2aba00a0892885961e01edb1c8be",
+          "checkpointBlobId": "6ec035ed58b1ff7b9e1d83249cae3add7aa54cf1"
+        },
+        {
+          "path": "services/pipeline/src/featureStore/source.ts",
+          "measuredSha256": "99a7b18840900584339a3f8916fb20dfda5fb6d463349137151eafdface90eb7",
+          "checkpointSha256": "404619a5ac754ff6f3728e05e90f92daabb7feb1166b943023fbdba265bc2c5d",
+          "checkpointBlobId": "6b8fa0d9f22c179f1c9c7cbf73625e901cf7e880"
+        }
+      ],
+      "interpretation": "Handler/owner/domain/SQL match. ObjectStore startup import graph changed; other changed files include fixture preparation, harness/auditor and environment. Approved six-trial rerun pending."
+    }
+  ],
+  "approvedReruns": [
+    {
+      "order": 1,
+      "workload": "prediction",
+      "runner": "services/pipeline/scripts/feature-store/prediction-capacity-benchmark.ts",
+      "startupRule": "trial-p95-v2",
+      "trials": [
+        "C1",
+        "W1",
+        "C2",
+        "W2",
+        "C3",
+        "W3"
+      ],
+      "samplesPerTrial": 100,
+      "p95Ms": 210,
+      "sampleDeadlineMs": 300,
+      "coldStartupP95Ms": 210,
+      "startupSampleDeadlineMs": 300,
+      "work": {
+        "sql": 3,
+        "checks": 2,
+        "gets": 1,
+        "requestPathHashes": 0
+      },
+      "status": "waiting-for-owner-confirmed-window"
+    },
+    {
+      "order": 2,
+      "workload": "dataset",
+      "runner": "services/pipeline/scripts/feature-store/dataset-spike.ts",
+      "coldWorker": "services/pipeline/scripts/feature-store/dataset-cold.ts",
+      "coldTrials": 3,
+      "warmTrials": 3,
+      "cold": "Fresh process/connection per build including Node startup, ObjectStore open and full build/write/hash",
+      "targetMs": 21000,
+      "deadlineMs": 30000,
+      "work": {
+        "sql": 8,
+        "checks": 2
+      },
+      "evidenceSafety": "Historical #138 paths cannot be overwritten; isolate runner output before execution",
+      "status": "waiting-for-owner-confirmed-window"
+    }
+  ],
+  "remainingLimits": {
+    "crossClockIssue": 258,
+    "acceptedVisibilityGapIssues": [
+      231,
+      241
+    ],
+    "publicOutputs": "Held pending output-specific decision and #53 enforcement under #197",
+    "neon": "Intended pipeline role/driver not verified",
+    "r2": "Synthetic contract; not default or hosted capacity proof"
+  },
+  "executedInStep1": {
+    "lanesStarted": 0,
+    "databaseQueries": 0,
+    "timedTrials": 0,
+    "testSuitesRun": 0,
+    "evidenceMode": "Read-only Git/GitHub inspection and local checksum/index generation; no re-execution of historical probes"
+  },
+  "approvalBoundary": {
+    "committed": false,
+    "pushed": false,
+    "quietWindowConfirmed": false,
+    "next": "Owner review/commit approval of step 1; then integrated assessment. Reruns wait for window."
+  }
+}

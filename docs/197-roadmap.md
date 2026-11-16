@@ -194,3 +194,44 @@ dispositions and the gate design.
 **LOE.** 1–2 active hours for documentation and the owner decision packet,
 excluding qualified review waits. Estimate fixture remediation separately
 if selected. Report before each commit and obtain fresh approval before push.
+
+## #261 inventory correction and publication prevention
+
+The original [tracked-payload inventory](evidence/feature-store-197/tracked-payload-inventory.json)
+stays unchanged as history. Its structured-row scan missed forecasts stored as
+JSON-encoded strings in #168/#242 archives and did not enumerate the base64
+source-map copies in #169. The exact mechanism is demonstrated by the independent
+#261 rescan and encoded-string/source-map controls; the reason the original
+scanner lacked those decoding paths is an inference from the observed gap.
+
+[The append-only #261 inventory](evidence/feature-store-261/tracked-payload-inventory-f30b93f.json)
+covers all 901 paths, 33 compressed files and 360 leaf members at main
+`f30b93f23a30316213f07ba346e4a301550d57b0`. It decodes strings repeatedly,
+JSON fragments, declared source maps and nested gzip/USTAR. The inventory records
+hashes, sizes and current-path introduction commits without copying row values.
+
+The [owner's disposition](https://github.com/ven2dev/dfs-ev-demo/issues/261#issuecomment-6759765086)
+removes the three exact #168/#242 archives going forward after verified durable
+private ObjectStore retention. Existing history exposure is accepted, with no
+history rewrite or force-push. Their original compact receipts remain unchanged;
+public checks recompute available metadata/arithmetic, while only private-byte
+audits reproduce full response-value and SQL-oracle checks.
+
+Both #169 archives stay at the two exact approved hashes. The #138 notice is
+extended only to their exact encoded copy of the existing 22,624-byte ingestion
+receipt; the extension binds the original hash and both archive hashes. If that
+original is removed or held, its copies go with it. A changed copy or new archive
+hash needs a new disposition. #169's auditor and CI check remain unchanged.
+
+The shared decoder now powers an unconditional complete-tree publication scan
+in App checks. Its raw outcome is required by the aggregate CI gate, including
+documentation-only changes and intentional empty affected work. Unknown or
+malformed containers, unapproved findings and republished removal paths fail.
+This technical guard is a regression check against recorded dispositions, not
+a substitute for #256's qualified rights review or an application release gate.
+The approved synthetic/existing-notice exceptions remain exact hash decisions;
+a payload's own `synthetic` marker grants no exemption.
+
+See [#261 design and audit boundaries](evidence-payload-publication.md) and
+[evidence instructions](evidence/feature-store-261/README.md). No fixture notice,
+public-serving approval, lineage or audience is broadened by this correction.

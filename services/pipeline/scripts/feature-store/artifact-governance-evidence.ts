@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
 import { readFile, readdir, writeFile } from "node:fs/promises";
 import { isAbsolute, relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -7,6 +6,10 @@ import { sha256 } from "../../src/featureStore/objectStore.ts";
 import type { CompositeCase, CompositeSample } from "./composite-authorization-measure.ts";
 import type { ReadCounters } from "../../tests/feature-store/artifact-read-work.ts";
 import type { PredictionRequest } from "@dfs-ev/pipeline/feature-store/predict";
+import { resolveEvidenceArchive, splitEvidenceAddress, archiveReferenceName } from "./evidence-records.ts";
+import type { ArchiveReference, EvidenceAuditOptions, EvidenceArchive } from "./evidence-records.ts";
+import { validateEvidenceProjection, verifyPublicEvidenceReceipt } from "./evidence-public-projection.ts";
+import type { EvidencePublicProjection } from "./evidence-public-projection.ts";
 import { compactCapacityBenchmark } from "./prediction-capacity-evidence.ts";
 import { visibilityProjection } from "./job-visibility-evidence.ts";
 import { compactProducerBenchmark } from "./producer-capacity-evidence.ts";
@@ -435,55 +438,77 @@ const recordReferences = (value: unknown): RecordReference[] => {
   return Object.values(object).flatMap(recordReferences);
 };
 
-// Read just the named member to stdout; never extract files or follow archive
-// paths on disk. Validate membership and relative paths before invoking tar.
-export const verifyEvidenceBundle = async (directory: string, recompute = true) => {
-  const receipts = await Promise.all((await readdir(directory)).filter(name => name.endsWith(".json"))
-    .sort().map(async name => ({ name, receipt: JSON.parse(await readFile(resolve(directory, name), "utf8")) })));
-  // Append-only evidence can retain several uniquely named bundles. Each name
-  // stays a plain relative filename; validate every archive's exact membership.
-  const archives = new Map<string, string[]>();
-  const records = new Map<string, Buffer>();
-  const verdicts = [];
+// One shared reader validates regular USTAR members in memory. References
+// select explicit public-metadata or private-byte capability; no extraction.
+export const verifyEvidenceBundle = async (directory: string, recompute = true, options: EvidenceAuditOptions = {}) => {
+  const names = (await readdir(directory)).filter(name => name.endsWith(".json")).sort();
+  const receipts = await Promise.all(names.filter(name => !name.endsWith(".reference.json") && !name.endsWith(".public.json"))
+    .map(async name => ({ name, receipt: JSON.parse(await readFile(resolve(directory, name), "utf8")) })));
+  const archives = new Map<string, EvidenceArchive>();
+  const load = async (name: string) => {
+    let archive = archives.get(name);
+    if (!archive) {
+      archive = await resolveEvidenceArchive(directory, name, options);
+      if (archive.mode === "public-metadata") {
+        validateEvidenceProjection(archive.projection as EvidencePublicProjection, archive.reference.archive.sha256);
+        assert.deepEqual((archive.projection as EvidencePublicProjection).records.map(r => r.member).sort(),
+          archive.reference.members.map(m => m.path).sort(), "projection-membership-mismatch");
+      }
+      archives.set(name, archive);
+    }
+    return archive;
+  };
+  for (const name of names.filter(name => name.endsWith(".reference.json"))) {
+    const reference = JSON.parse(await readFile(resolve(directory, name), "utf8")) as ArchiveReference;
+    assert.equal(name, archiveReferenceName(reference.archive.name), "reference-filename-mismatch");
+    await load(reference.archive.name);
+  }
+  const records = new Map<string, Buffer | undefined>();
+  const verdicts: { record: string; verdict: string; sha256: string; byteSize: number; audit: "full-bytes" | "public-metadata" }[] = [];
   for (const { name, receipt } of receipts) {
     for (const record of recordReferences(receipt)) {
-      assert(!isAbsolute(record.path), "absolute-full-record-path");
-      const [archive, member, extra] = record.path.split("#");
-      assert(/^[a-zA-Z0-9][a-zA-Z0-9_.-]*\.tar\.gz$/.test(archive), "unexpected-full-record-bundle");
-      assert(member && !extra && /^[a-zA-Z0-9][a-zA-Z0-9_./-]*$/.test(member) &&
-        member.split("/").every(part => part && part !== "." && part !== ".."), "unsafe-full-record-member");
-      const bundle = resolve(directory, archive);
-      let members = archives.get(archive);
-      if (!members) {
-        members = execFileSync("tar", ["-tzf", bundle], { encoding: "utf8" }).trim().split("\n");
-        assert.equal(new Set(members).size, members.length, "duplicate-bundle-member");
-        archives.set(archive, members);
+      const { archive: archiveName, member } = splitEvidenceAddress(record.path), archive = await load(archiveName);
+      const bytes = archive.mode === "full-bytes" ? archive.members.get(member) : undefined;
+      let byteSize: number;
+      if (archive.mode === "full-bytes") {
+        assert(bytes, "missing-full-record-member"); verifyRecordBytes(record, bytes); byteSize = bytes.length;
+      } else {
+        const expected = archive.reference.members.find(m => m.path === member); assert(expected, "missing-full-record-member");
+        assert.equal(record.sha256, expected.sha256, "record-reference-sha256-mismatch");
+        assert.equal(record.byteSize, expected.byteSize, "record-reference-byte-size-mismatch"); byteSize = expected.byteSize;
       }
-      assert(members.includes(member), "missing-full-record-member");
-      const bytes = records.get(record.path) ?? execFileSync("tar", ["-xOzf", bundle, member], { maxBuffer: 16 * 1024 * 1024 });
-      // SHA-256 precedes JSON parsing or any percentile/counter recomputation.
-      verifyRecordBytes(record, bytes);
-      if (!records.has(record.path)) verdicts.push({ record: archive === "full-records.tar.gz" ? member : record.path,
-        verdict: "pass", sha256: sha256(bytes), byteSize: bytes.byteLength });
+      if (!records.has(record.path)) verdicts.push({ record: archiveName === "full-records.tar.gz" ? member : record.path,
+        verdict: "pass", sha256: record.sha256, byteSize, audit: archive.mode });
       records.set(record.path, bytes);
     }
-    if (recompute && receipt.fullRecord) {
-      const bytes = records.get(receipt.fullRecord.path)!;
-      verifyEvidenceReceipt(receipt, bytes);
+    if (receipt.fullRecord) {
+      const { archive: archiveName, member } = splitEvidenceAddress(receipt.fullRecord.path), archive = await load(archiveName);
+      if (archive.mode === "full-bytes") { if (recompute) verifyEvidenceReceipt(receipt, records.get(receipt.fullRecord.path)!); }
+      else {
+        const projected = (archive.projection as EvidencePublicProjection).records.find(r => r.member === member)!;
+        verifyPublicEvidenceReceipt(receipt, projected, recompute);
+      }
     }
     assert(recordReferences(receipt).length, `receipt-without-full-record:${name}`);
   }
-  for (const [archive, members] of archives)
-    assert.deepEqual([...records.keys()].filter(path => path.startsWith(archive + "#")).sort(),
-      members.map(member => archive + "#" + member).sort(), "unreferenced-bundle-member");
+  for (const [name, archive] of archives) {
+    const members = archive.mode === "full-bytes" ? [...archive.members.keys()] : archive.reference.members.map(m => m.path);
+    assert.deepEqual([...records.keys()].filter(path => path.startsWith(name + "#")).sort(),
+      members.map(member => name + "#" + member).sort(), "unreferenced-bundle-member");
+  }
   return verdicts;
 };
 
-// Hash first, then recompute. `audit` needs only tracked files, Node and tar;
-// its hash-only mode is suitable for CI without measuring or gating timing.
+// Hash supplied bytes first, then recompute. Standalone audits need tracked
+// files and Node; private mode additionally requires the explicit ObjectStore.
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   const [operation, receiptPath, fullPath] = process.argv.slice(2);
-  if (operation === "audit") {
+  if (operation === "audit-private") {
+    assert(receiptPath && fullPath, "usage: artifact-governance-evidence.ts audit-private EVIDENCE_DIRECTORY PRIVATE_OBJECTSTORE");
+    const { openLocalObjectStore } = await import("../../src/featureStore/localObjectStore.ts");
+    const privateStore = await openLocalObjectStore(resolve(fullPath));
+    for (const verdict of await verifyEvidenceBundle(receiptPath, true, { mode: "private", privateStore })) console.log(JSON.stringify(verdict));
+  } else if (operation === "audit") {
     assert(receiptPath && !fullPath, "usage: artifact-governance-evidence.ts audit EVIDENCE_DIRECTORY");
     for (const verdict of await verifyEvidenceBundle(receiptPath)) console.log(JSON.stringify(verdict));
   } else {

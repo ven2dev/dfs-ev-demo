@@ -1,10 +1,11 @@
-import { randomBytes } from "node:crypto";
 import { mkdtemp, readFile, readdir, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { openLocalObjectStore } from "../../src/featureStore/localObjectStore.ts";
-import { OBJECT_NAMESPACES, objectKey, parseObjectKey, VerifiedWire, type ObjectStore } from "../../src/featureStore/objectStore.ts";
+import { objectKey, parseObjectKey, VerifiedWire } from "../../src/featureStore/objectStore.ts";
+
+import { checkObjectStore } from "../support/checkObjectStore.ts";
 
 const roots: string[] = [];
 const fixture = async (maxObjectBytes?: number) => {
@@ -13,73 +14,6 @@ const fixture = async (maxObjectBytes?: number) => {
   return { root, store: await openLocalObjectStore(root, { maxObjectBytes }) };
 };
 afterEach(async () => { await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true }))); });
-
-const checkObjectStore = async (store: ObjectStore, payloads: Buffer[]) => {
-  const keys = payloads.map((bytes) => objectKey("raw", bytes));
-  const written = await store.putIfAbsent(keys[0], payloads[0]);
-  expect(written).toEqual({
-    created: true, object: { key: keys[0], sha256: keys[0].slice(4), byteSize: payloads[0].length },
-  });
-  expect(await store.putIfAbsent(keys[0], payloads[0])).toEqual({ ...written, created: false });
-  expect(await store.get(keys[0])).toEqual(payloads[0]);
-  expect(await store.head(keys[0])).toEqual(written.object);
-  const verified = await store.getVerified(keys[0], payloads[0].length);
-  expect(verified.wireSha256).toBe(written.object.sha256);
-  expect(verified.byteSize).toBe(written.object.byteSize);
-  await expect(store.getVerified(keys[0], payloads[0].length - 1)).rejects.toThrow("object-size-refused");
-  for (const [index, bytes] of payloads.entries()) {
-    if (index > 0) expect((await store.putIfAbsent(keys[index], bytes)).created).toBe(true);
-  }
-  expect((await store.list("raw")).map(({ key }) => key).sort()).toEqual([...keys].sort());
-  expect(await store.list("datasets")).toEqual([]);
-  const sorted = [...keys].sort();
-  const firstPage = await store.listPage("raw", { limit: 2 });
-  expect(firstPage.entries.map(({ key }) => key)).toEqual(sorted.slice(0, 2));
-  expect(firstPage.nextStartAfter).toBe(sorted.length > 2 ? sorted[1] : null);
-  if (firstPage.nextStartAfter) {
-    const lastPage = await store.listPage("raw", { limit: 1, startAfter: firstPage.nextStartAfter });
-    expect(lastPage.entries.map(({ key }) => key)).toEqual(sorted.slice(2));
-    expect(lastPage.nextStartAfter).toBeNull();
-  }
-  await expect(store.listPage("datasets", { limit: 1, startAfter: sorted[0] })).rejects.toThrow("object-page-request-refused");
-  expect(await store.listPage("raw", { limit: 1, startAfter: sorted.at(-1)! })).toEqual({
-    entries: [], nextStartAfter: null,
-  });
-  for (const key of keys) await store.delete(key);
-  await store.delete(keys[0]);
-  expect(await store.head(keys[0])).toBeNull();
-  expect(await store.list("raw")).toEqual([]);
-  await expect(store.get(keys[0])).rejects.toMatchObject({ code: "ENOENT" });
-};
-
-it.skipIf(process.env.R2_LIVE_CONTRACT !== "1")("runs the shared contract on the dedicated R2 test bucket", async () => {
-  const { loadR2TestClient } = await import("../support/r2TestConfig.ts");
-  const { openR2ObjectStore } = await import("../../src/featureStore/r2ObjectStore.ts");
-  const { client, bucket } = loadR2TestClient();
-  const counts = { A: 0, B: 0, delete: 0 };
-  client.middlewareStack.add((next, context) => async (args) => {
-    const kind = context.commandName === "DeleteObjectCommand" ? "delete"
-      : ["HeadObjectCommand", "GetObjectCommand"].includes(context.commandName ?? "") ? "B" : "A";
-    if (kind !== "delete" && counts[kind] >= 50) throw new Error("R2 request cap exceeded");
-    counts[kind]++;
-    return next(args);
-  }, { step: "build", name: "countLiveContractRequests" });
-  const store = openR2ObjectStore(client, bucket, 2);
-  const payloads = Array.from({ length: 3 }, () => randomBytes(32));
-  try {
-    for (const namespace of OBJECT_NAMESPACES) expect(await store.list(namespace)).toEqual([]);
-    try {
-      await checkObjectStore(store, payloads);
-    } finally {
-      const cleanup = await Promise.allSettled(payloads.map((bytes) => store.delete(objectKey("raw", bytes))));
-      for (const namespace of OBJECT_NAMESPACES) expect(await store.list(namespace)).toEqual([]);
-      expect(cleanup.every(({ status }) => status === "fulfilled")).toBe(true);
-    }
-  } finally {
-    client.destroy();
-    console.info("R2 contract request attempts", counts);
-  }
-}, 30_000);
 
 describe("#138 local ObjectStore", () => {
   it("preserves binary wire bytes, metadata, namespace listing and idempotent deletion", async () => {

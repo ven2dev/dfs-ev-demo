@@ -18,6 +18,7 @@ const script = block.replace(/^ {10}/gm, "");
 const validExecution = {
   FORCE_FULL: "0", APP_TEST_RESULT: "success", APP_TEST_MODE: "affected",
   APP_TEST_WORK: "executed", APP_MATRIX_RESULT: "success", DB_PLAN_RESULT: "success",
+  APP_PAYLOAD_RESULT: "success",
   DB_SELECTION_GUARD_RESULT: "success", DB_GUARD_RESULT: "success", DB_MODE: "affected",
   DB_LOCAL_SELECTED: "true", FEATURE_STORE_SELECTED: "true", DB_LIFECYCLE_RESULT: "success",
   DB_LOCAL_RESULT: "success", FEATURE_STORE_RESULT: "success", DB_CLEANUP_RESULT: "success",
@@ -192,6 +193,7 @@ test("aggregate metadata is wired to raw outcomes and the selection outputs of t
     APP_TEST_MODE: ["app", "test_mode", "steps.tests.outputs.mode"],
     APP_TEST_WORK: ["app", "test_work", "steps.tests.outputs.work"],
     APP_MATRIX_RESULT: ["app", "matrix_result", "steps.matrix.outcome"],
+    APP_PAYLOAD_RESULT: ["app", "payload_result", "steps.payloads.outcome"],
     DB_PLAN_RESULT: ["db_core", "plan_result", "steps.selection.outcome"],
     DB_SELECTION_GUARD_RESULT: ["db_core", "selection_guard_result", "steps.selection_guard.outcome"],
     DB_GUARD_RESULT: ["db_core", "guard_result", "steps.guard.outcome"],
@@ -216,6 +218,7 @@ test("aggregate metadata is wired to raw outcomes and the selection outputs of t
   assert.ok(gate.includes("          FORCE_FULL: ${{ env.TURBO_FORCE_FULL }}\n"));
   for (const [job, name, id] of [
     ["app", "Prove affected task selection on Node 24", "matrix"], ["app", "Test", "tests"],
+    ["app", "Check published evidence payloads", "payloads"],
     ["db_core", "Plan affected database suites", "selection"], ["db_core", "Require explicit database selection", "selection_guard"],
     ["db_core", "Check database target, bootstrap and report guards", "guard"],
     ["db_core", "Verify startup recovery and failure cleanup", "lifecycle"],
@@ -227,6 +230,23 @@ test("aggregate metadata is wired to raw outcomes and the selection outputs of t
     ["db_feature_store", "Remove disposable PostgreSQL", "cleanup"],
   ]) assert.ok(jobs[job].includes(`      - name: ${name}\n        id: ${id}\n`), `${job}.${id}`);
   assert.doesNotMatch(workflow, /continue-on-error:/);
+});
+
+test("publication guard runs on every app check before affected selection and cannot be silently skipped", () => {
+  const app = jobBlock("app");
+  assert.ok(app);
+  assert.doesNotMatch(app, /^    if:/m);
+  assert.doesNotMatch(workflow.split("permissions:")[0], /paths(?:-ignore)?:/);
+  const step = app.split("      - name: Check published evidence payloads\n")[1]?.split("      - name:")[0];
+  assert.equal(step, "        id: payloads\n        run: npm run test:evidence-publication\n\n");
+  assert.ok(app.indexOf("id: payloads") < app.indexOf("id: matrix"));
+  const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
+  assert.equal(pkg.scripts["test:evidence-publication"], "node services/pipeline/scripts/feature-store/evidence-publication-guard.ts");
+  for (const status of ["failure", "cancelled", "skipped", ""]) {
+    const result = runGate("success", "success", "success", { APP_PAYLOAD_RESULT: status });
+    assert.equal(result.status, 1);
+    assert.match(result.stdout, /Mandatory execution: expected success, received/);
+  }
 });
 
 test("the actual full app command publishes completion only after root npm test succeeds", () => {

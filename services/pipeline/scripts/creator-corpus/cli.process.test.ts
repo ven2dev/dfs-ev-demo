@@ -1,9 +1,9 @@
 // @vitest-environment node
-import { spawn, spawnSync } from "node:child_process";
 import { chmod, mkdtemp, readFile, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { runTestProcess, startTestProcess } from "../../tests/support/runTestProcess.ts";
 import { runCli, type CliDeps } from "./cli.ts";
 import type { FetchLike } from "./youtubeApi.ts";
 import { discoveryFor, record as supportRecord, vid as supportVid } from "./testSupport.ts";
@@ -779,20 +779,20 @@ describe("screen and dispatch", () => {
 
 describe("the real command line", () => {
   const cli = (args: string[], env: Record<string, string>) =>
-    spawnSync(
+    runTestProcess(
       process.execPath,
       ["--disable-warning=MODULE_TYPELESS_PACKAGE_JSON", "services/pipeline/scripts/creator-corpus/cli.ts", ...args],
-      { cwd: process.cwd(), env: { PATH: process.env.PATH ?? "", ...env } as unknown as NodeJS.ProcessEnv, encoding: "utf8" }
+      { cwd: process.cwd(), env: { PATH: process.env.PATH ?? "", ...env } as unknown as NodeJS.ProcessEnv, timeoutMs: 10_000 }
     );
 
   it("prints one fixed code and never the key, for a missing key or an unusable output directory", async () => {
     await writeJson("creators.json", creatorsFile);
-    const noKey = cli(["resolve", "--creators", path("creators.json"), "--output", path("registry.json")], {});
+    const noKey = await cli(["resolve", "--creators", path("creators.json"), "--output", path("registry.json")], {});
     expect(noKey.status).toBe(1);
     expect(noKey.stdout).toBe("");
     expect(noKey.stderr).toBe("creator-corpus: api-key-missing\n");
 
-    const badDirectory = cli(
+    const badDirectory = await cli(
       ["resolve", "--creators", path("creators.json"), "--output", path("missing-dir/registry.json")],
       { YOUTUBE_API_KEY: KEY }
     );
@@ -803,34 +803,35 @@ describe("the real command line", () => {
 
   it("serves the review page from the real command and exits cleanly on Ctrl+C", async () => {
     await writeJson("discovery.json", discoveryFor([supportRecord(1)]));
-    const child = spawn(
+    const server = startTestProcess(
       process.execPath,
       ["--disable-warning=MODULE_TYPELESS_PACKAGE_JSON", "services/pipeline/scripts/creator-corpus/cli.ts", "review", "--input", path("discovery.json"), "--decisions", path("decisions.json")],
-      { cwd: process.cwd(), env: { PATH: process.env.PATH ?? "" } as unknown as NodeJS.ProcessEnv }
+      { cwd: process.cwd(), env: { PATH: process.env.PATH ?? "" } as unknown as NodeJS.ProcessEnv, timeoutMs: 15_000 }
     );
     try {
-      const exited = new Promise<number | null>((resolve) => child.on("exit", (code) => resolve(code)));
-      const address = await new Promise<string>((resolve, reject) => {
+      const ready = new Promise<string>((resolve) => {
         let output = "";
-        child.stdout.on("data", (chunk) => {
+        server.child.stdout.on("data", (chunk: string) => {
           output += chunk;
           const match = /http:\/\/127\.0\.0\.1:\d+\/#token=\S+/.exec(output);
           if (match) resolve(match[0]);
         });
-        child.on("exit", () => reject(new Error("exited before printing an address")));
       });
+      const address = await Promise.race([ready, server.result.then(({ status }) => {
+        throw new Error(`Exited before printing an address (status ${status})`);
+      })]);
       const url = new URL(address);
       expect((await fetch(url.origin + "/")).status).toBe(200);
-      child.kill("SIGINT");
-      expect(await exited).toBe(0);
+      server.child.kill("SIGINT");
+      expect((await server.result).status).toBe(0);
       await expect(fetch(url.origin + "/")).rejects.toThrow();
     } finally {
-      child.kill("SIGKILL");
+      await server.stop();
     }
   });
 
-  it("reports an unrecognised failure generically", () => {
-    const result = cli(["screen", "--input", join(directory, "nope.json")], {});
+  it("reports an unrecognised failure generically", async () => {
+    const result = await cli(["screen", "--input", join(directory, "nope.json")], {});
     expect(result.stderr).toBe("creator-corpus: input-unreadable\n");
   });
 });
