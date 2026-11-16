@@ -292,7 +292,14 @@ export const fetchSlateEvents = async (
 export type PlayerPropMarketOddsFetch = OddsApiFetch<{
   response: EventOddsResponse | null;
   oddsByBookmaker: PlayerPropBookmakerLine[];
-}>;
+}> & {
+  sharedObservation?: {
+    origin: "cache" | "upstream";
+    status: "fresh" | "upstream" | "stale" | "unavailable";
+    observationId: string | null;
+    persisted: boolean;
+  };
+};
 
 // Live and discovery share the raw transport; preserve live's unavailable
 // result on HTTP errors and project only after receiving the all-player data.

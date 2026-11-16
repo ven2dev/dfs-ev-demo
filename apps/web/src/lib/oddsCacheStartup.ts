@@ -54,6 +54,7 @@ export const initializeOddsCache = (): Promise<OddsCacheMode> => {
 };
 
 export const selectOddsCachePath = <T>(legacy: T, shared: T): T => {
+  if (!startup && !process.env.DATABASE_URL) return legacy;
   if (!startup) throw new Error("Odds-cache startup has not completed");
   return startup.select(legacy, shared);
 };

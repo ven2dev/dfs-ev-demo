@@ -10,7 +10,9 @@ import {
   type OddsApiFetch,
   type OddsApiQuota,
 } from "./oddsApi";
-import { persistOddsObservation } from "./oddsSnapshotRepo";
+import { persistRawOddsObservation } from "./oddsObservation";
+import { getSharedMarketOdds } from "./sharedOddsRepo";
+import { selectOddsCachePath } from "./oddsCacheStartup";
 
 // Discovery costs real credits (1 per market requested), so re-fetching
 // a market that was checked moments ago -- even by a different request
@@ -51,58 +53,6 @@ type FreshEventOdds = OddsApiFetch<EventOddsResponse> & {
 
 const inFlightFetches = new Map<string, Promise<FreshEventOdds>>();
 
-const persistDiscoveryObservation = async (
-  sportKey: string,
-  eventId: string,
-  marketKeys: string[],
-  fetched: OddsApiFetch<EventOddsResponse>,
-  observationId: string
-): Promise<boolean> => {
-  const event = fetched.data;
-  if (!event.commence_time || !event.home_team || !event.away_team) {
-    console.error(
-      `[oddsCacheRepo] skipped observation "${observationId}": upstream event metadata is incomplete`
-    );
-    return false;
-  }
-  const eventStartMs = Date.parse(event.commence_time);
-  const capturedAtMs = Date.parse(fetched.capturedAt);
-  if (
-    Number.isFinite(eventStartMs) &&
-    Number.isFinite(capturedAtMs) &&
-    capturedAtMs >= eventStartMs
-  ) {
-    return false;
-  }
-
-  try {
-    await persistOddsObservation(
-      {
-        observationId,
-        sportKey: event.sport_key ?? sportKey,
-        eventId,
-        homeTeam: event.home_team,
-        awayTeam: event.away_team,
-        eventStartTime: new Date(event.commence_time),
-        source: "discovery",
-        capturedAt: new Date(fetched.capturedAt),
-        requestedMarketKeys: marketKeys,
-        quota: fetched.quota,
-      },
-      event
-    );
-    return true;
-  } catch (error) {
-    // History must never make a current-odds request fail after the provider
-    // already returned usable data. The gap is explicit in server logs.
-    console.error(
-      `[oddsCacheRepo] failed to persist observation "${observationId}":`,
-      error
-    );
-    return false;
-  }
-};
-
 const dedupedFetchEventOdds = (
   sportKey: string,
   eventId: string,
@@ -115,7 +65,7 @@ const dedupedFetchEventOdds = (
   const observationId = randomUUID();
   const fetchPromise = fetchEventOdds(sportKey, eventId, marketKeys, undefined, "discovery")
     .then(async (fetched) => {
-      const observationPersisted = await persistDiscoveryObservation(
+      const observationPersisted = await persistRawOddsObservation(
         sportKey,
         eventId,
         marketKeys,
@@ -139,10 +89,11 @@ type CacheRow = {
 
 export type MarketOddsOrigin = {
   origin: "cache" | "upstream";
-  capturedAt: string;
+  capturedAt: string | null;
   observationId: string | null;
   observationPersisted: boolean;
   quota: OddsApiQuota | null;
+  status?: "fresh" | "upstream" | "stale" | "unavailable";
 };
 
 export type MarketOddsResult = {
@@ -159,7 +110,7 @@ export type GetOrFetchMarketOddsOptions = {
   forceRefresh?: boolean;
 };
 
-export const getOrFetchMarketOdds = async (
+export const getLegacyMarketOdds = async (
   sportKey: string,
   eventId: string,
   marketKeys: string[],
@@ -255,3 +206,6 @@ export const getOrFetchMarketOdds = async (
     origins,
   };
 };
+
+export const getOrFetchMarketOdds: typeof getLegacyMarketOdds = (...args) =>
+  selectOddsCachePath(getLegacyMarketOdds, getSharedMarketOdds)(...args);
