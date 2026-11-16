@@ -27,7 +27,7 @@ const readSharedOdds = async (
   return getSharedOddsBatch<SharedPayload>(eventId, keys, {
     signal,
     query: (text, params) => getSql().query(text, params),
-    makeOwnerId: randomUUID, now: Date.now, monotonicNow: () => performance.now(),
+    makeOwnerId: randomUUID, monotonicNow: () => performance.now(),
     wait: ms => new Promise(resolve => setTimeout(resolve, ms)),
     onCacheWriteError: error => console.error("[sharedOddsRepo] failed to publish odds:", error),
     fetch: async (owned, ownerSignal) => {

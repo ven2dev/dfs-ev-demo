@@ -1,0 +1,199 @@
+{
+  "at": "2026-11-16T05:55:30.355501+00:00",
+  "parentSha": "bf3fe3257dba5d301dc1dd769b30da8d01ddf693",
+  "branch": "feature/dfsEV-221-shared-odds-cache",
+  "status": "uncommitted checkpoint 3 for owner review",
+  "lane": "lane-2",
+  "tier": "standard",
+  "fullApplication": {
+    "browserPassed": 942,
+    "nodePassed": 897,
+    "skipped": {
+      "count": 1,
+      "reason": "existing opt-in live R2 contract; no live credentials or provider access"
+    }
+  },
+  "coreDatabase": {
+    "vitestPassed": 57,
+    "vitestFiles": 9,
+    "mandatoryNodeCases": 74,
+    "nodePassed": 76,
+    "reportVerified": true
+  },
+  "featureStoreDatabase": {
+    "passed": 301,
+    "failed": 0,
+    "skipped": 0
+  },
+  "lifecycleUnits": {
+    "passed": 12,
+    "followerReads": 181,
+    "failedClaims": 181,
+    "pollMs": 250,
+    "maxWaitMs": 45000
+  },
+  "readinessTypecheck": "passed",
+  "fullLint": "passed",
+  "webpackBuild": "passed",
+  "turbopackBuild": "environment-blocked: PostCSS worker port binding denied (os error 1)",
+  "localSpeed": {
+    "finalReceipt": "docs/evidence/cache-221/2026-11-16T05-50-33.885Z-final-local-qualification.json",
+    "allFinal20LeaderRoundsUnder10Ms": true,
+    "final20LeaderP95Ms": [
+      9.50933299999997,
+      6.512207999999646,
+      6.483582999999726
+    ],
+    "medianRoundP95Ms": 6.512207999999646,
+    "full61PathQualified": false,
+    "scope": "four actual cache statements; no admission or hosted transport",
+    "priorConnectionOnlyWarmMissRetained": "docs/evidence/cache-221/2026-11-16T05-36-28.009Z-final-local-qualification.json"
+  },
+  "fixture": {
+    "events": 20,
+    "markets": 12,
+    "rows": 240,
+    "logicalPayloadBytes": 4198040,
+    "fixtureOnlyCeilingBytes": 8388608,
+    "physical": {
+      "heap_bytes": "114688",
+      "index_bytes": "40960",
+      "total_bytes": "958464"
+    }
+  },
+  "teardown": {
+    "containers": [],
+    "networks": [],
+    "verifiedAbsent": true
+  },
+  "realProviderRequests": 0,
+  "hostedActions": 0,
+  "logs": [
+    {
+      "check": "application",
+      "exitCode": 0,
+      "path": "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/221-intake/2026-11-16T05-55-30Z-checkpoint3-app.log",
+      "sha256": "0a1105608babb2e0ea32906e56f477da5651186d260cff6236afb0ddad3ecdf9"
+    },
+    {
+      "check": "core-db",
+      "exitCode": 0,
+      "path": "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/221-intake/2026-11-16T05-55-30Z-checkpoint3-final-core-db.log",
+      "sha256": "418b2a0390f11775541e04c27b50f6c57d1a4dbc5763faccb931cc649f37daf2"
+    },
+    {
+      "check": "feature-store",
+      "exitCode": 0,
+      "path": "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/221-intake/2026-11-16T05-55-30Z-checkpoint3-feature-store.log",
+      "sha256": "0de7419303b2b998eab8e59e7b0c3078d43c7068c0f94c19d0ebd18a45b8e553"
+    },
+    {
+      "check": "lint",
+      "exitCode": 0,
+      "path": "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/221-intake/2026-11-16T05-55-30Z-checkpoint3-final-lint.log",
+      "sha256": "b5c6c7572e9b01d633f15ec4a07bc9ef117f3146eb8843013ceb91e221f33f4b"
+    },
+    {
+      "check": "layout-and-report",
+      "exitCode": 0,
+      "path": "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/221-intake/2026-11-16T05-55-30Z-checkpoint3-layout.log",
+      "sha256": "5014ba804773881314c7d16afec979b0875b666d98e4e1d1669895dc3a399cda"
+    },
+    {
+      "check": "typecheck",
+      "exitCode": 0,
+      "path": "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/221-intake/2026-11-16T05-55-30Z-checkpoint3-typecheck.log",
+      "sha256": "f65fd97d2a283a6d774c84d936e0bc3d5153bb69f81b0ebef1975371238ff03e"
+    },
+    {
+      "check": "webpack-build",
+      "exitCode": 0,
+      "path": "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/221-intake/2026-11-16T05-55-30Z-checkpoint3-webpack-build.log",
+      "sha256": "e07d853a357e6b99ea2f1a4f937959d3ea4b0026d276467a78031ddc45e25e9a"
+    },
+    {
+      "check": "turbopack-build",
+      "exitCode": 1,
+      "path": "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/221-intake/2026-11-16T05-55-30Z-checkpoint3-turbopack-build.log",
+      "sha256": "ed55f7d939f581178c03a55e7aefd7d29db9d4161fb2480941a1c590ebde01e1"
+    },
+    {
+      "check": "connection-warm-measurement",
+      "exitCode": 0,
+      "path": "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/221-intake/2026-11-16T05-55-30Z-checkpoint3-timing.log",
+      "sha256": "bfbe8e5b51e03d3aea31c2accc83bac782183261e31724e83738c64f8fcdba32"
+    },
+    {
+      "check": "application-warm-measurement",
+      "exitCode": 0,
+      "path": "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/221-intake/2026-11-16T05-55-30Z-checkpoint3-warm-timing.log",
+      "sha256": "0461cc1e60977b909744d8af3155907e878cfe414fd428dba52e870f0304462e"
+    },
+    {
+      "check": "final-speed-gate",
+      "exitCode": 0,
+      "path": "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/221-intake/2026-11-16T05-55-30Z-checkpoint3-final-timing.log",
+      "sha256": "d3db850285daec1c4fb01f9f8de921a29e3d8362f303a268b3dd1c4a67def945"
+    }
+  ],
+  "receipts": [
+    {
+      "path": "docs/evidence/cache-221/2026-11-16T05-36-28.009Z-final-local-qualification.json",
+      "sha256": "e1a1a51940ff4bf27ddee7ceab0afcfaa4be6413c914c03d553c51e3c496994c"
+    },
+    {
+      "path": "docs/evidence/cache-221/2026-11-16T05-38-56.832Z-final-local-qualification.json",
+      "sha256": "6a979b8b0a939a898711188ab78c66ebf5d6e1b73786a7111effaee541d53e85"
+    },
+    {
+      "path": "docs/evidence/cache-221/2026-11-16T05-50-33.885Z-final-local-qualification.json",
+      "sha256": "6ef2dfde346da2def24888a02736001e75d5d3ce24056003d04df9b172505f64"
+    }
+  ],
+  "sources": [
+    {
+      "path": "apps/web/src/lib/sharedOddsRepo.ts",
+      "sha256": "96ce467de7df1282dfd55d2337f42f489ae90ad710fe7114156dd5e9405973cc"
+    },
+    {
+      "path": "packages/db/src/sharedOddsCache.ts",
+      "sha256": "6b56b5239ae96a3ea6307fdae1dd919b095ee4eb62d521daf61beafe58d463a7"
+    },
+    {
+      "path": "packages/db/tooling/tests/sharedOdds.test.ts",
+      "sha256": "d4b598c0d07b4264761b4735df7d72cef390af2f35f946c33e2bd84c248e3094"
+    },
+    {
+      "path": "packages/db/tooling/tests/unit/sharedOddsCache.test.ts",
+      "sha256": "cbeb0ab5ac86cc555bc448d27c9280fd9d4a07117111e6cf874b3bee0e1403d1"
+    },
+    {
+      "path": "scripts/db/db-test-lanes.mjs",
+      "sha256": "1183bf2bebde1bda1ecdc59bee80d2776d75079862a3182683985c77c55ee11b"
+    },
+    {
+      "path": "scripts/spikes/221-qualify-cache.mts",
+      "sha256": "0d16c401186ba39fb3468166fba969ad3a1c4478e10320ee8bc3c6478fa5df3f"
+    },
+    {
+      "path": "tests/db/cache221.qualification.ts",
+      "sha256": "8c583248e3a07cd93e2437f14087891a01567a7265836119ef3b661f6af2a74e"
+    },
+    {
+      "path": "tests/db/fixtures/cache221-worker.mts",
+      "sha256": "a8c3ddc72792d67f5a0150b521e8605e6575b770aada5f079c4cdcba79a15f64"
+    },
+    {
+      "path": "tests/db/sharedOdds.process.test.ts",
+      "sha256": "b29332fcb9b1f1f1c974248f56d689826f571a321eeddacb74479cf02c91e69b"
+    },
+    {
+      "path": "tests/db/sharedOddsViews.test.ts",
+      "sha256": "b60b82cf9e4f7eedcf95a97f0b31f8b86eb7712fc2586f924b22da37262fa74a"
+    },
+    {
+      "path": "vitest.cache-221.config.mts",
+      "sha256": "c7091b719ea524832ea060fa728a460e270e35e0c7635b278687ab8194e21e02"
+    }
+  ]
+}

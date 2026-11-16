@@ -39,7 +39,7 @@ const withBatch = (run: (batch: (keys: string[], ttl?: number) => ReturnType<typ
         calls.push([...keys]);
         return Object.fromEntries(keys.map(key => [key, empty]));
       },
-      makeOwnerId: randomUUID, now: Date.now, monotonicNow: () => performance.now(),
+      makeOwnerId: randomUUID, monotonicNow: () => performance.now(),
       wait: ms => new Promise(resolve => setTimeout(resolve, ms)),
     };
     await run((keys, ttl = 300_000) => getSharedOddsBatch("event", keys, deps, { ttlMs: ttl }), calls, sql, client);
@@ -153,7 +153,7 @@ describe("shared raw odds SQL proposal and actual adapter", () => {
           keys.forEach(key => active.delete(key));
           return Object.fromEntries(keys.map(key => [key, empty]));
         },
-        makeOwnerId: randomUUID, now: Date.now, monotonicNow: () => performance.now(),
+        makeOwnerId: randomUUID, monotonicNow: () => performance.now(),
         wait: async ms => { expect(ms).toBe(250); follower.resolve(); await new Promise(resolve => setTimeout(resolve, ms)); },
       });
       const owner = getSharedOddsBatch('event', marketKeys.slice(0,2), actor(first, true), { ttlMs: 90_000 });
@@ -168,6 +168,50 @@ describe("shared raw odds SQL proposal and actual adapter", () => {
       expect(overlap).toBe(0);
       expect(Object.keys(result).sort()).toEqual(requested.sort());
     }));
+  });
+
+  it.each([20_000, 90_000, 300_000])("checks caller TTL %i only against publication time", async ttl => {
+    await withBatch(async (batch, calls, _sql, client) => {
+      await batch([marketKeys[0]], ttl);
+      await client.query(`UPDATE public.event_market_odds_cache
+        SET fetched_at=clock_timestamp()-($1::int-1000)*interval '1 millisecond',
+            refresh_claimed_at=clock_timestamp()-$1::int*interval '1 millisecond'`, [ttl]);
+      expect((await batch([marketKeys[0]], ttl))[marketKeys[0]].state).toBe('fresh');
+      expect(calls).toHaveLength(1);
+      await client.query(`UPDATE public.event_market_odds_cache
+        SET fetched_at=clock_timestamp()-($1::int+1000)*interval '1 millisecond',
+            refresh_claimed_at=clock_timestamp()-($1::int+2000)*interval '1 millisecond'`, [ttl]);
+      expect((await batch([marketKeys[0]], ttl))[marketKeys[0]].state).toBe('upstream');
+      expect(calls).toHaveLength(2);
+    });
+  });
+
+  it("preserves a fresh slice while claiming only the missing subset", async () => {
+    await withBatch(async (batch, calls) => {
+      await batch([marketKeys[0]]);
+      const result = await batch(marketKeys.slice(0,2));
+      expect(calls).toEqual([[marketKeys[0]], [marketKeys[1]]]);
+      expect(result[marketKeys[0]].state).toBe('fresh');
+      expect(result[marketKeys[1]].state).toBe('upstream');
+    });
+  });
+
+  it("persists the attempt after an ambiguous provider failure without automatic resend", async () => {
+    await withTestClient(async client => {
+      let sends = 0;
+      const deps: SharedOddsDependencies<Payload> = {
+        query: async (text, params) => (await client.query(text, params)).rows,
+        fetch: async () => { sends++; throw new Error('ambiguous mock outcome'); },
+        makeOwnerId: randomUUID, monotonicNow: () => performance.now(),
+        wait: ms => new Promise(resolve => setTimeout(resolve, ms)),
+      };
+      const run = () => getSharedOddsBatch('event', [marketKeys[0]], deps, { ttlMs: 300_000 });
+      await expect(run()).rejects.toThrow('ambiguous mock outcome');
+      expect((await run())[marketKeys[0]].state).toBe('unavailable');
+      expect(sends).toBe(1);
+      const state = await client.query('SELECT refresh_owner,refresh_claimed_at IS NOT NULL AS claimed FROM public.event_market_odds_cache');
+      expect(state.rows).toEqual([{ refresh_owner: null, claimed: true }]);
+    });
   });
 
 });

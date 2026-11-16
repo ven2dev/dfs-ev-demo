@@ -11,7 +11,6 @@ export type SharedOddsDependencies<T> = {
   query: SharedOddsQuery;
   fetch: (keys: string[], signal: AbortSignal) => Promise<Record<string, T>>;
   makeOwnerId: () => string;
-  now: () => number;
   monotonicNow: () => number;
   wait: (ms: number) => Promise<void>;
   signal?: AbortSignal;
@@ -21,7 +20,8 @@ export type SharedOddsDependencies<T> = {
 // A completed read/locked claim can include stale/unavailable cooldown keys.
 // Carry it out of the existing lifecycle without inventing a fresh timestamp.
 class CompletedBatch<T> {
-  constructor(readonly resources: SharedOddsBatch<T>) {}
+  readonly resources: SharedOddsBatch<T>;
+  constructor(resources: SharedOddsBatch<T>) { this.resources = resources; }
 }
 
 export const getSharedOddsBatch = async <T>(
@@ -107,7 +107,7 @@ export const getSharedOddsBatch = async <T>(
         release: async (_key, owner) => {
           await deps.query("SELECT public.release_shared_odds_batch($1,$2,$3)", [eventId, owned, owner]);
         },
-        makeOwnerId: deps.makeOwnerId, now: deps.now, wait: deps.wait,
+        makeOwnerId: deps.makeOwnerId, now: deps.monotonicNow, wait: deps.wait,
         onCacheWriteError: deps.onCacheWriteError,
       }, options
     );
