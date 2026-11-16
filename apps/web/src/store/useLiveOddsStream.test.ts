@@ -460,4 +460,43 @@ describe("useLiveOddsStream: observed quote history", () => {
     expect(current.evHistory[0].context?.price).toBeUndefined();
     unmount();
   });
+  it("marks stale odds as paused without inventing a new history point or observation time", () => {
+    const { source, unmount } = start();
+    receive(source, tick(100));
+    const history = useAppStore.getState().watchlist[samplePropId].evHistory;
+    receive(source, tick(500, { type: "stale", oddsStatus: "stale", oddsCapturedAt: new Date(50).toISOString(),
+      line: 249.5, quote: { bookmakerKey: "draftkings", price: 2 } }));
+    const current = useAppStore.getState().watchlist[samplePropId];
+    expect(current.evHistory).toEqual(history);
+    expect(current).toMatchObject({ line: 249.5, updatedAt: 50, refreshState: "paused",
+      quote: { timestamp: 50, price: 2 } });
+    expect(useAppStore.getState().connectionStatus).toBe("stale");
+    receive(source, tick(600, { oddsStatus: "fresh" }));
+    expect(useAppStore.getState().watchlist[samplePropId].evHistory).toHaveLength(2);
+    expect(useAppStore.getState().connectionStatus).toBe("live");
+    unmount();
+  });
+
+  it("can show a first stale result without creating an observed-price history", () => {
+    const { source, unmount } = start();
+    receive(source, tick(500, { type: "stale", oddsStatus: "stale", oddsCapturedAt: new Date(50).toISOString() }));
+    expect(useAppStore.getState().watchlist[samplePropId]).toMatchObject({ updatedAt: 50,
+      evHistory: [], refreshState: "paused", line: 247.5 });
+    expect(useAppStore.getState().connectionStatus).toBe("stale");
+    unmount();
+  });
+
+  it.each([{ oddsStatus: "stale" }, { oddsStatus: "unavailable" }, { oddsStatus: "unexpected" }])(
+    "does not treat malformed availability metadata as fresh: %j", extra => {
+      const { source, unmount } = start();
+      receive(source, tick(100));
+      receive(source, tick(500, extra));
+      const current = useAppStore.getState().watchlist[samplePropId];
+      expect(current.updatedAt).toBe(100);
+      expect(current.evHistory).toHaveLength(1);
+      expect(useAppStore.getState().connectionStatus).toBe("stale");
+      unmount();
+    }
+  );
+
 });

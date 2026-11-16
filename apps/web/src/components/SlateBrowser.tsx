@@ -103,6 +103,9 @@ export const SlateBrowser = () => {
   const selectionFocusRef = useRef<"game" | "summary" | null>(null);
   const oddsControlId = useId();
   const [oddsViewNotice, setOddsViewNotice] = useState<string | null>(null);
+  const [marketAvailability, setMarketAvailability] = useState<{
+    identity: string; stale: string[]; unavailable: string[];
+  } | null>(null);
 
   const sortedCheckedMarketKeys = useMemo(
     () => [...checkedMarketKeys].sort(),
@@ -265,6 +268,10 @@ export const SlateBrowser = () => {
         return;
       }
       setDiscoveredProps(data.players, eventId, marketKeys);
+      setMarketAvailability({ identity,
+        stale: marketKeys.filter(key => data.marketStatuses?.[key] === "stale"),
+        unavailable: marketKeys.filter(key => data.marketStatuses?.[key] === "unavailable"),
+      });
       setDiscoveryStatus("loaded");
       if (!forceRefresh) {
         selectionFocusRef.current = "summary";
@@ -468,6 +475,16 @@ export const SlateBrowser = () => {
               {discoveryStatus === "error" && (
                 <p className="mt-2 text-sm text-red-700 dark:text-red-400">{discoveryError}</p>
               )}
+
+              {hasCurrentDiscovery && marketAvailability?.identity === discoveryIdentity &&
+                (marketAvailability.stale.length > 0 || marketAvailability.unavailable.length > 0) && (
+                  <p role="status" className="mt-2 text-sm text-amber-800 dark:text-amber-300">
+                    {marketAvailability.stale.length > 0 && `Stale odds: ${PLAYER_PROP_MARKETS
+                      .filter(market => marketAvailability.stale.includes(market.key)).map(market => market.label).join(", ")}. `}
+                    {marketAvailability.unavailable.length > 0 && `Temporarily unavailable markets: ${PLAYER_PROP_MARKETS
+                      .filter(market => marketAvailability.unavailable.includes(market.key)).map(market => market.label).join(", ")}.`}
+                  </p>
+                )}
 
               {visibleDiscoveredProps.length > 0 && (
                 <div className="mt-4">
