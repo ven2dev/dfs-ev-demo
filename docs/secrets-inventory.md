@@ -160,10 +160,11 @@ where no environment variable is committed.
   #59's existing limits on generic pattern detection and optional validity
   checks.
 - `FIREBASE_SERVICE_ACCOUNT_KEY_BASE64` is the actual app credential name.
-  The DB guard refuses `FIREBASE_ADMIN_*`, but that prefix does not match the
-  app name. This is a source-confirmed guard coverage finding, not evidence
-  that a real credential was present. Step 1 changes no guard; any repair
-  needs scope approval and a synthetic boundary test.
+  The owner-approved #98 addition closes the initial DB guard gap: it now
+  refuses that exact name and all cataloged secret shell inputs by presence,
+  including blank inputs. The existing `FIREBASE_ADMIN_*`, `POSTGRES_*` and
+  `PG*` refusals remain. This prevents owner/CI credentials reaching disposable
+  test processes; no real credential was used to verify it.
 - The monitor intentionally receives its endpoint bearer while ordinary CI
   remains free of Production application credentials. `github.token` is a
   GitHub-issued job token, not evidence of a permanent owner PAT.
@@ -284,3 +285,27 @@ not prove deployment isolation, key validity, redaction throughout application
 routes, effective IAM or runtime secret-use auditing. Existing server-only
 guards and synthetic app tests remain separate; #99 implements and tests the
 missing unified runtime validation contract.
+
+## Disposable DB credential refusal
+
+[The guard](../packages/db/tooling/tests/target.mts) rejects the catalog's
+secret shell inputs independently of this JSON, so editing catalog policy
+does not silently alter executable access rules. Its
+[coverage test](../packages/db/tooling/tests/target.check.mjs) resolves profiles
+and overrides for every secret row and exercises each exact input or a
+synthetic member of a refused prefix. Nonempty, empty and undefined entries
+all refuse by presence. The error text is fixed and contains no supplied value.
+
+`dbTestGuardException.reason` records the five non-shell cases: the
+`github.token` context (its `GH_TOKEN` shell alias is refused), the generated
+creator `token`, and the three owner-session/bypass/recovery runbook categories.
+These are not permission to pass credentials to DB tests. A future named shell
+input needs its own row and guard coverage. Any intentional exception or
+classification change needs review because it can weaken this boundary.
+
+Two additional guard tests check real catalog coverage and demonstrate that
+new/reclassified secrets and missing/blank exception reasons fail. They use
+only synthetic values; they neither read credentials nor open a database lane.
+The catalog still has 87 entries and 14 profiles; it now cites 265 source
+references, including guard refusals. `consumers` can name a refusing source,
+as distinguished in each row's notes, rather than an authorized consumer.

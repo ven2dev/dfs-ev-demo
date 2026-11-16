@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 import {
@@ -8,6 +9,28 @@ import {
   LOCAL_TEST_DATABASE_URL,
   parseTestDatabaseUrl,
 } from "./target.mts";
+
+const catalog = JSON.parse(readFileSync(new URL("../../../../docs/secrets-inventory.json", import.meta.url), "utf8"));
+const credentialError = "Application/database credentials are not allowed in the DB test environment.";
+
+function assertCatalogSecretsRefused(candidate) {
+  for (const entry of candidate.entries) {
+    const policy = { ...candidate.profiles[entry.profile], ...entry.overrides };
+    if (policy.classification !== "secret") continue;
+    if (entry.dbTestGuardException !== undefined) {
+      assert.equal(typeof entry.dbTestGuardException.reason, "string", `exception reason required: ${entry.name}`);
+      assert.ok(entry.dbTestGuardException.reason.trim(), `exception reason required: ${entry.name}`);
+      continue;
+    }
+    assert.match(entry.name, /^[A-Z_][A-Z0-9_]*\*?$/, `catalog secret needs a shell name or exception reason: ${entry.name}`);
+    const name = entry.name.replace(/\*$/, "SYNTHETIC_CREDENTIAL");
+    for (const value of ["synthetic-credential-value-not-for-output", "", undefined]) {
+      assert.throws(() => assertNoApplicationCredentials({ [name]: value }), error =>
+        error instanceof Error && error.message === credentialError,
+      `catalog secret must be refused without exposing values: ${entry.name}`);
+    }
+  }
+}
 
 test("accepts only explicit loopback test connections", () => {
   for (const host of ["127.0.0.1", "localhost", "[::1]"]) {
@@ -57,6 +80,25 @@ test("rejects application credentials and ambient pg configuration", () => {
   for (const name of ["DATABASE_URL", "MIGRATION_DATABASE_URL", "ODDS_API_KEY", "FIREBASE_ADMIN_PROJECT_ID", "FIREBASE_ADMIN_PRIVATE_KEY", "POSTGRES_URL", "PGHOST", "PGOPTIONS", "GOOGLE_APPLICATION_CREDENTIALS"]) {
     assert.throws(() => assertNoApplicationCredentials({ [name]: "test-only-placeholder" }));
   }
+});
+
+test("every catalog secret is refused by the DB guard or has a stated catalog exception", () => {
+  assertCatalogSecretsRefused(catalog);
+});
+
+test("catalog guard coverage fails on new or reclassified secrets and unexplained exceptions", () => {
+  const added = structuredClone(catalog);
+  added.entries.push({ name: "SYNTHETIC_NEW_SECRET", profile: "application-secret" });
+  assert.throws(() => assertCatalogSecretsRefused(added), /catalog secret must be refused/);
+  const reclassified = structuredClone(catalog);
+  reclassified.entries.push({ name: "SYNTHETIC_RECLASSIFIED_INPUT", profile: "owner-identifier", overrides: { classification: "secret" } });
+  assert.throws(() => assertCatalogSecretsRefused(reclassified), /catalog secret must be refused/);
+  const noReason = structuredClone(catalog);
+  noReason.entries.find(entry => entry.name === "token").dbTestGuardException = { reason: "" };
+  assert.throws(() => assertCatalogSecretsRefused(noReason), /exception reason required/);
+  const unexplained = structuredClone(catalog);
+  delete unexplained.entries.find(entry => entry.name === "token").dbTestGuardException;
+  assert.throws(() => assertCatalogSecretsRefused(unexplained), /shell name or exception reason/);
 });
 
 test("resolves the default and isolates each registered loopback port", () => {

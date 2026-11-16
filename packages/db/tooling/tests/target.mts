@@ -19,15 +19,31 @@ export const getTestDatabaseLane = (selector = "default") => {
 };
 
 export function assertNoApplicationCredentials(environment: NodeJS.ProcessEnv) {
+  // Refuse presence, including blank inputs, before a disposable DB operation.
+  // Keep this guard independent of the documentation; target.check.mjs checks
+  // it against every catalog secret so new owner/CI inputs cannot drift in.
+  const secretNames = new Set([
+    "CORPUS_DATABASE_URL",
+    "CRON_SECRET",
+    "DATABASE_URL",
+    "DB_READINESS_SECRET",
+    "FIREBASE_SERVICE_ACCOUNT_KEY_BASE64",
+    "FS170_DATABASE_URL",
+    "GH_TOKEN",
+    "GOOGLE_APPLICATION_CREDENTIALS",
+    "HEALTH_SECRET",
+    "MIGRATION_DATABASE_URL",
+    "ODDS_API_KEY",
+    "ODDS_HEALTH_SECRET",
+    "R2_SECRET_ACCESS_KEY",
+    "YOUTUBE_API_KEY",
+  ]);
   const forbidden = Object.keys(environment).some(
     (name) =>
-      name === "DATABASE_URL" ||
-      name === "MIGRATION_DATABASE_URL" ||
-      name === "ODDS_API_KEY" ||
+      secretNames.has(name) ||
       name.startsWith("FIREBASE_ADMIN_") ||
       name.startsWith("POSTGRES_") ||
-      name.startsWith("PG") ||
-      name === "GOOGLE_APPLICATION_CREDENTIALS"
+      name.startsWith("PG")
   );
   if (forbidden) {
     throw new Error("Application/database credentials are not allowed in the DB test environment.");

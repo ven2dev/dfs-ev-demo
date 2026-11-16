@@ -195,9 +195,10 @@ expected identity can bypass such a check, so deployment access remains trusted.
 Current code already has server-only Firebase/DB modules, lazy clients and
 odds environment refusals. It does not yet prove the complete contract above:
 cached Firebase apps can bypass env parsing, resource identity validation is
-not unified and some route errors log raw exceptions. The catalog separately
-records the DB test guard's missing refusal for the real Firebase credential
-name. Its repair stays outside #98 as directed by the owner.
+not unified and some route errors log raw exceptions. The owner subsequently
+added DB test guard repair to #98: it now refuses the catalog's secret shell
+inputs, with synthetic catalog coverage and explicit non-shell exceptions.
+That local test guard is separate from #99's runtime configuration boundary.
 
 ## Catalog and #99's typed configuration module
 
