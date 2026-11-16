@@ -5,9 +5,10 @@ Step 1 records names and handling boundaries at
 [selective hybrid on #97](https://github.com/ven2dev/dfs-ev-demo/issues/97#issuecomment-6904517703):
 environment-scoped Vercel Secret variables are authoritative for the deployed
 app's runtime credentials. GCSM needs a named second-consumer or audit case and
-separate approval; none is selected today. Step 2's delivery design follows
-after the Step 1 commit. The comparison remains in the owner roadmap, outside
-the repo.
+separate approval; none is selected today. The
+[delivery design](secrets-delivery-design.md) defines the Step 2 contract and
+its implementation boundaries. The comparison remains in the owner roadmap,
+outside the repo.
 
 The [catalog](secrets-inventory.json) is the single structured inventory.
 It contains no current values, actual provider resource identifiers, private
@@ -63,8 +64,8 @@ not permission to infer access.
 | `owner` | Accountable role, without account identifiers |
 | `consumers` | File paths that use, declare, alias or refuse the name; `kind` distinguishes these cases |
 | `currentStorageClass` | Documented storage class and its verification limit |
-| `intendedSourceOfTruth` | Known non-secret/provider authority or the approved hybrid direction, with per-item details reserved for Step 2 |
-| `deliveryMethod` | Current delivery contract; Step 2 records any proposed change |
+| `intendedSourceOfTruth` | Approved delivery authority, distinguished from provider issuance/revocation authority |
+| `deliveryMethod` | Current contract or explicitly labeled approved design; implementation remains separate |
 | `rotationAuthority` | Who can issue/change/revoke it and the separate approval boundary |
 | `recoveryDependency` | Account, role, deployment or private recovery prerequisite |
 | `ciPermission` | Whether actual, public throwaway or synthetic-only material can reach the named job |
@@ -181,15 +182,23 @@ and a reference to a file that does not contain the name. These are catalog
 checks, not new runtime tests or proof of deployed credential access.
 
 The inventory fields are populated through profiles and explicit overrides.
-Per-item hybrid delivery details remain Step 2 work. #99's Google-first
-premise is superseded by the linked amendment; it owns the typed server-only
-validation boundary, fail-closed behavior and Preview isolation. Step 2 will
-specify how that boundary supplies/checks catalog coverage. #100 owns any
-justified Bitwarden adoption, and #101 separately approved migration/rotation
-and retirement of copies.
+Step 2 adds the [hybrid design](secrets-delivery-design.md) and `copyLedger` for
+six independent runtime credentials. It records the GitHub/Hostinger calling
+copies, workflow aliases, deployment snapshots and unresolved readiness caller.
+The ledger states intended authority and verification limits; it neither
+asserts byte equality nor authorizes an unknown private copy. The 87 input
+entries, profiles and source references are unchanged in scope.
+
+#99's Google-first premise is superseded by the linked amendment; it owns the
+typed server-only validation boundary, fail-closed behavior and Preview
+isolation. Its executable names, classification, capability and environment
+rules will generate or be checked against the catalog's runtime subset, with
+raw accesses checked outside explicitly approved adapters. #100 owns any
+justified Bitwarden adoption; none is selected today. #101 owns separately
+approved migration/rotation, live-scope verification and retirement of copies.
 
 No runtime code, workflow, template, deployment, IAM or credential has changed
-in Step 1. Synthetic catalog validation can establish field/reference coverage;
+in Steps 1–2. Synthetic catalog validation can establish field/reference coverage;
 it cannot establish real authentication, effective permissions, secret access
 auditing, billing state, outage performance or recovery readiness. Those
 claims require their separately approved evidence.
