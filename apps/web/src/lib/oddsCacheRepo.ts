@@ -1,5 +1,7 @@
 import "server-only";
 
+import { sliceOddsByMarket, mergeOddsSlices, type CachedMarketPayload } from "./oddsProjection";
+
 import { randomUUID } from "node:crypto";
 import { getSql } from "./db";
 import {
@@ -7,7 +9,6 @@ import {
   type EventOddsResponse,
   type OddsApiFetch,
   type OddsApiQuota,
-  type OddsMarket,
 } from "./oddsApi";
 import { persistOddsObservation } from "./oddsSnapshotRepo";
 
@@ -130,10 +131,6 @@ const dedupedFetchEventOdds = (
   return fetchPromise;
 };
 
-type CachedMarketPayload = {
-  bookmakers: { key: string; markets: OddsMarket[] }[];
-};
-
 type CacheRow = {
   market_key: string;
   payload: CachedMarketPayload;
@@ -151,46 +148,6 @@ export type MarketOddsOrigin = {
 export type MarketOddsResult = {
   odds: EventOddsResponse;
   origins: Record<string, MarketOddsOrigin>;
-};
-
-// Slices a multi-market API response down to just one market's data --
-// this is the shape actually written to (and read back from) the
-// per-(event, market) cache row, so a request for a DIFFERENT subset of
-// markets on the same event can reuse whichever of these it needs
-// without re-fetching markets it already has fresh.
-const sliceByMarket = (response: EventOddsResponse, marketKey: string): CachedMarketPayload => ({
-  bookmakers: response.bookmakers
-    .map((bookmaker) => ({
-      key: bookmaker.key,
-      markets: bookmaker.markets.filter((market) => market.key === marketKey),
-    }))
-    .filter((bookmaker) => bookmaker.markets.length > 0),
-});
-
-// Merges any number of per-market slices (some from the cache, some
-// freshly fetched) back into one combined response -- bookmakers that
-// offer more than one of the requested markets get their markets
-// combined onto a single entry, rather than appearing once per market.
-const mergeSlices = (eventId: string, slices: CachedMarketPayload[]): EventOddsResponse => {
-  const bookmakersByKey = new Map<string, Map<string, OddsMarket>>();
-
-  for (const slice of slices) {
-    for (const bookmaker of slice.bookmakers) {
-      const marketsByKey = bookmakersByKey.get(bookmaker.key) ?? new Map<string, OddsMarket>();
-      for (const market of bookmaker.markets) {
-        marketsByKey.set(market.key, market);
-      }
-      bookmakersByKey.set(bookmaker.key, marketsByKey);
-    }
-  }
-
-  return {
-    id: eventId,
-    bookmakers: Array.from(bookmakersByKey.entries()).map(([key, marketsByKey]) => ({
-      key,
-      markets: Array.from(marketsByKey.values()),
-    })),
-  };
 };
 
 export type GetOrFetchMarketOddsOptions = {
@@ -254,7 +211,7 @@ export const getOrFetchMarketOdds = async (
     const fetched = await dedupedFetchEventOdds(sportKey, eventId, missingMarketKeys);
 
     for (const marketKey of missingMarketKeys) {
-      freshlyFetchedSlices.set(marketKey, sliceByMarket(fetched.data, marketKey));
+      freshlyFetchedSlices.set(marketKey, sliceOddsByMarket(fetched.data, marketKey));
       origins[marketKey] = {
         origin: "upstream",
         capturedAt: fetched.capturedAt,
@@ -291,7 +248,7 @@ export const getOrFetchMarketOdds = async (
   }
 
   return {
-    odds: mergeSlices(eventId, [
+    odds: mergeOddsSlices(eventId, [
       ...Array.from(freshRowsByMarket.values()),
       ...Array.from(freshlyFetchedSlices.values()),
     ]),
