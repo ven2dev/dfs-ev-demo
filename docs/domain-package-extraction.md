@@ -195,6 +195,13 @@ native Node prohibition on preserve-symlinks. Negative mutations cover Next,
 React, ReactDOM, `@next/env`, TypeScript and missing/mismatched domain declarations.
 The root/web declarations remain duplicated under this enforced equality policy.
 
+The statements above record #189's extraction checkpoint. #282 later removes
+the independent root `@next/env` declaration: the launcher resolves the loader
+through the installed Next package and checks its exact dependency and resolved
+module identity. The shared-version policy for other duplicated dependencies
+remains. See the [current loader Design basis](dependency-updates.md#next-environment-loader-ownership-282).
+Historical #189 evidence keeps its original hashes and version-equality claims.
+
 The [step-3 receipt](evidence/domain-189/step-3-boundaries.json) records clean lint,
 root/domain typechecks, 7 boundary cases, 12 CI/layout cases and 35 domain/native
 consumer regressions, plus 34 unchanged frozen artifacts. It retains the initial

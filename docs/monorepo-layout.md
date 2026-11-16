@@ -133,6 +133,18 @@ local root dotenv files; shell variables win, then root values, then app values.
 Direct workspace commands and hosted builds use the app's native dotenv boundary.
 No credential file was copied. See README.md for new-worktree setup.
 
+### Current environment-loader ownership (#282)
+
+The root launcher now resolves `@next/env` through the web workspace's installed
+Next package. Next owns its exact dependency; root no longer declares a separate
+version. Resolution works with either a hoisted or nested dependency and refuses
+missing/non-exact/mismatched ownership. Root dotenv precedence remains shell >
+root > app; hosted (`VERCEL`/`VERCEL_ENV`), typegen and help skip root loading.
+See the [Design basis and dependency policy](dependency-updates.md#next-environment-loader-ownership-282).
+The historical relocation receipts remain unchanged; their root-version-equality
+assertion records the earlier implementation, superseded by the current
+owner/module-identity checks.
+
 This is physical ownership, with temporary source imports and a shared root
 test/typecheck harness. Existing DB-test imports of app policies and creator-role
 bootstrap remain until #190; independent package APIs follow in #189–#191.
