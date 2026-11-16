@@ -28,9 +28,9 @@ BEGIN
       AND c.fetched_at<=t-p_ttl_ms*interval '1 millisecond'
       AND (c.refresh_claimed_at IS NULL OR c.refresh_claimed_at<=t-interval '20 seconds');
   SELECT jsonb_object_agg(c.market_key,jsonb_build_object(
-    'state',CASE WHEN c.refresh_claimed_at>c.fetched_at AND c.refresh_claimed_at>t-interval '20 seconds'
+    'state',CASE WHEN c.fetched_at>t-p_ttl_ms*interval '1 millisecond' THEN 'fresh'
+      WHEN c.refresh_claimed_at>t-interval '20 seconds'
         THEN CASE WHEN c.fetched_at>'epoch'::timestamptz THEN 'stale' ELSE 'unavailable' END
-      WHEN c.fetched_at>t-p_ttl_ms*interval '1 millisecond' THEN 'fresh'
       ELSE 'pending' END,
     'payload',CASE WHEN c.fetched_at>'epoch'::timestamptz THEN c.payload ELSE NULL END,
     'fetchedAt',CASE WHEN c.fetched_at>'epoch'::timestamptz THEN c.fetched_at ELSE NULL END))

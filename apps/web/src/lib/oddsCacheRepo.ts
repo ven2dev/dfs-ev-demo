@@ -207,5 +207,5 @@ export const getLegacyMarketOdds = async (
   };
 };
 
-export const getOrFetchMarketOdds: typeof getLegacyMarketOdds = (...args) =>
-  selectOddsCachePath(getLegacyMarketOdds, getSharedMarketOdds)(...args);
+export const getOrFetchMarketOdds: typeof getLegacyMarketOdds = async (...args) =>
+  (await selectOddsCachePath(getLegacyMarketOdds, getSharedMarketOdds))(...args);

@@ -173,5 +173,5 @@ const legacyLiveInputs = createLivePropInputs((key, _context, signal) =>
   fetchPlayerPropMarketOdds(key.sportKey, key.eventId, key.marketKey, key.playerName, signal, "live"));
 const sharedLiveInputs = createLivePropInputs((key, context, signal) =>
   fetchSharedPlayerPropOdds(key.sportKey, key.eventId, key.marketKey, key.playerName, signal, context));
-export const getSharedLivePropInputs: typeof legacyLiveInputs = (...args) =>
-  selectOddsCachePath(legacyLiveInputs, sharedLiveInputs)(...args);
+export const getSharedLivePropInputs: typeof legacyLiveInputs = async (...args) =>
+  (await selectOddsCachePath(legacyLiveInputs, sharedLiveInputs))(...args);

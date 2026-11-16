@@ -48,9 +48,7 @@ export const getSharedOddsBatch = async <T>(
           deps.signal?.throwIfAborted();
           const rows = await deps.query(
             `SELECT market_key, payload, fetched_at,
-                    fetched_at > clock_timestamp() - $3 * interval '1 millisecond'
-                      AND NOT coalesce(refresh_claimed_at > fetched_at
-                        AND refresh_claimed_at > clock_timestamp() - interval '20 seconds', false) AS fresh
+                    fetched_at > clock_timestamp() - $3 * interval '1 millisecond' AS fresh
              FROM public.event_market_odds_cache
              WHERE event_id = $1 AND market_key = ANY($2) ORDER BY market_key`,
             [eventId, keys, options.ttlMs]

@@ -78,18 +78,30 @@ describe("shared raw odds SQL proposal and actual adapter", () => {
     });
   });
 
-  it("failed force refresh stays marked stale during cooldown even for a longer caller TTL", async () => {
-    await withBatch(async (batch, calls, _sql, client) => {
+  it.each(['in-flight','failed-publication'])("in-TTL B read stays one SELECT and fresh during A %s", async phase => {
+    await withBatch(async (batch, calls, sql, client) => {
       await client.query(`INSERT INTO public.event_market_odds_cache(event_id,market_key,payload,fetched_at)
         VALUES('event',$1,$2,clock_timestamp()-interval '30 seconds')`, [marketKeys[0], empty]);
-      await failPublication(client);
-      try { await batch([marketKeys[0]], 20_000); }
-      finally { await allowPublication(client); }
-      expect((await batch([marketKeys[0]], 300_000))[marketKeys[0]].state).toBe("stale");
-      expect(calls).toHaveLength(1);
-      await client.query(`UPDATE public.event_market_odds_cache SET refresh_claimed_at=clock_timestamp()-interval '21 seconds'`);
-      expect((await batch([marketKeys[0]], 300_000))[marketKeys[0]].state).toBe("fresh");
-      expect(calls).toHaveLength(1); // TTL still applies to the original publication only.
+      const claim = await client.query('SELECT * FROM public.claim_shared_odds_batch($1,$2,$3,$4,$5)',
+        ['event',[marketKeys[0]],'owner-a',20_000,30_000]);
+      expect(claim.rows[0].outcome).toBe('leader');
+      if (phase === 'failed-publication') {
+        await failPublication(client);
+        try {
+          await expect(client.query('SELECT public.publish_shared_odds_batch($1,$2,$3,$4)',
+            ['event',[marketKeys[0]],'owner-a',{[marketKeys[0]]:empty}])).rejects.toThrow('injected publication failure');
+        } finally { await allowPublication(client); }
+        await client.query('SELECT public.release_shared_odds_batch($1,$2,$3)', ['event',[marketKeys[0]],'owner-a']);
+      }
+      expect((await batch([marketKeys[0]],90_000))[marketKeys[0]].state).toBe('fresh');
+      expect(sql).toHaveLength(1);
+      expect(calls).toHaveLength(0);
+      // A locked recheck must agree with the ordinary fresh read as well.
+      const checked = await client.query('SELECT * FROM public.claim_shared_odds_batch($1,$2,$3,$4,$5)',
+        ['event',[marketKeys[0]],'owner-b',90_000,30_000]);
+      expect(checked.rows[0].outcome).toBe('complete');
+      expect(checked.rows[0].resources[marketKeys[0]].state).toBe('fresh');
+      expect(checked.rows[0].owned_keys).toEqual([]);
     });
   });
 

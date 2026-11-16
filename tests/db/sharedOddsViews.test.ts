@@ -185,3 +185,38 @@ it('two player views and discovery share one real raw publication with distinct 
   expect(m.persist).toHaveBeenCalledOnce();
   expect(m.weather).toHaveBeenCalledTimes(2);
 });
+
+
+it.each(['in-flight','failed-publication'])(
+  'in-TTL live odds stay fresh through the real application while A is %s', async phase => {
+    const capturedAt = new Date(Date.now()-30_000).toISOString();
+    const payload = {bookmakers,observation:{id:'prior',capturedAt,persisted:true,
+      quota:{remaining:null,used:null,last:null}}};
+    await client.query(`INSERT INTO public.event_market_odds_cache(event_id,market_key,payload,fetched_at)
+      VALUES($1,$2,$3,clock_timestamp()-interval '30 seconds')`,[key.eventId,key.marketKey,payload]);
+    await client.query('SELECT * FROM public.claim_shared_odds_batch($1,$2,$3,$4,$5)',
+      [key.eventId,[key.marketKey],'owner-a',20_000,30_000]);
+    if (phase === 'failed-publication') {
+      await client.query(`CREATE FUNCTION public.reject_odds_publication() RETURNS trigger LANGUAGE plpgsql AS $$
+        BEGIN RAISE EXCEPTION 'injected publication failure'; END $$;
+        CREATE TRIGGER reject_odds_publication BEFORE UPDATE ON public.event_market_odds_cache
+        FOR EACH ROW EXECUTE FUNCTION public.reject_odds_publication();`);
+      try {
+        await expect(client.query('SELECT public.publish_shared_odds_batch($1,$2,$3,$4)',
+          [key.eventId,[key.marketKey],'owner-a',{[key.marketKey]:payload}])).rejects.toThrow('injected publication failure');
+      } finally {
+        await client.query('DROP TRIGGER reject_odds_publication ON public.event_market_odds_cache; DROP FUNCTION public.reject_odds_publication();');
+      }
+      await client.query('SELECT public.release_shared_odds_batch($1,$2,$3)',[key.eventId,[key.marketKey],'owner-a']);
+    }
+    m.query.mockClear();
+    const {fetchSharedPlayerPropOdds} = await import('../../apps/web/src/lib/sharedOddsRepo');
+    const fetched = await fetchSharedPlayerPropOdds(key.sportKey,key.eventId,key.marketKey,key.playerName);
+    expect(fetched.sharedObservation?.status).toBe('fresh');
+    expect(m.query).toHaveBeenCalledOnce();
+    expect(m.event).not.toHaveBeenCalled();
+    const {getSharedLivePropInputs} = await import('../../apps/web/src/lib/livePropCacheRepo');
+    expect((await getSharedLivePropInputs(key,context)).oddsObservation?.status).toBe('fresh');
+    expect(m.event).not.toHaveBeenCalled();
+  }
+);
