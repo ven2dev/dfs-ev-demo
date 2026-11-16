@@ -1,0 +1,195 @@
+# Configuration and credential inventory (#98)
+
+Step 1 records names and handling boundaries at
+`e254a9b351bac53ae7589c725058bf78fb78ad7f`. The owner approved the
+[selective hybrid on #97](https://github.com/ven2dev/dfs-ev-demo/issues/97#issuecomment-6904517703):
+environment-scoped Vercel Secret variables are authoritative for the deployed
+app's runtime credentials. GCSM needs a named second-consumer or audit case and
+separate approval; none is selected today. Step 2's delivery design follows
+after the Step 1 commit. The comparison remains in the owner roadmap, outside
+the repo.
+
+The [catalog](secrets-inventory.json) is the single structured inventory.
+It contains no current values, actual provider resource identifiers, private
+file contents, or fingerprints derived from credentials. A source-code commit
+identifies what was inspected; it does not identify any secret value.
+
+## Design basis
+
+- **Pattern:** a value-free configuration catalog with source references and
+  shared handling profiles. A row names its consumers and overrides a profile
+  only when its handling differs. This inventories supplied inputs without
+  introducing a secret broker. #99's future typed server configuration schema
+  will own the executable input definition; catalog coverage will be generated
+  from or checked against it, rather than maintained as an independent schema.
+- **Alternatives:** an unstructured prose-only list makes completeness and
+  missing fields difficult to review; separately repeating every policy in
+  every row encourages contradictory updates; discovery by exporting deployed
+  values exposes material that classification does not require. These are
+  rejected for the catalog. The approved delivery direction is linked above;
+  Step 1 implements no delivery mechanism.
+- **Targets:** cover supplied environment inputs, computed setting names,
+  credential aliases, CLI credential/target selectors, runbook and
+  platform-injected credentials, and deliberately refused names;
+  give each entry all eleven fields below. Retain zero secret values or
+  secret-derived fingerprints. This step changes no read/write path and has
+  no latency or database benchmark target.
+- **Requirement reasons:** keep names separate from values to avoid disclosure;
+  distinguish Production, Preview, disposable tests and owner operations to
+  prevent accidental privilege transfer; classify aliases and refusal cases
+  explicitly to avoid provisioning nonexistent consumers; retain source and
+  verification status to avoid presenting a documented setup as a verified
+  deployment. Separate owner approval remains necessary for credential
+  rotation/deletion because it can interrupt live consumers.
+- **Assumptions:** current source is a Next.js app on Vercel, with Firebase,
+  Neon, a Hostinger external cron caller, a GitHub operational monitor, and
+  owner-run local pipeline tools. Source and public metadata can establish
+  names and contracts. Actual deployment settings, IAM, account recovery,
+  billing, variable types and copy counts need separate value-free owner
+  confirmation; this step does not inspect them.
+
+## Reading the catalog
+
+Each `entries` row contains an exact `name`, a `kind`, a `profile`, source
+file paths in `consumers`, and optional `notes`/`overrides`. Resolve a row by
+taking its profile, adding its explicit consumers, then applying overrides.
+There is no inheritance between profiles. An unresolved field is an error,
+not permission to infer access.
+
+| Required field | Meaning |
+| --- | --- |
+| `classification` | Secret, sensitive identifier, or ordinary configuration |
+| `environments` | The separate environments/operations where it belongs |
+| `owner` | Accountable role, without account identifiers |
+| `consumers` | File paths that use, declare, alias or refuse the name; `kind` distinguishes these cases |
+| `currentStorageClass` | Documented storage class and its verification limit |
+| `intendedSourceOfTruth` | Known non-secret/provider authority or the approved hybrid direction, with per-item details reserved for Step 2 |
+| `deliveryMethod` | Current delivery contract; Step 2 records any proposed change |
+| `rotationAuthority` | Who can issue/change/revoke it and the separate approval boundary |
+| `recoveryDependency` | Account, role, deployment or private recovery prerequisite |
+| `ciPermission` | Whether actual, public throwaway or synthetic-only material can reach the named job |
+| `agentPermission` | Whether values may enter an agent session; #98 needs only names and synthetic material |
+
+`consumers` are evidence of source behavior, not a live access or IAM audit.
+Validation checks that each name appears in every listed file, without pinning
+line numbers that unrelated edits can move. For refused prefixes, the trailing
+`*` denotes a namespace; validation checks the prefix text. Runbook categories
+use actual source phrases (`protection bypass`, `authenticated CLI bypass`,
+`provider recovery`, `token`) and notes identify the credential they describe.
+The catalog CLI's option names omit the leading `--`; their `kind` identifies
+the command. Secret aliases share the underlying credential's rotation
+boundary; a prefix does not claim that every possible member exists.
+
+## Scope and discovery
+
+**Inclusion rule:** record supplied configuration inputs: environment variables,
+CLI credential/target selectors, runbook credentials, platform-injected
+credentials and deliberately refused names. Exclude source-controlled policy
+key paths, constants, workflow-internal state and artifact paths unless they
+carry or select a credential. A name's appearance in an `env` map does not by
+itself make workflow bookkeeping a supplied configuration input.
+
+Discovery reviewed tracked TypeScript/JavaScript accesses and destructuring,
+child-process maps, computed collector setting calls, both `.env.example`
+templates, workflows, Compose, Turbo and operator runbooks, then applied that
+rule. Both literal and computed supplied names are included. In particular,
+`integerSetting(name)` in the collector and the R2 helper's explicit `values`
+argument are not missed by limiting discovery to `process.env.NAME`.
+
+For example, Dependabot/Compose/Next policy key paths, `APP_RESULT`,
+`GITHUB_OUTPUT`, benchmark output paths and source constants are excluded.
+The remaining test/runtime flags are externally supplied process controls.
+`TEST_DATABASE_TEMPLATE_MANIFEST` remains because it selects the registered
+disposable database template, rather than naming an evidence output. API user
+sessions are outside the deployment configuration catalog; the creator review
+token remains because an owner runbook delivers that local capability.
+
+Documentation mentions such as `DATABASE_NAME` and `HOST_FINGERPRINT` are
+placeholders for the catalog CLI's `--expected-database` and
+`--expected-host-fingerprint` arguments, not extra environment variables.
+`DB_TEST_RUN_ACTIVE`, `ERR_PACKAGE_PATH_NOT_EXPORTED` and `TURBO_SELECTION` are
+error/output labels. `NEXT_PUBLIC_` is a framework prefix, not an individual
+credential. These are not counted as additional environment inputs.
+
+## Current trust boundaries
+
+| Boundary | Names / credential categories | Current contract and authority |
+| --- | --- | --- |
+| Application server | `ODDS_API_KEY`, `FIREBASE_SERVICE_ACCOUNT_KEY_BASE64`, `DATABASE_URL`, `DB_READINESS_SECRET` | Explicit deployment configuration; Firebase Admin and DB modules are `server-only`; provider/role owner controls issuance. Actual values/types/copies were not inspected. |
+| External collector caller | `CRON_SECRET` | Hostinger calls the deployed collector; the same bearer also protects player-stat sync. Documented calling copy and server copy rotate together. No database/provider key is needed by Hostinger. |
+| Operational monitor | `ODDS_HEALTH_SECRET` → `HEALTH_SECRET`; `ODDS_HEALTH_URL` → `HEALTH_URL` | Repository Actions secrets feed the no-checkout Collector Health job. Only the bearer is a secret by classification; the endpoint remains a resource identifier even though GitHub stores it as a secret. |
+| Public browser configuration | Six exact `NEXT_PUBLIC_FIREBASE_*` names in the catalog | Intended to be bundled; authorization depends on Firebase Rules, App Check and API restrictions, not hiding configuration. Firebase Admin key material is separate. |
+| Server authorization/configuration | `ADMIN_UID`, `ODDS_FREE_PILOT_EVENT_ID`, collector profiles/tuning | UID and event ID are identifiers; the remaining policy settings are ordinary configuration. Changes can affect authorization, quota or collection scope without being credential rotation. |
+| Preview | Separate Firebase Admin/web configuration, Neon target and optional Preview UID | Fixture-only provider behavior. No Production Odds key, Production data copy or fallback to Production credentials. Source contract is recorded in [Preview isolation](preview-environment.md). |
+| Disposable test databases | `TEST_DATABASE_URL`, `DB_TEST_*`, container `POSTGRES_DB`/`USER`/`PASSWORD`, `FS244_SOURCE_DATABASE_URL` | Public throwaway fixture credentials and registered loopback lanes. Replay currently requires lane-2 large; its source URL is not a hosted data credential. |
+| Owner creator tools | `YOUTUBE_API_KEY`, `CORPUS_DATABASE_URL`, per-run review token | Explicit owner terminal entry; corpus URL is registered loopback/`corpus_importer`. Private creator inputs stay outside agents. The review token is an ephemeral local browser capability. |
+| Owner migration/catalog operations | `MIGRATION_DATABASE_URL` and explicit target/evidence CLI options | Direct non-pooled connection, no application URL fallback or dotenv discovery. Remote mutation remains separately blocked under #95; account/PITR recovery remains #86. |
+| Owner local integrity operation | `FS170_DATABASE_URL` | Explicit loopback target; the tool checks against an ambient application URL. This is not a qualified hosted scrubber. |
+| Synthetic-only R2 proof | `R2_ACCOUNT_ID`, `R2_BUCKET`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_LIVE_CONTRACT` | Existing ignored local file and explicit live-test opt-in; the helper restricts the synthetic test bucket. R2 is not the default pipeline store. No file or credential was read by #98. |
+| Platform/owner sessions | `github.token`/`GH_TOKEN`, Vercel bypass/session credentials, provider recovery factors | Keep generated job identities, owner administration and application credentials separate. Ordinary CI is not authority to receive Production application secrets. |
+
+Relevant consumers are [Firebase Admin](../apps/web/src/lib/firebaseAdmin.ts),
+[Firebase browser config](../apps/web/src/lib/firebaseClient.ts),
+[server DB](../apps/web/src/lib/db.ts), [API authorization](../apps/web/src/lib/apiAuth.ts),
+[collector route](../apps/web/src/app/api/cron/collect-odds/route.ts),
+[Collector Health workflow](../.github/workflows/collector-health.yml),
+[R2 test helper](../services/pipeline/tests/support/r2TestConfig.ts),
+[local corpus target](../services/pipeline/scripts/creator-corpus/importTarget.ts),
+and [DB test target](../packages/db/tooling/tests/target.mts).
+
+The catalog records separate recovery dependencies rather than treating a
+provider API key as sufficient for account recovery. Provider administrator
+recovery dependencies are fields, not invented environment-variable names.
+The runbook's Neon recovery and Vercel bypass/session categories remain even
+where no environment variable is committed.
+
+## Verification status and findings
+
+- Repository metadata reports secret scanning and push protection enabled.
+  Repository Actions secret names are `ODDS_HEALTH_SECRET` and
+  `ODDS_HEALTH_URL`; the GitHub environments named Preview and Production
+  returned no environment-secret names during intake. Values were not read.
+  This says nothing about Vercel variables, organization-level grants or
+  local/private copies. [Security operations](security-operations.md) retains
+  #59's existing limits on generic pattern detection and optional validity
+  checks.
+- `FIREBASE_SERVICE_ACCOUNT_KEY_BASE64` is the actual app credential name.
+  The DB guard refuses `FIREBASE_ADMIN_*`, but that prefix does not match the
+  app name. This is a source-confirmed guard coverage finding, not evidence
+  that a real credential was present. Step 1 changes no guard; any repair
+  needs scope approval and a synthetic boundary test.
+- The monitor intentionally receives its endpoint bearer while ordinary CI
+  remains free of Production application credentials. `github.token` is a
+  GitHub-issued job token, not evidence of a permanent owner PAT.
+- Hostinger cron and Collector Health currently pass their bearer in an HTTP
+  header argument. This records a process/configuration exposure surface;
+  Step 1 does not change either caller or its schedule.
+- Base64 does not protect Firebase Admin key material. The encoded JSON is
+  one provider credential, including its private key and identity metadata;
+  that does not justify bundling unrelated credentials into it.
+- The actual Vercel plan, Secret/Config types, OIDC setup, GCSM/billing/IAM,
+  Bitwarden adoption, account recovery and complete private-copy ledger are
+  unverified. An inventory of current storage *classes* is not an attestation
+  that a deployed value has the intended scope.
+
+## Step boundary
+
+Step 1's offline check resolves all eleven fields for 87 entries across 14
+profiles, checks each name in 252 cited file references, and checks local links. It
+rejects removal of the real `ODDS_API_KEY` row, a missing rotation authority,
+and a reference to a file that does not contain the name. These are catalog
+checks, not new runtime tests or proof of deployed credential access.
+
+The inventory fields are populated through profiles and explicit overrides.
+Per-item hybrid delivery details remain Step 2 work. #99's Google-first
+premise is superseded by the linked amendment; it owns the typed server-only
+validation boundary, fail-closed behavior and Preview isolation. Step 2 will
+specify how that boundary supplies/checks catalog coverage. #100 owns any
+justified Bitwarden adoption, and #101 separately approved migration/rotation
+and retirement of copies.
+
+No runtime code, workflow, template, deployment, IAM or credential has changed
+in Step 1. Synthetic catalog validation can establish field/reference coverage;
+it cannot establish real authentication, effective permissions, secret access
+auditing, billing state, outage performance or recovery readiness. Those
+claims require their separately approved evidence.
