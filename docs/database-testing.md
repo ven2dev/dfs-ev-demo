@@ -409,3 +409,29 @@ dispositions, and hosted run URLs on #45 rather than in this guide. The initial
 hosted failure and passing proofs are recorded in the
 [completed validation evidence](https://github.com/ven2dev/dfs-ev-demo/issues/45#issuecomment-5989637479).
 Do not treat local truth-table coverage as hosted failure-propagation evidence.
+
+## #221 shared raw odds qualification
+
+The core DB suite includes the shared-batch SQL, actual live-view/legacy-schema
+compatibility, and separate-process crash/race cases. These use only the
+throwaway PostgreSQL fixture and a loopback mock HTTP provider. Their file list
+is part of the complete-report gate; omitting a file fails verification.
+
+Final cache timing is opt-in and separate from ordinary CI. Reserve a quiet
+window across lanes, start lane-2 standard using the commands above, and invoke
+`node scripts/spikes/221-qualify-cache.mts` from a clean environment with
+`DB_TEST_LANE=lane-2`, `DB_TEST_TIER=standard`, and the selected fixture's
+`TEST_DATABASE_URL`. The ordinary target/credential guard and exclusive run
+lease apply. The script never loads dotenv or falls back to a hosted URL.
+Stop the owned fixture afterward with `node scripts/db/test-db.mjs down` and the
+same lane selector.
+
+The opt-in configuration measures three interleaved legacy/shared rounds at
+one and 20 independent leaders after warming both connection pools. It records
+the actual live-cache entry to mocked provider callback, SQL counts, and a
+20-event × 12-market synthetic payload corpus, including persisted metadata.
+Receipts use unique filenames under `docs/evidence/cache-221/`. The 8 MiB
+logical payload limit is fixture-only. The opt-in run retains its receipt and fails if any 20-leader round misses the
+10 ms cache allocation; no wall-time assertion runs in CI. These local PostgreSQL timings
+exclude admission and hosted transport, so they do not certify #61's complete
+90 ms warm pre-provider deadline or authorize a provider/schema cutover.

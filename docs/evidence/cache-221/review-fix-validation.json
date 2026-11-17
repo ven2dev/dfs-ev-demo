@@ -1,0 +1,81 @@
+{
+  "at": "2026-11-16T07:00:43.064393+00:00",
+  "parentSha": "fedc66296fdee6686f0ff6b54d857a08e425d1ac",
+  "status": "uncommitted whole-branch review correction",
+  "finding": "Repository stale status was dropped by the live SSE route and ignored by the discovery browser; a stale quote could look fresh and enter observed EV history.",
+  "correction": [
+    "Distinct stale stream message carries original capture time.",
+    "Client retains a paused stale result without appending an observed-history point; rejects invalid availability metadata.",
+    "Discovery names stale/unavailable requested markets, including empty results, and clears notice after fresh data."
+  ],
+  "validation": {
+    "browserPassed": 949,
+    "nodePassed": 898,
+    "nodeSkipped": "one existing opt-in live R2 contract",
+    "fullLint": "passed",
+    "typecheck": "passed",
+    "webpackBuild": "passed",
+    "turbopack": "existing environment port restriction; not rerun"
+  },
+  "cacheMeasurementSourcesUnchanged": true,
+  "priorCacheReceipt": {
+    "path": "docs/evidence/cache-221/2026-11-16T05-50-33.885Z-final-local-qualification.json",
+    "sha256": "6ef2dfde346da2def24888a02736001e75d5d3ce24056003d04df9b172505f64"
+  },
+  "databaseOrTimingRerun": false,
+  "reason": "Correction changes delivery/presentation after the cache boundary, not measured SQL, cache lifecycle or schema.",
+  "realProviderCalls": 0,
+  "hostedActions": 0,
+  "sources": [
+    {
+      "path": "apps/web/src/app/api/stream/route.ts",
+      "sha256": "2e2374373b32c79f533f72a1913b9e96e5324110e28739596f0c94d7d5108dd2"
+    },
+    {
+      "path": "apps/web/src/components/SlateBrowser.test.tsx",
+      "sha256": "89c8e8f21145a300495112d218fd3cca4a514c3c62223bf55745fda049037368"
+    },
+    {
+      "path": "apps/web/src/components/SlateBrowser.tsx",
+      "sha256": "058435368a42215444f18db87b9c0d802c688bbb19a652b4616f29a246c64f27"
+    },
+    {
+      "path": "apps/web/src/lib/streamRoute.server.test.ts",
+      "sha256": "3eec9380655bee5681b3d1766c2ad69cd7f2d55bf8544843eefb97a6ef1a2c67"
+    },
+    {
+      "path": "apps/web/src/store/useLiveOddsStream.test.ts",
+      "sha256": "b278a9f2ab3fa633da7d1881df803bb5e90922fc46d825e73a0519854572cbbd"
+    },
+    {
+      "path": "apps/web/src/store/useLiveOddsStream.ts",
+      "sha256": "97a2bb6708e346e39450caf76252a67b0d74f9d3da5e875a7bedf121d7e38780"
+    }
+  ],
+  "logs": [
+    {
+      "kind": "app",
+      "exitCode": 0,
+      "path": "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/221-intake/2026-11-16T07-00-43Z-review-fix-app.log",
+      "sha256": "585899700d651d56dd20395dc5f428dffb04c6f689048de5fa716e97149a726f"
+    },
+    {
+      "kind": "lint",
+      "exitCode": 0,
+      "path": "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/221-intake/2026-11-16T07-00-43Z-review-fix-lint.log",
+      "sha256": "710a106d1b842966498c1fe3324c92ede32fab923bc1ab23c1cf5ee9095905c4"
+    },
+    {
+      "kind": "typecheck",
+      "exitCode": 0,
+      "path": "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/221-intake/2026-11-16T07-00-43Z-review-fix-typecheck.log",
+      "sha256": "f65fd97d2a283a6d774c84d936e0bc3d5153bb69f81b0ebef1975371238ff03e"
+    },
+    {
+      "kind": "build",
+      "exitCode": 0,
+      "path": "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/221-intake/2026-11-16T07-00-43Z-review-fix-build.log",
+      "sha256": "bffa4522708c7863117e73321d76860a2aeffc32ba082d811a94e69f0e91320f"
+    }
+  ]
+}

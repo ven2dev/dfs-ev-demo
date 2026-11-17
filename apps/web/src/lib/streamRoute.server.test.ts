@@ -218,6 +218,32 @@ describe("GET /api/stream consensus devig ticks", () => {
     });
   });
 
+  it("emits a normal tick when the cache says the data is still inside its caller TTL", async () => {
+    getSharedLivePropInputsMock.mockResolvedValue({
+      oddsByBookmaker: [{ bookmakerKey: "draftkings", overPrice: 1.8, underPrice: 2, point: 250.5 }],
+      weather: { temperatureF: 65, windSpeedMph: 5, precipitationMm: 0 },
+      oddsObservation: { origin: "cache", status: "fresh", capturedAt: "2026-10-05T12:00:00.000Z",
+        observationId: "prior", persisted: true, quota: { remaining: null, used: null, last: null } },
+    });
+    const tick = await openStream();
+    expect(tick.type).toBe("tick");
+    expect(tick.oddsStatus).toBe("fresh");
+  });
+
+  it("preserves stale odds status and its capture time in the stream payload", async () => {
+    getSharedLivePropInputsMock.mockResolvedValue({
+      oddsByBookmaker: [{ bookmakerKey: "draftkings", overPrice: 1.8, underPrice: 2, point: 250.5 }],
+      weather: { temperatureF: 65, windSpeedMph: 5, precipitationMm: 0 },
+      oddsObservation: { origin: "cache", status: "stale", capturedAt: "2026-10-05T12:00:00.000Z",
+        observationId: "prior", persisted: true, quota: { remaining: null, used: null, last: null } },
+    });
+    const tick = await openStream();
+    expect(tick.type).toBe("stale");
+    expect(tick.oddsStatus).toBe("stale");
+    expect(tick.oddsCapturedAt).toBe("2026-10-05T12:00:00.000Z");
+    expect(tick.line).toBe(250.5);
+  });
+
   it("uses exact-line multi-book median probability and exposes its provenance", async () => {
     const tick = await openStream("over");
 

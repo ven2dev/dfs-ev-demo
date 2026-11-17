@@ -66,14 +66,13 @@ export const GET = async (
     const forceRefresh = request.nextUrl.searchParams.get("refresh") === "true";
 
     const dataSource = resolveOddsDataSource();
-    const odds =
-      dataSource === "fixture"
-        ? getFixtureEventOdds(eventId, requestedMarketKeys as PlayerPropMarketKey[])
-        : (
-            await getOrFetchMarketOdds(sportKey, eventId, requestedMarketKeys, {
-              forceRefresh,
-            })
-          ).odds;
+    const result = dataSource === "fixture" ? null :
+      await getOrFetchMarketOdds(sportKey, eventId, requestedMarketKeys, { forceRefresh });
+    const odds = dataSource === "fixture"
+      ? getFixtureEventOdds(eventId, requestedMarketKeys as PlayerPropMarketKey[])
+      : result!.odds;
+    const marketStatuses = Object.fromEntries(Object.entries(result?.origins ?? {})
+      .flatMap(([key, origin]) => origin.status ? [[key, origin.status]] : []));
     if (!odds) {
       return NextResponse.json(
         { success: false, reason: `Fixture event "${eventId}" was not found` },
@@ -82,7 +81,10 @@ export const GET = async (
     }
     const players = groupOddsByPlayer(odds);
 
-    return NextResponse.json({ success: true, dataSource, eventId, players });
+    return NextResponse.json({
+      success: true, dataSource, eventId, players,
+      ...(Object.keys(marketStatuses).length ? { marketStatuses } : {}),
+    });
   } catch (err) {
     console.error("[api/slate/[eventId]/props] GET failed:", err);
     return NextResponse.json({ success: false, reason: "Internal error" }, { status: 500 });
