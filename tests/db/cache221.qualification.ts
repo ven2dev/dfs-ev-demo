@@ -71,7 +71,6 @@ it("records interleaved final-application cache timing and the synthetic payload
   }
   const modes = new Map<string, (typeof import('../../apps/web/src/lib/livePropCacheRepo'))['getSharedLivePropInputs']>();
   for (const mode of ['legacy','shared']) {
-    vi.resetModules();
     m.query.mockImplementation(async (text: string, params: unknown[]) => {
       if (text.includes('AS ready')) return [{ ready: mode === 'shared' }];
       const sample = samples.getStore();
@@ -80,7 +79,10 @@ it("records interleaved final-application cache timing and the synthetic payload
     });
     // A schema result is injected only for baseline path selection. All measured
     // cache SQL below executes against the guarded, real PostgreSQL fixture.
-    vi.stubEnv('DATABASE_URL','configured-mocked-driver');
+    // The app URL is synthetic; the mocked driver above supplies the fixture connection.
+    vi.stubEnv('DATABASE_URL','postgres://synthetic:synthetic@mocked-driver.invalid/synthetic');
+    // Reset after stubbing so each mode receives fresh cached configuration.
+    vi.resetModules();
     const { initializeOddsCache } = await import('../../apps/web/src/lib/oddsCacheStartup');
     expect(await initializeOddsCache()).toBe(mode);
     modes.set(mode,(await import('../../apps/web/src/lib/livePropCacheRepo')).getSharedLivePropInputs);
