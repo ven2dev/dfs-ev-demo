@@ -1,0 +1,90 @@
+{
+  "at": "2026-11-16T00:03:33.154Z",
+  "baseSha": "4962d17",
+  "tier": "no database; existing kernel with synthetic shared-store dependency double",
+  "fixture": {
+    "events": 20,
+    "markets": 12,
+    "trackableMarkets": 9,
+    "bookmakersPerMarket": 4,
+    "playersPerMarket": 32
+  },
+  "cases": [
+    {
+      "label": "two callers, same player",
+      "count": {
+        "read": 5,
+        "acquire": 4,
+        "renew": 0,
+        "write": 1,
+        "release": 0,
+        "providerCallbacks": 1
+      },
+      "mockOnly": true
+    },
+    {
+      "label": "two callers, different players, same upstream event/market",
+      "count": {
+        "read": 2,
+        "acquire": 2,
+        "renew": 0,
+        "write": 2,
+        "release": 0,
+        "providerCallbacks": 2
+      },
+      "mockOnly": true
+    },
+    {
+      "label": "cache-write failure, next same-key request",
+      "count": {
+        "read": 2,
+        "acquire": 2,
+        "renew": 0,
+        "write": 2,
+        "release": 2,
+        "providerCallbacks": 2
+      },
+      "mockOnly": true
+    }
+  ],
+  "cardinality": {
+    "marketSetKeysPerEvent": 4095,
+    "marketSetKeysAcross20Events": 81900,
+    "perMarketKeysAcross20Events": 240
+  },
+  "syntheticPayloadBytes": {
+    "min": 8344,
+    "max": 20128,
+    "totalAcross20Events": 4119680
+  },
+  "candidateImplemented": false,
+  "candidateSpeedMeasured": false,
+  "realSqlExecuted": 0,
+  "realProviderRequests": 0,
+  "code": [
+    {
+      "path": "packages/db/src/livePropCache.ts",
+      "sha256": "8c4964fb97f7c92423e0cadce94442c5d4437a534fb394c3790988902b954749"
+    },
+    {
+      "path": "packages/db/src/livePropRefresh.ts",
+      "sha256": "5917bff6afdf6410abd1a068d497e6fec1d5750372327a347820ef706c4199c4"
+    },
+    {
+      "path": "apps/web/src/lib/oddsCacheRepo.ts",
+      "sha256": "5fef24c9a3754e9cf4982efd19dc2d12f6bfead220d5a1a0ddd4fb5c283a69f9"
+    },
+    {
+      "path": "apps/web/src/lib/livePropCacheRepo.ts",
+      "sha256": "127cac18f3884cfda578f286394e72b5be76b0cfef324bd21ec83e97941dd32a"
+    },
+    {
+      "path": "apps/web/src/lib/oddsApi.ts",
+      "sha256": "8eada4a057c1f66c7cd1ffe20220319fe2e982643567877898c823a393c33ee9"
+    },
+    {
+      "path": "apps/web/src/lib/playerPropMarkets.ts",
+      "sha256": "d4d9eec96a64d4fbecd25d1d48f7eb7686d7e12cf4c0f18c1cad249be93e3a0f"
+    }
+  ]
+}

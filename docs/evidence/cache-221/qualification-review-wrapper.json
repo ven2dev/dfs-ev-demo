@@ -1,0 +1,49 @@
+{
+  "baseSha": "4962d1729354ac4942f4aaa0b0bf5014eaae2b09",
+  "lane": "lane-2",
+  "tier": "standard",
+  "testsPassed": 40,
+  "testsFailed": 0,
+  "files": [
+    {
+      "file": "221-qualification.server.test.ts",
+      "status": "passed",
+      "tests": 8
+    },
+    {
+      "file": "livePropCacheRepo.server.test.ts",
+      "status": "passed",
+      "tests": 8
+    },
+    {
+      "file": "livePropCacheRepo.wiring.server.test.ts",
+      "status": "passed",
+      "tests": 1
+    },
+    {
+      "file": "oddsCacheRepo.server.test.ts",
+      "status": "passed",
+      "tests": 13
+    },
+    {
+      "file": "livePropCache.test.ts",
+      "status": "passed",
+      "tests": 9
+    },
+    {
+      "file": "livePropCacheStore.test.ts",
+      "status": "passed",
+      "tests": 1
+    }
+  ],
+  "rawReportSha256": "8ddf33338977ff4afc8c00f71fff4a40461c0ecae49315626bdbc877d8381a9e",
+  "rawReportLocation": "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/221-intake/legacy-weather-final.json",
+  "teardown": {
+    "verifiedAt": "2026-11-16T00:49:19.852370+00:00",
+    "composeProject": "dfs-ev-demo-test-lane-2",
+    "downExitCode": 0,
+    "remainingContainers": [],
+    "remainingNetworks": []
+  },
+  "scope": "Local synthetic qualification only; no hosted or real provider calls."
+}

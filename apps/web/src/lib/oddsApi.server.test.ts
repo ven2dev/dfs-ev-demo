@@ -232,6 +232,29 @@ describe("fetchEventOdds", () => {
   });
 });
 
+describe("live raw transport failures", () => {
+  it("does not retry a network error or convert it to an HTTP unavailable result", async () => {
+    vi.stubEnv("ODDS_API_KEY", "test-key");
+    fetchMock.mockRejectedValueOnce(new Error("ambiguous network outcome"));
+    await expect(fetchPlayerPropMarketOdds(
+      "americanfootball_nfl", "evt-1", "player_pass_yds", "Player A"
+    )).rejects.toThrow("ambiguous network outcome");
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it("propagates invalid JSON without retrying the provider", async () => {
+    vi.stubEnv("ODDS_API_KEY", "test-key");
+    fetchMock.mockResolvedValueOnce({
+      ...jsonResponse(null),
+      json: () => Promise.reject(new SyntaxError("invalid provider JSON")),
+    });
+    await expect(fetchPlayerPropMarketOdds(
+      "americanfootball_nfl", "evt-1", "player_pass_yds", "Player A"
+    )).rejects.toThrow("invalid provider JSON");
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+});
+
 describe("fetchPlayerPropOdds", () => {
   const twoBookResponse = jsonResponse({
     id: "evt-1",
