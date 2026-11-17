@@ -54,4 +54,3 @@ export const persistRawOddsObservation = async (
     return false;
   }
 };
-
