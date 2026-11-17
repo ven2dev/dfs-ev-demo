@@ -34,8 +34,9 @@
 
 The validated Firebase service account's `project_id` is compared with the
 existing `NEXT_PUBLIC_FIREBASE_PROJECT_ID` before `cert()`/`initializeApp()` and
-before reusing the boundary-owned app. An unverified global/default Firebase
-app is never selected. Errors omit both project values. Both values can agree
+before reusing the named app. A default Firebase app is never selected. After a
+reload, `dfs-ev-server` is reused only when its explicit `options.projectId`
+matches the verified account. Errors omit both project values. Both values can agree
 on an unintended project; #101 verifies the actual deployed resource, IAM and
 permissions. There are no new `EXPECTED_*` variables.
 
@@ -52,8 +53,8 @@ no existing route behavior. No store, environment or Production-fixture fallback
 
 ## Checkpoints and measurement
 
-Checkpoint (a) adds isolated modules and synthetic probes only. No current
-consumer imports them. Exported value-free definitions describe names, parsing,
+Checkpoint (a), committed as `6fa5d1a`, added isolated modules and synthetic
+probes before consumers were migrated. Exported value-free definitions describe names, parsing,
 classification and capability/environment requirements without reading values
 or initializing clients. Count repeated success/refusal requests, input reads
 and parser invocations, and SDK/SQL/network calls. Verify Firebase check ordering,
@@ -61,8 +62,69 @@ fixture-mode secret-read refusal traps and a production build with no live
 secrets. A required probe miss stops the checkpoint without changing the design
 or migrating consumers. A pass stops for owner commit approval.
 
-Checkpoint (b), after that approval, migrates consumers and qualifies real call
-paths, cached clients, status changes, redaction and browser/static output.
+Checkpoint (b) migrates the 26 former environment reads in 12 consumer files
+on main `8da5fa1`, including #286's new startup reader. Shared odds types and
+predicates remain client-safe; server routes obtain policy from `serverConfig`.
+Catalog source references follow the two readers without retiring discovery.
+
+Firebase Admin initializes `dfs-ev-server` with an explicit verified project ID;
+the same named app can survive a configuration reload after its project is
+checked again. An absent or mismatched project refuses before any SDK client is
+selected. Browser Auth checks its cached app's
+public options against `publicConfig` before reuse and retains controlled
+unavailability for missing Auth configuration. It preserves the existing default
+app identity, so Auth persistence and hot reload keep their current behavior;
+unused storage/messaging settings do not become sign-in prerequisites. The
+server's named app avoids default-app adoption and duplicate initialization on
+reload while refusing an existing named app whose project cannot be verified.
+Every cached database adapter return first passes through `serverConfig.database()`.
+These checks add no SDK initialization, SQL, provider requests or remote checks.
+
+External SDK/driver messages, causes and configuration fields are omitted before
+existing API log calls. Safe diagnostics retain the constructor's class name,
+exact SQLSTATE/Firebase code formats and an integer HTTP status (100–599).
+Arbitrary instance `name` values are omitted. App-origin errors retain only
+repository-relative stack locations, with the full message header and function
+labels removed; dependency and unknown compiled-chunk origins omit the stack.
+ConfigurationError keeps its fixed message and finite code. Browser Firebase
+initialization likewise logs only a fixed message and a validated Firebase code.
+Provider network/JSON failures are
+normalized at transport exit; HTTP status/quota metadata and request outcome
+telemetry remain intact. Unexpected SSE errors use a fixed message; deliberate
+quote-validation messages remain unchanged. Missing receiver configuration now
+returns the approved cron 500 and odds-health 503; configured receivers retain
+their existing bad-caller 401/403 behavior. Sync and active collection validate
+database configuration before beginning downloads; health validates policy
+before its snapshot query, so known configuration refusals cause no work.
+
+Synthetic integration tests cover the real Firebase/database adapters and
+route handlers, cached-app mismatch, verified named-app reuse across reloads, refusal before
+side effects, sanitized logging and SSE output, and unchanged operation counts.
+Existing provider, cache, collector, readiness and authentication checks remain
+in place. Tests that previously changed an environment under a live singleton
+now import a fresh module instance between synthetic deployments. The odds
+policy tests moved from the shared contract to the executable server owner;
+configuration errors assert stable sanitized codes rather than echoed settings.
+
+The migration exposes existing coupling: configuration parsing was spread across
+consumers, ambient Firebase state could bypass verification, and route loggers
+accepted raw dependency errors. Consolidating the readers and normalizing errors
+at the existing log calls addresses those weaknesses. Browser app renaming and
+new requirements for unused Firebase settings were removed during review to
+preserve Auth persistence and capability scope. #287 enforces the new boundary
+so later configuration changes do not recreate the scattered readers.
+
+At this checkpoint, Node 24 qualification passes 1,877 tests with one opt-in live
+R2 test skipped. CI gate passes 36 checks, typecheck and clean-snapshot lint pass,
+and a production build succeeds without application secrets. A synthetic marker
+build scans 81 browser/static artifacts: six server markers are absent while a
+public project marker is present. The documented runtime guard excludes Node-only
+dependencies from 11 Edge JavaScript files and four source maps. One source map
+retains the original guarded instrumentation source; the executable Edge code
+omits that guard's imports and log, and its maps contain no Node-only module
+sources. A deliberate
+client import of `config.server` is rejected by Next's server-only boundary.
+
 [#287](https://github.com/ven2dev/dfs-ev-demo/issues/287) then enforces the boundary
 with lint and catalog/schema alignment, replacing generic code discovery while
 retaining the other #98 checks. #99 stays open until #287 merges; only the
@@ -78,10 +140,14 @@ the literal environment expression with the target runtime, allowing the Edge
 bundle to omit Node-only imports. This is compiler state, not a runtime secret
 or deployment identity input; it does not go through the server module.
 
-#287's proposed exemption is limited to that member expression in that guard
+#287's [approved exemption](https://github.com/ven2dev/dfs-ev-demo/issues/287#issuecomment-6935991900)
+is limited to that member expression in that guard
 in that file/function. Other environment access in the same file remains
 restricted, preventing instrumentation from becoming a general boundary bypass.
 Moving the guard into the client-safe module adds cross-module constant-folding
 dependence without a benefit; routing it through server configuration would
 pull a Node-only module into the Edge dependency graph. Preserve the documented
 form and prove Node-only code is absent from Edge output with a production build.
+
+After any merge from main, rerun the CI gate and full suite before pushing;
+pre-merge results cannot expose integration failures introduced by the merge.

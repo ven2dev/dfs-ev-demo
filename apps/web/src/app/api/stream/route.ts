@@ -3,7 +3,8 @@ import { consensusDevigAtLine } from "@dfs-ev/domain/consensus-devig";
 import { computeEV } from "@dfs-ev/domain/ev";
 import { fetchSlateEvents } from "@/lib/oddsApi";
 import { DEFAULT_SPORT_KEY, isSafeOddsEventId, isSupportedOddsSport } from "@/lib/oddsRequestInputs";
-import { resolveOddsDataSource } from "@/lib/oddsDataSource";
+import { serverConfig, sanitizedFailure } from "@/lib/config.server";
+import type { OddsDataSource } from "@/lib/oddsDataSource";
 import {
   getFixtureLivePropInputs,
   getFixtureRecentGameStats,
@@ -99,11 +100,11 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  let dataSource: ReturnType<typeof resolveOddsDataSource>;
+  let dataSource: OddsDataSource;
   try {
-    dataSource = resolveOddsDataSource();
+    dataSource = serverConfig.odds().source;
   } catch (err) {
-    console.error("[api/stream] invalid odds data-source configuration:", err);
+    console.error("[api/stream] invalid odds data-source configuration:", sanitizedFailure(err));
     return NextResponse.json(
       { success: false, reason: "Odds data source is misconfigured" },
       { status: 500 }
@@ -156,7 +157,7 @@ export async function GET(request: NextRequest) {
       eventTeams = [homeTeam, awayTeam];
     }
   } catch (err) {
-    console.error("[api/stream] failed to resolve the selected event:", err);
+    console.error("[api/stream] failed to resolve the selected event:", sanitizedFailure(err));
     return NextResponse.json(
       { success: false, reason: "Failed to resolve the selected event" },
       { status: 502 }
@@ -196,7 +197,7 @@ export async function GET(request: NextRequest) {
     }
     recentGameStats = resolvedRecentGameStats;
   } catch (err) {
-    console.error("[api/stream] historical-stats lookup failed:", err);
+    console.error("[api/stream] historical-stats lookup failed:", sanitizedFailure(err));
     return NextResponse.json(
       { success: false, reason: "Historical stats are temporarily unavailable" },
       { status: 503 }
@@ -336,7 +337,7 @@ export async function GET(request: NextRequest) {
             sampleSize: recentStatWindow.length,
           });
         } catch (err) {
-          send({ type: "error", message: String(err) });
+          send({ type: "error", message: sanitizedFailure(err).message });
         }
       };
 

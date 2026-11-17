@@ -45,16 +45,38 @@ export const createPublicConfig = (
     apiKey?: string; authDomain?: string; projectId?: string;
     storageBucket?: string; messagingSenderId?: string; appId?: string;
   }> | undefined;
+  const firebaseConfiguration = () => firebase ??= Object.freeze({
+    apiKey: input("NEXT_PUBLIC_FIREBASE_API_KEY"),
+    authDomain: input("NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN"),
+    projectId: input("NEXT_PUBLIC_FIREBASE_PROJECT_ID"),
+    storageBucket: input("NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET"),
+    messagingSenderId: input("NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID"),
+    appId: input("NEXT_PUBLIC_FIREBASE_APP_ID"),
+  });
+  type FirebaseOptions = ReturnType<typeof firebaseConfiguration>;
+  // Missing browser inputs retain controlled unavailable-auth behavior. Cache
+  // that refusal as well, without requiring live configuration during builds.
+  let authOptions: { value: FirebaseOptions } | { error: Error } | undefined;
+  const firebaseAuth = (appOptions?: Partial<FirebaseOptions>) => {
+    if (!authOptions) {
+      const options = firebaseConfiguration();
+      // Auth requires an API key; do not make unused storage/messaging inputs
+      // prerequisites for signing in. The SDK validates provider-specific use.
+      authOptions = options.apiKey
+        ? { value: options }
+        : { error: new Error("Browser configuration unavailable.") };
+    }
+    if ("error" in authOptions) throw authOptions.error;
+    if (appOptions && Object.entries(authOptions.value).some(([key, value]) =>
+      appOptions[key as keyof FirebaseOptions] !== value)) {
+      throw new Error("Browser configuration unavailable.");
+    }
+    return authOptions.value;
+  };
   return Object.freeze({
+    firebaseAuth,
     firebaseProjectId: () => input("NEXT_PUBLIC_FIREBASE_PROJECT_ID"),
-    firebase: () => firebase ??= Object.freeze({
-      apiKey: input("NEXT_PUBLIC_FIREBASE_API_KEY"),
-      authDomain: input("NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN"),
-      projectId: input("NEXT_PUBLIC_FIREBASE_PROJECT_ID"),
-      storageBucket: input("NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET"),
-      messagingSenderId: input("NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID"),
-      appId: input("NEXT_PUBLIC_FIREBASE_APP_ID"),
-    }),
+    firebase: firebaseConfiguration,
     devtoolsEnabled: () => input("NODE_ENV") !== "production",
   });
 };

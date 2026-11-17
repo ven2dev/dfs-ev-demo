@@ -19,7 +19,7 @@ const context = { startTime: "2026-10-05T17:00:00Z", homeTeam: "Home", awayTeam:
 beforeEach(() => {
   vi.resetModules();
   Object.values(m).forEach(mock => mock.mockReset());
-  vi.stubEnv("DATABASE_URL", "postgres://fixture-mocked-no-network");
+  vi.stubEnv("DATABASE_URL", "postgresql://synthetic:synthetic@database.invalid/synthetic");
   m.weather.mockResolvedValue({ temperatureF: 62, windSpeedMph: 8, precipitationMm: 0 });
   m.persist.mockResolvedValue({ inserted: true });
 });

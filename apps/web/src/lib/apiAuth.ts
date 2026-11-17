@@ -4,6 +4,7 @@ import type { NextRequest } from "next/server";
 import { getAdminAuth } from "./firebaseAdmin";
 import { parseBearerToken } from "./parseBearerToken";
 import type { DeletionUidCheck } from "./accountDeletion";
+import { serverConfig } from "./config.server";
 
 type RevocationCheckResult =
   | { status: "ok"; uid: string }
@@ -52,10 +53,7 @@ const verifyWithRevocationCheck = async (
 // plain null would surface as a misleading "Unauthorized" instead of
 // the real 500 a broken deploy should produce.
 export const requireAdminUid = async (request: NextRequest): Promise<string | null> => {
-  const adminUid = process.env.ADMIN_UID;
-  if (!adminUid) {
-    throw new Error("ADMIN_UID is not set");
-  }
+  const adminUid = serverConfig.adminUid();
   const uid = await requireUid(request);
   return uid === adminUid ? uid : null;
 };

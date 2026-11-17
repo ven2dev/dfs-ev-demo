@@ -1,3 +1,4 @@
+import { sanitizedFailure } from "@/lib/config.server";
 import { NextRequest, NextResponse } from "next/server";
 import { getFirestoreDb } from "@/lib/firebaseAdmin";
 import { requireUid } from "@/lib/apiAuth";
@@ -17,7 +18,7 @@ export const PUT = async (request: NextRequest) => {
     await getFirestoreDb().collection("users").doc(uid).set({ matchupConfig }, { merge: true });
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error("[api/matchup-config] PUT failed:", err);
+    console.error("[api/matchup-config] PUT failed:", sanitizedFailure(err));
     return NextResponse.json({ success: false, reason: "Internal error" }, { status: 500 });
   }
 };

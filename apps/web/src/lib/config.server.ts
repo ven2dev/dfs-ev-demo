@@ -15,6 +15,43 @@ export class ConfigurationError extends Error {
   }
 }
 
+class SanitizedDependencyError extends Error {
+  declare code?: string;
+  declare status?: number;
+}
+
+const applicationStack = (error: Error): string | undefined => {
+  // Strip the whole header, including multiline messages, before inspecting
+  // frames. Function names are omitted because they can contain supplied text.
+  const header = `${error.name}${error.message ? `: ${error.message}` : ""}`;
+  if (!error.stack?.startsWith(`${header}\n`)) return undefined;
+  const frames = error.stack.slice(header.length + 1).split("\n");
+  const location = (frame: string) => frame.match(
+    /(?:^|[/\\])(apps\/web\/src\/[\w./\[\]@()-]+|packages\/(?:domain\/src|db\/runtime)\/[\w./\[\]@()-]+):([0-9]+):([0-9]+)\)?$/
+  );
+  // A dependency stack may contain our callers; only an app-origin error gets
+  // a stack. Unknown/compiled chunk origins are omitted rather than inferred.
+  if (!location(frames[0] ?? "")) return undefined;
+  const locations = frames.map(location).filter(match => match !== null);
+  return locations.map(match => `    at ${match[1]}:${match[2]}:${match[3]}`).join("\n");
+};
+
+// Keep only diagnostic fields with a bounded vocabulary/format. The incoming
+// message, cause, arbitrary name and other SDK/configuration fields never leave.
+export const sanitizedFailure = (error: unknown): Error => {
+  if (error instanceof ConfigurationError) return new ConfigurationError(error.code);
+  if (error instanceof SanitizedDependencyError) return error;
+  const safe = new SanitizedDependencyError("Application dependency unavailable.");
+  const fields = error && typeof error === "object" ? error as Record<string, unknown> : {};
+  const className = error instanceof Error ? Object.getPrototypeOf(error)?.constructor?.name : undefined;
+  safe.name = typeof className === "string" && /^[A-Za-z_$][A-Za-z0-9_$]{0,79}$/.test(className) ? className : "Error";
+  if (typeof fields.code === "string" && fields.code.match(/^(?:[0-9A-Z]{5}|[a-z-]+\/[a-z0-9-]+)$/)?.[0] === fields.code) safe.code = fields.code;
+  const status = fields.status ?? fields.statusCode;
+  if (typeof status === "number" && Number.isInteger(status) && status >= 100 && status <= 599) safe.status = status;
+  safe.stack = error instanceof Error ? applicationStack(error) : undefined;
+  return safe;
+};
+
 const refuse = (code: ErrorCode): never => { throw new ConfigurationError(code); };
 const optionalText = (value: string | undefined) => value?.trim() || undefined;
 const requiredText = (value: string | undefined) => optionalText(value) ?? refuse("missing");
@@ -23,7 +60,7 @@ const token = (value: string | undefined) => {
   if (/\s/.test(text)) refuse("invalid");
   return text;
 };
-const enumeration = <T extends string>(values: readonly T[]) => (raw: string | undefined): T | undefined => {
+const enumeration = <const T extends string>(values: readonly T[]) => (raw: string | undefined): T | undefined => {
   const value = optionalText(raw);
   if (value === undefined) return undefined;
   if (!values.includes(value as T)) refuse("invalid");
@@ -135,7 +172,7 @@ export const createServerConfig = (
   });
   const liveOdds = () => capability("live-odds", () => {
     const configuration = odds();
-    if (configuration.source !== "live") refuse("environment-policy");
+    if (configuration.source !== "live") return refuse("environment-policy");
     return configuration;
   });
   const checkFirebaseProject = (account: Readonly<ServiceAccount>) => {
@@ -168,7 +205,10 @@ export const createServerConfig = (
       checkFirebaseProject(account);
       return capability("firebase-app", () => {
         try { return initialize(account); }
-        catch { return refuse("initialization-failed"); }
+        catch (error) {
+          if (error instanceof ConfigurationError) throw error;
+          return refuse("initialization-failed");
+        }
       });
     },
     collectorHealth: () => capability("collector-health", () => {

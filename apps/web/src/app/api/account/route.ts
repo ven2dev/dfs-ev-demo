@@ -1,3 +1,4 @@
+import { sanitizedFailure } from "@/lib/config.server";
 import { NextRequest, NextResponse } from "next/server";
 import { getFirestoreDb, getAdminAuth } from "@/lib/firebaseAdmin";
 import { checkUidForDeletion } from "@/lib/apiAuth";
@@ -36,7 +37,7 @@ export const DELETE = async (request: NextRequest) => {
       // treats a retried, already-deleted account as success).
       console.error(
         "[api/account] Auth user deletion failed after Firestore data was already deleted:",
-        result.cause
+        sanitizedFailure(result.cause)
       );
       return NextResponse.json(
         {
@@ -49,7 +50,7 @@ export const DELETE = async (request: NextRequest) => {
 
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error("[api/account] DELETE failed:", err);
+    console.error("[api/account] DELETE failed:", sanitizedFailure(err));
     return NextResponse.json({ success: false, reason: "Internal error" }, { status: 500 });
   }
 };

@@ -1,16 +1,12 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
-import {
-  fetchEventOdds,
-  fetchPlayerPropMarketOdds,
-  fetchPlayerPropOdds,
-  fetchSlateEvents,
-  OddsApiHttpError,
-} from "./oddsApi.ts";
+let { fetchEventOdds, fetchPlayerPropMarketOdds, fetchPlayerPropOdds, fetchSlateEvents, OddsApiHttpError } = await import("./oddsApi.ts");
 
 const fetchMock = vi.fn();
 vi.stubGlobal("fetch", fetchMock);
 
-beforeEach(() => {
+beforeEach(async () => {
+  vi.resetModules();
+  ({ fetchEventOdds, fetchPlayerPropMarketOdds, fetchPlayerPropOdds, fetchSlateEvents, OddsApiHttpError } = await import("./oddsApi.ts"));
   vi.stubEnv("ODDS_DATA_SOURCE", "live");
 });
 
@@ -106,7 +102,7 @@ describe("fetchSlateEvents", () => {
     vi.stubEnv("ODDS_API_KEY", "");
 
     await expect(fetchSlateEvents("americanfootball_nfl")).rejects.toThrow(
-      "requires ODDS_API_KEY"
+      "Application configuration unavailable (missing)."
     );
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -238,7 +234,7 @@ describe("live raw transport failures", () => {
     fetchMock.mockRejectedValueOnce(new Error("ambiguous network outcome"));
     await expect(fetchPlayerPropMarketOdds(
       "americanfootball_nfl", "evt-1", "player_pass_yds", "Player A"
-    )).rejects.toThrow("ambiguous network outcome");
+    )).rejects.toThrow("Application dependency unavailable.");
     expect(fetchMock).toHaveBeenCalledOnce();
   });
 
@@ -250,7 +246,7 @@ describe("live raw transport failures", () => {
     });
     await expect(fetchPlayerPropMarketOdds(
       "americanfootball_nfl", "evt-1", "player_pass_yds", "Player A"
-    )).rejects.toThrow("invalid provider JSON");
+    )).rejects.toThrow("Application dependency unavailable.");
     expect(fetchMock).toHaveBeenCalledOnce();
   });
 });
@@ -400,7 +396,7 @@ describe("fetchPlayerPropOdds", () => {
 
     await expect(
       fetchPlayerPropOdds("americanfootball_nfl", "evt-1", "player_pass_yds", "Jalen Hurts", "draftkings")
-    ).rejects.toThrow("requires ODDS_API_KEY");
+    ).rejects.toThrow("Application configuration unavailable (missing).");
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });

@@ -8,7 +8,7 @@ vi.mock("./oddsCollectorHealthRepo", () => ({
   getOddsCollectorHealthSnapshot: snapshotMock,
 }));
 
-const { GET } = await import("@/app/api/health/odds-collector/route");
+let { GET } = await import("@/app/api/health/odds-collector/route");
 
 const request = (authorization?: string) =>
   ({
@@ -34,7 +34,9 @@ const healthySnapshot = (): OddsCollectorHealthSnapshot => ({
   nextPilotCheckpoint: { priorityRank: 40, marketCreditCost: 9 },
 });
 
-beforeEach(() => {
+beforeEach(async () => {
+  vi.resetModules();
+  ({ GET } = await import("@/app/api/health/odds-collector/route"));
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-10-03T12:00:00.000Z"));
   vi.stubEnv("ODDS_HEALTH_SECRET", "health-secret");
@@ -57,6 +59,21 @@ describe("GET /api/health/odds-collector", () => {
 
     expect(response.status).toBe(401);
     await expect(response.json()).resolves.toEqual({ status: "unauthorized" });
+    expect(snapshotMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 503 for a missing receiver secret without querying Postgres", async () => {
+    vi.stubEnv("ODDS_HEALTH_SECRET", undefined);
+    const response = await GET(request());
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ status: "unavailable", reasons: ["not-configured"] });
+    expect(snapshotMock).not.toHaveBeenCalled();
+  });
+
+  it("refuses invalid health policy before any database query", async () => {
+    vi.stubEnv("ODDS_COLLECTION_QUOTA_RESERVE", "synthetic-invalid-setting");
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    expect((await GET(request("Bearer health-secret"))).status).toBe(500);
     expect(snapshotMock).not.toHaveBeenCalled();
   });
 
@@ -149,7 +166,7 @@ describe("GET /api/health/odds-collector", () => {
     expect(JSON.stringify(body)).not.toContain("connection string");
     expect(consoleError).toHaveBeenCalledWith(
       "[api/health/odds-collector] health query failed:",
-      "Error"
+      expect.objectContaining({ message: "Application dependency unavailable." })
     );
   });
 });

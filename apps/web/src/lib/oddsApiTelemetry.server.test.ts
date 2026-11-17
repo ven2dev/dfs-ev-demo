@@ -8,10 +8,12 @@ vi.mock("./oddsApiTelemetryRepo", () => ({
 }));
 vi.stubGlobal("fetch", fetchMock);
 
-const { fetchEventOdds, fetchPlayerPropMarketOdds, fetchSlateEvents } =
+let { fetchEventOdds, fetchPlayerPropMarketOdds, fetchSlateEvents } =
   await import("./oddsApi.ts");
 
-beforeEach(() => {
+beforeEach(async () => {
+  vi.resetModules();
+  ({ fetchEventOdds, fetchPlayerPropMarketOdds, fetchSlateEvents } = await import("./oddsApi.ts"));
   vi.stubEnv("ODDS_DATA_SOURCE", "live");
 });
 
@@ -55,14 +57,14 @@ describe("Odds API request telemetry", () => {
     vi.stubEnv("ODDS_API_KEY", "must-not-be-used");
     vi.stubEnv("DATABASE_URL", "postgres://must-not-be-used");
 
-    await expect(request()).rejects.toThrow("disabled unless ODDS_DATA_SOURCE=live");
+    await expect(request()).rejects.toThrow("Application configuration unavailable (environment-policy).");
     expect(fetchMock).not.toHaveBeenCalled();
     expect(recordOddsApiRequestMock).not.toHaveBeenCalled();
   });
 
   it("records a scheduled event-odds request with its billed quota", async () => {
     vi.stubEnv("ODDS_API_KEY", "test-key");
-    vi.stubEnv("DATABASE_URL", "postgres://configured");
+    vi.stubEnv("DATABASE_URL", "postgresql://synthetic:synthetic@database.invalid/synthetic");
     fetchMock.mockResolvedValueOnce(
       jsonResponse(
         { id: "event-1", bookmakers: [] },
@@ -101,7 +103,7 @@ describe("Odds API request telemetry", () => {
 
   it("records a free slate request without inventing billed markets", async () => {
     vi.stubEnv("ODDS_API_KEY", "test-key");
-    vi.stubEnv("DATABASE_URL", "postgres://configured");
+    vi.stubEnv("DATABASE_URL", "postgresql://synthetic:synthetic@database.invalid/synthetic");
     fetchMock.mockResolvedValueOnce(jsonResponse([]));
 
     await fetchSlateEvents(
@@ -125,7 +127,7 @@ describe("Odds API request telemetry", () => {
 
   it("records an HTTP failure before returning an unavailable player market", async () => {
     vi.stubEnv("ODDS_API_KEY", "test-key");
-    vi.stubEnv("DATABASE_URL", "postgres://configured");
+    vi.stubEnv("DATABASE_URL", "postgresql://synthetic:synthetic@database.invalid/synthetic");
     fetchMock.mockResolvedValueOnce(
       jsonResponse(null, false, 429, {
         "x-requests-remaining": "0",
@@ -157,7 +159,7 @@ describe("Odds API request telemetry", () => {
 
   it("distinguishes an aborted request from a generic network error", async () => {
     vi.stubEnv("ODDS_API_KEY", "test-key");
-    vi.stubEnv("DATABASE_URL", "postgres://configured");
+    vi.stubEnv("DATABASE_URL", "postgresql://synthetic:synthetic@database.invalid/synthetic");
     const controller = new AbortController();
     controller.abort();
     fetchMock.mockRejectedValueOnce(new DOMException("aborted", "AbortError"));
@@ -170,7 +172,7 @@ describe("Odds API request telemetry", () => {
         controller.signal,
         "discovery"
       )
-    ).rejects.toThrow("aborted");
+    ).rejects.toThrow("Application dependency unavailable.");
 
     expect(recordOddsApiRequestMock).toHaveBeenCalledWith(
       expect.objectContaining({
