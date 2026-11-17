@@ -3,6 +3,7 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   // DB tests never read .env, .env.local, or application credentials.
   envDir: false,
+  ssr: { resolve: { conditions: ["react-server"] } },
   test: {
     environment: "node",
     include: ["packages/db/tooling/tests/**/*.test.ts", "tests/db/**/*.test.ts", "services/pipeline/tests/creator/**/*.test.ts"],

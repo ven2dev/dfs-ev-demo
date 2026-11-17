@@ -1,4 +1,5 @@
 import "server-only";
+import { projectPlayerPropLines } from "./oddsProjection";
 import { randomUUID } from "node:crypto";
 import { getCurrentNflSlateWindow, isEventInNflSlateWindow } from "@dfs-ev/domain/nfl-week";
 import {
@@ -291,13 +292,17 @@ export const fetchSlateEvents = async (
 export type PlayerPropMarketOddsFetch = OddsApiFetch<{
   response: EventOddsResponse | null;
   oddsByBookmaker: PlayerPropBookmakerLine[];
-}>;
+}> & {
+  sharedObservation?: {
+    origin: "cache" | "upstream";
+    status: "fresh" | "upstream" | "stale" | "unavailable";
+    observationId: string | null;
+    persisted: boolean;
+  };
+};
 
-// Real-time, uncached, deliberately NOT reusing the discovery cache
-// (see #27 step 7's decision) -- a live tracker showing a value frozen
-// for several ticks between real refreshes would defeat its own
-// purpose. Returns every bookmaker so one snapshot can support both
-// the selected-book line anchor and same-line market consensus.
+// Live and discovery share the raw transport; preserve live's unavailable
+// result on HTTP errors and project only after receiving the all-player data.
 export const fetchPlayerPropMarketOdds = async (
   sportKey: string,
   eventId: string,
@@ -306,83 +311,24 @@ export const fetchPlayerPropMarketOdds = async (
   signal?: AbortSignal,
   source: OddsApiRequestSource = "direct"
 ): Promise<PlayerPropMarketOddsFetch> => {
-  requireLiveOddsDataSource();
-  sportKey = requireOddsSport(sportKey);
-  eventId = requireOddsEventId(eventId);
-  marketKey = requireOddsMarket(marketKey);
-  const apiKey = process.env.ODDS_API_KEY;
-  if (!apiKey) {
-    throw new Error("ODDS_API_KEY is not set");
-  }
-
-  const url = new URL(`${ODDS_API_BASE}/sports/${sportKey}/events/${encodeURIComponent(eventId)}/odds/`);
-  url.search = new URLSearchParams({ apiKey, regions: "us", markets: marketKey }).toString();
-  const requestId = randomUUID();
-  const requestedAt = new Date();
-  let res: Response;
+  let fetched: OddsApiFetch<EventOddsResponse>;
   try {
-    res = await fetch(url.toString(), { cache: "no-store", signal, redirect: "error" });
+    fetched = await fetchEventOdds(sportKey, eventId, [marketKey], signal, source);
   } catch (error) {
-    await safelyRecordRequest({
-      id: requestId,
-      requestKind: "event-odds",
-      source,
-      sportKey,
-      eventId,
-      requestedMarkets: [marketKey],
-      requestedAt,
-      responseReceivedAt: null,
-      outcome: signal?.aborted ? "aborted" : "network-error",
-      httpStatus: null,
-      quota: emptyQuota(),
-    });
-    throw error;
+    if (!(error instanceof OddsApiHttpError)) throw error;
+    return {
+      data: { response: null, oddsByBookmaker: [] },
+      capturedAt: error.capturedAt,
+      quota: error.quota,
+    };
   }
-  const metadata = responseMetadata(res);
-  await safelyRecordRequest({
-    id: requestId,
-    requestKind: "event-odds",
-    source,
-    sportKey,
-    eventId,
-    requestedMarkets: [marketKey],
-    requestedAt,
-    responseReceivedAt: new Date(metadata.capturedAt),
-    outcome: res.ok ? "success" : "http-error",
-    httpStatus: res.status,
-    quota: metadata.quota,
-  });
-  if (!res.ok) {
-    return { data: { response: null, oddsByBookmaker: [] }, ...metadata };
-  }
-  const data: EventOddsResponse = await res.json();
-
-  const lines: PlayerPropBookmakerLine[] = [];
-  for (const bookmaker of data.bookmakers) {
-    const market = bookmaker.markets.find((candidate) => candidate.key === marketKey);
-    if (!market) continue;
-    const over = market.outcomes.find(
-      (outcome) => outcome.name === "Over" && outcome.description === playerName
-    );
-    const under = market.outcomes.find(
-      (outcome) => outcome.name === "Under" && outcome.description === playerName
-    );
-    if (
-      over &&
-      under &&
-      over.point !== undefined &&
-      under.point !== undefined &&
-      over.point === under.point
-    ) {
-      lines.push({
-        bookmakerKey: bookmaker.key,
-        overPrice: over.price,
-        underPrice: under.price,
-        point: over.point,
-      });
-    }
-  }
-  return { data: { response: data, oddsByBookmaker: lines }, ...metadata };
+  return {
+    ...fetched,
+    data: {
+      response: fetched.data,
+      oddsByBookmaker: projectPlayerPropLines(fetched.data, marketKey, playerName),
+    },
+  };
 };
 
 export const fetchPlayerPropOdds = async (

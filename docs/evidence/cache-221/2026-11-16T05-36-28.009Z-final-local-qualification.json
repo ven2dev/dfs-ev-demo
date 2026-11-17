@@ -1,0 +1,234 @@
+{
+  "at": "2026-11-16T05:36:28.009Z",
+  "lane": "lane-2",
+  "tier": "standard",
+  "parentSha": "bf3fe3257dba5d301dc1dd769b30da8d01ddf693",
+  "baseline": "legacy path on this branch, with current-schema compatibility separately verified; not a new hosted main baseline",
+  "measured": "actual live-view cache entry to mocked raw provider callback; excludes startup and admission",
+  "poolWarmup": [
+    {
+      "distinctBackends": 20
+    },
+    {
+      "distinctBackends": 20
+    }
+  ],
+  "trials": [
+    {
+      "mode": "legacy",
+      "workers": 1,
+      "round": 0,
+      "preProvider": {
+        "samples": 100,
+        "p50Ms": 1.020208000000025,
+        "p95Ms": 1.5933330000000296,
+        "maxMs": 5.791333000000009
+      },
+      "sqlBeforeSend": 2,
+      "totalCacheSql": 3,
+      "successfulLeaders": 100
+    },
+    {
+      "mode": "shared",
+      "workers": 1,
+      "round": 0,
+      "preProvider": {
+        "samples": 100,
+        "p50Ms": 2.895625000000109,
+        "p95Ms": 3.661041999999952,
+        "maxMs": 9.623708999999963
+      },
+      "sqlBeforeSend": 4,
+      "totalCacheSql": 6,
+      "successfulLeaders": 100
+    },
+    {
+      "mode": "shared",
+      "workers": 1,
+      "round": 1,
+      "preProvider": {
+        "samples": 100,
+        "p50Ms": 2.8424999999999727,
+        "p95Ms": 3.7812910000002375,
+        "maxMs": 3.9947500000000673
+      },
+      "sqlBeforeSend": 4,
+      "totalCacheSql": 6,
+      "successfulLeaders": 100
+    },
+    {
+      "mode": "legacy",
+      "workers": 1,
+      "round": 1,
+      "preProvider": {
+        "samples": 100,
+        "p50Ms": 1.2017499999997199,
+        "p95Ms": 1.689082999999755,
+        "maxMs": 2.2132080000001224
+      },
+      "sqlBeforeSend": 2,
+      "totalCacheSql": 3,
+      "successfulLeaders": 100
+    },
+    {
+      "mode": "legacy",
+      "workers": 1,
+      "round": 2,
+      "preProvider": {
+        "samples": 100,
+        "p50Ms": 1.0467499999999745,
+        "p95Ms": 1.4925829999997404,
+        "maxMs": 1.619542000000365
+      },
+      "sqlBeforeSend": 2,
+      "totalCacheSql": 3,
+      "successfulLeaders": 100
+    },
+    {
+      "mode": "shared",
+      "workers": 1,
+      "round": 2,
+      "preProvider": {
+        "samples": 100,
+        "p50Ms": 2.8037500000000364,
+        "p95Ms": 3.3760419999998703,
+        "maxMs": 15.293624999999793
+      },
+      "sqlBeforeSend": 4,
+      "totalCacheSql": 6,
+      "successfulLeaders": 100
+    },
+    {
+      "mode": "legacy",
+      "workers": 20,
+      "round": 0,
+      "preProvider": {
+        "samples": 100,
+        "p50Ms": 3.4570420000000013,
+        "p95Ms": 11.932749999999942,
+        "maxMs": 13.140374999999949
+      },
+      "sqlBeforeSend": 2,
+      "totalCacheSql": 3,
+      "successfulLeaders": 100
+    },
+    {
+      "mode": "shared",
+      "workers": 20,
+      "round": 0,
+      "preProvider": {
+        "samples": 100,
+        "p50Ms": 7.525959000000057,
+        "p95Ms": 14.346915999999965,
+        "maxMs": 16.628375000000233
+      },
+      "sqlBeforeSend": 4,
+      "totalCacheSql": 6,
+      "successfulLeaders": 100
+    },
+    {
+      "mode": "shared",
+      "workers": 20,
+      "round": 1,
+      "preProvider": {
+        "samples": 100,
+        "p50Ms": 7.113082999999733,
+        "p95Ms": 10.117624999999862,
+        "maxMs": 10.55337499999996
+      },
+      "sqlBeforeSend": 4,
+      "totalCacheSql": 6,
+      "successfulLeaders": 100
+    },
+    {
+      "mode": "legacy",
+      "workers": 20,
+      "round": 1,
+      "preProvider": {
+        "samples": 100,
+        "p50Ms": 2.8127080000003843,
+        "p95Ms": 3.806209000000308,
+        "maxMs": 3.948124999999891
+      },
+      "sqlBeforeSend": 2,
+      "totalCacheSql": 3,
+      "successfulLeaders": 100
+    },
+    {
+      "mode": "legacy",
+      "workers": 20,
+      "round": 2,
+      "preProvider": {
+        "samples": 100,
+        "p50Ms": 2.415625000000091,
+        "p95Ms": 3.081250000000182,
+        "maxMs": 3.4451669999998558
+      },
+      "sqlBeforeSend": 2,
+      "totalCacheSql": 3,
+      "successfulLeaders": 100
+    },
+    {
+      "mode": "shared",
+      "workers": 20,
+      "round": 2,
+      "preProvider": {
+        "samples": 100,
+        "p50Ms": 6.002958000000035,
+        "p95Ms": 12.580917000000227,
+        "maxMs": 12.901165999999648
+      },
+      "sqlBeforeSend": 4,
+      "totalCacheSql": 6,
+      "successfulLeaders": 100
+    }
+  ],
+  "budget": {
+    "fullWarmPreProviderMs": 90,
+    "fourCacheStatementsMs": 10,
+    "admissionMs": 53,
+    "headroomMs": 27,
+    "cacheAllocationMetEvery20LeaderRound": false,
+    "fullPathQualified": false
+  },
+  "fixture": {
+    "events": 20,
+    "markets": 12,
+    "rows": 240,
+    "logicalPayloadBytes": 4198040,
+    "fixtureOnlyCeilingBytes": 8388608,
+    "physical": {
+      "heap_bytes": "131072",
+      "index_bytes": "40960",
+      "total_bytes": "974848"
+    }
+  },
+  "sources": [
+    {
+      "path": "packages/db/src/sharedOddsCache.ts",
+      "sha256": "6b56b5239ae96a3ea6307fdae1dd919b095ee4eb62d521daf61beafe58d463a7"
+    },
+    {
+      "path": "packages/db/src/livePropRefresh.ts",
+      "sha256": "5917bff6afdf6410abd1a068d497e6fec1d5750372327a347820ef706c4199c4"
+    },
+    {
+      "path": "packages/db/src/livePropCache.ts",
+      "sha256": "8c4964fb97f7c92423e0cadce94442c5d4437a534fb394c3790988902b954749"
+    },
+    {
+      "path": "packages/db/proposals/221_shared_odds_cache.sql",
+      "sha256": "148a8180dc3cc89abac2f5a7525f6f3516219e48bd394ef2758d81bacbff8055"
+    },
+    {
+      "path": "apps/web/src/lib/livePropCacheRepo.ts",
+      "sha256": "2641da1d99689339956f317bc8c88383626aeec1ebd381eaa8ac73c33972048d"
+    },
+    {
+      "path": "apps/web/src/lib/sharedOddsRepo.ts",
+      "sha256": "96ce467de7df1282dfd55d2337f42f489ae90ad710fe7114156dd5e9405973cc"
+    }
+  ],
+  "realProviderCalls": 0,
+  "hostedActions": 0
+}

@@ -1,0 +1,68 @@
+{
+  "at": "2026-11-16T03:54:38.605585+00:00",
+  "baseSha": "4962d1729354ac4942f4aaa0b0bf5014eaae2b09",
+  "branch": "feature/dfsEV-221-shared-odds-cache",
+  "checkpoint": 1,
+  "focusedTests": {
+    "passed": 99,
+    "failed": 0,
+    "files": 8,
+    "rawReportSha256": "d6462552bc6588f1e2f0bfa87671fd4a0951d63dffbd6be381765cfc07ad8bf9"
+  },
+  "typecheck": "passed",
+  "scopedLint": "passed",
+  "importAndLayoutChecks": {
+    "passed": 25,
+    "failed": 0
+  },
+  "defaultTurbopackBuild": "blocked: PostCSS worker local-port binding denied after replacing external dependency symlink; initial sandbox attempt also could not download fonts",
+  "deadlineMs": 90,
+  "planningBudgetMs": {
+    "fourCacheStatements": 10,
+    "admission": 53,
+    "headroom": 27
+  },
+  "budgetIsMeasuredPass": false,
+  "sharedRoutingConnected": false,
+  "providerCalls": 0,
+  "databaseOrHostedActions": 0,
+  "sources": [
+    {
+      "path": "apps/web/src/instrumentation.ts",
+      "sha256": "2d053d9c785088cc503a481ae341b73c7031c1c257ec3877ca68d2010b567f10"
+    },
+    {
+      "path": "apps/web/src/lib/oddsApi.ts",
+      "sha256": "ba53d938e396449a3d0d2ecdd5de62d634da2d276d2225fe96a92d72a9c30e64"
+    },
+    {
+      "path": "apps/web/src/lib/oddsApi.server.test.ts",
+      "sha256": "e90892cd96cf18883d17aa1046be8d80d81ca0f499cc4f1aed10696ad133edba"
+    },
+    {
+      "path": "apps/web/src/lib/oddsCacheRepo.ts",
+      "sha256": "13be30e4270b3b4391872644994699deaac4d145c60221045083e308b4ff41be"
+    },
+    {
+      "path": "apps/web/src/lib/oddsProjection.ts",
+      "sha256": "0e9551b8a234016f821ed4be6fddee88559bc1d1559b46be15d5304f8e13689e"
+    },
+    {
+      "path": "apps/web/src/lib/oddsProjection.server.test.ts",
+      "sha256": "35f1e5e431c1c3db1cbfab844eeec1559762ebde9b8b110bc945c4b0a6f74351"
+    },
+    {
+      "path": "apps/web/src/lib/oddsCacheStartup.ts",
+      "sha256": "33d4185bba9ebf984f5b7bbf3d08b145c1cccc9ac9d4a10b694112faa9c0714f"
+    },
+    {
+      "path": "apps/web/src/lib/oddsCacheStartup.server.test.ts",
+      "sha256": "7fbe1f77a7de32dd7cc0595983d61e53a9351265256a1b38958ccf78000cfb4b"
+    },
+    {
+      "path": "apps/web/src/lib/oddsCacheInstrumentation.server.test.ts",
+      "sha256": "2f9bbb001eb56694d205a0c3bd97e929e5c99e67c6d59576d7ed6ade1aef259f"
+    }
+  ],
+  "webpackProductionBuild": "passed (npm run build -- --webpack, clean environment, existing Google Font downloads allowed)"
+}
