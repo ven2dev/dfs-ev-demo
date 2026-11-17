@@ -1,3 +1,4 @@
+import { sanitizedFailure } from "@/lib/config.server";
 import { NextRequest, NextResponse } from "next/server";
 import { getFirestoreDb } from "@/lib/firebaseAdmin";
 import { requireUid } from "@/lib/apiAuth";
@@ -19,7 +20,7 @@ export const GET = async (request: NextRequest) => {
     }
     return NextResponse.json({ success: true, exists: true, data: snap.data() });
   } catch (err) {
-    console.error("[api/user-data] GET failed:", err);
+    console.error("[api/user-data] GET failed:", sanitizedFailure(err));
     return NextResponse.json({ success: false, reason: "Internal error" }, { status: 500 });
   }
 };

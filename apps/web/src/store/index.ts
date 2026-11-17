@@ -6,6 +6,7 @@ import { createGoalSlice } from "./slices/goalSlice";
 import { createMatchupSlice } from "./slices/matchupSlice";
 import { createWatchlistSlice } from "./slices/watchlistSlice";
 import type { AppState } from "./types";
+import { publicConfig } from "@/lib/config.client";
 
 // No persist middleware: goal/watchlist/matchupConfig now live in
 // Firestore, keyed by uid (see useInitAuth.ts, /api/user-data), and
@@ -29,7 +30,7 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: "dfs-ev-demo-store",
-      enabled: process.env.NODE_ENV !== "production",
+      enabled: publicConfig.devtoolsEnabled(),
     }
   )
 );

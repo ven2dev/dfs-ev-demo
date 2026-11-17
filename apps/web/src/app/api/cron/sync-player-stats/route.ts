@@ -12,6 +12,7 @@ import {
 import { readSyncState, writeSyncState, upsertStats } from "@/lib/playerStatsRepo";
 import { upsertRosterPlayers } from "@/lib/playerRosterRepo";
 import { isAuthorizedCronHeader } from "@/lib/cronAuth";
+import { serverConfig, sanitizedFailure } from "@/lib/config.server";
 
 export const dynamic = "force-dynamic";
 
@@ -21,16 +22,17 @@ export const dynamic = "force-dynamic";
 const isAuthorizedCronRequest = (request: NextRequest): boolean => {
   return isAuthorizedCronHeader(
     request.headers.get("authorization"),
-    process.env.CRON_SECRET
+    serverConfig.cronSecret()
   );
 };
 
 export const GET = async (request: NextRequest) => {
-  if (!isAuthorizedCronRequest(request)) {
-    return NextResponse.json({ success: false, reason: "Unauthorized" }, { status: 401 });
-  }
-
   try {
+    if (!isAuthorizedCronRequest(request)) {
+      return NextResponse.json({ success: false, reason: "Unauthorized" }, { status: 401 });
+    }
+    // Validate the shared database dependency before starting either download.
+    serverConfig.database();
     const [playerStats, roster] = await Promise.all([
       syncPlayerStats({
         fetchStatsReleaseUpdatedAt,
@@ -52,7 +54,7 @@ export const GET = async (request: NextRequest) => {
 
     return NextResponse.json({ success: true, result: { playerStats, roster } });
   } catch (err) {
-    console.error("[api/cron/sync-player-stats] sync failed:", err);
+    console.error("[api/cron/sync-player-stats] sync failed:", sanitizedFailure(err));
     return NextResponse.json({ success: false, reason: "Internal error" }, { status: 500 });
   }
 };

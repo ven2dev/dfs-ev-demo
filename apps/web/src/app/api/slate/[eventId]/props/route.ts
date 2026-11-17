@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { DEFAULT_SPORT_KEY, isSafeOddsEventId, isSupportedOddsSport } from "@/lib/oddsRequestInputs";
 import { getOrFetchMarketOdds } from "@/lib/oddsCacheRepo";
 import { groupOddsByPlayer } from "@/lib/discoveredProps";
-import { resolveOddsDataSource } from "@/lib/oddsDataSource";
+import { serverConfig, sanitizedFailure } from "@/lib/config.server";
 import { getFixtureEventOdds } from "@/lib/oddsFixtures";
 import {
   isValidPlayerPropMarketKey,
@@ -65,7 +65,7 @@ export const GET = async (
     const sportKey = DEFAULT_SPORT_KEY;
     const forceRefresh = request.nextUrl.searchParams.get("refresh") === "true";
 
-    const dataSource = resolveOddsDataSource();
+    const dataSource = serverConfig.odds().source;
     const result = dataSource === "fixture" ? null :
       await getOrFetchMarketOdds(sportKey, eventId, requestedMarketKeys, { forceRefresh });
     const odds = dataSource === "fixture"
@@ -86,7 +86,7 @@ export const GET = async (
       ...(Object.keys(marketStatuses).length ? { marketStatuses } : {}),
     });
   } catch (err) {
-    console.error("[api/slate/[eventId]/props] GET failed:", err);
+    console.error("[api/slate/[eventId]/props] GET failed:", sanitizedFailure(err));
     return NextResponse.json({ success: false, reason: "Internal error" }, { status: 500 });
   }
 };

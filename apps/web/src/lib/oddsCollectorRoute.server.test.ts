@@ -7,15 +7,18 @@ vi.mock("./oddsCollector", () => ({
   runOddsCollector: runCollectorMock,
 }));
 
-const { GET } = await import("@/app/api/cron/collect-odds/route");
+let { GET } = await import("@/app/api/cron/collect-odds/route");
 
 const request = (authorization?: string) =>
   ({
     headers: new Headers(authorization ? { authorization } : {}),
   }) as NextRequest;
 
-beforeEach(() => {
+beforeEach(async () => {
+  vi.resetModules();
+  ({ GET } = await import("@/app/api/cron/collect-odds/route"));
   vi.stubEnv("CRON_SECRET", "cron-secret");
+  vi.stubEnv("DATABASE_URL", "postgresql://synthetic:synthetic@database.invalid/synthetic");
   vi.stubEnv("ODDS_COLLECTION_PROFILE", "free-pilot");
   vi.stubEnv("ODDS_DATA_SOURCE", "live");
   vi.stubEnv("ODDS_API_KEY", "test-key");
@@ -34,6 +37,16 @@ describe("GET /api/cron/collect-odds", () => {
 
     expect(response.status).toBe(401);
     expect(runCollectorMock).not.toHaveBeenCalled();
+  });
+
+  it("returns sanitized 500 for missing receiver configuration without collector work", async () => {
+    vi.stubEnv("CRON_SECRET", undefined);
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const response = await GET(request());
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({ success: false, reason: "Internal error" });
+    expect(runCollectorMock).not.toHaveBeenCalled();
+    expect(log).toHaveBeenCalledWith("[api/cron/collect-odds] configuration failed:", expect.objectContaining({ code: "missing" }));
   });
 
   it("runs with bounded defaults and returns an operational summary", async () => {

@@ -203,6 +203,20 @@ raw accesses checked outside explicitly approved adapters. #100 owns any
 justified Bitwarden adoption; none is selected today. #101 owns separately
 approved migration/rotation, live-scope verification and retirement of copies.
 
+#99 relocates application input references to its typed server/client readers;
+the input names, classifications, delivery authority and copy ledger stay the
+same. The client-safe odds contract no longer reads environment inputs, so its
+server policy tests are referenced at their new executable owner. #287 replaces
+discovery with schema alignment and lint enforcement; discovery remains active
+until that companion is reviewed and merged.
+
+#99 uses the existing public Firebase project ID to check service-account
+agreement before initialization/reuse, without extra expected-identity inputs.
+Agreement does not establish the intended deployed project. Database URL checks
+are structural only; #101 verifies deployed host/database/role, targets and
+permissions. See the [runtime boundary](typed-configuration-boundary.md) for the
+implemented local checks and their synthetic evidence.
+
 No runtime code, workflow, template, deployment, IAM or credential has changed
 in Steps 1–2. Step 3 changes template comments and runbook setup references,
 and adds the offline checks described below. Synthetic validation can establish field/reference coverage;

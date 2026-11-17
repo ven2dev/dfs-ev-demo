@@ -1,6 +1,7 @@
 import "server-only";
 
 import { getSql } from "./db";
+import { serverConfig } from "./config.server";
 
 export type OddsCacheMode = "legacy" | "shared";
 type SchemaQuery = (text: string, params: unknown[]) => Promise<unknown>;
@@ -61,8 +62,9 @@ export const createOddsCacheStartup = (
 
 let startup: ReturnType<typeof createOddsCacheStartup> | undefined;
 const getStartup = () => {
+  const configured = serverConfig.databaseConfigured();
   startup ??= createOddsCacheStartup(
-    process.env.DATABASE_URL ? (text, params) => getSql().query(text, params) : undefined
+    configured ? (text, params) => getSql().query(text, params) : undefined
   );
   return startup;
 };

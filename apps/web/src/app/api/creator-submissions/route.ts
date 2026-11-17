@@ -1,3 +1,4 @@
+import { sanitizedFailure } from "@/lib/config.server";
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminUid } from "@/lib/apiAuth";
 import { insertSubmission, listSubmissions } from "@/lib/creatorSubmissionsRepo";
@@ -34,7 +35,7 @@ export const POST = async (request: NextRequest) => {
     const result = await insertSubmission({ channelName, videoUrl, videoTitle, transcriptText });
     return NextResponse.json({ success: true, result });
   } catch (err) {
-    console.error("[api/creator-submissions] POST failed:", err);
+    console.error("[api/creator-submissions] POST failed:", sanitizedFailure(err));
     return NextResponse.json({ success: false, reason: "Internal error" }, { status: 500 });
   }
 };
@@ -47,7 +48,7 @@ export const GET = async (request: NextRequest) => {
     const submissions = await listSubmissions();
     return NextResponse.json({ success: true, submissions });
   } catch (err) {
-    console.error("[api/creator-submissions] GET failed:", err);
+    console.error("[api/creator-submissions] GET failed:", sanitizedFailure(err));
     return NextResponse.json({ success: false, reason: "Internal error" }, { status: 500 });
   }
 };

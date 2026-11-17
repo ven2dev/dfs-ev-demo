@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from "vitest";
+import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import type { NextRequest } from "next/server";
 
 const verifyIdToken = vi.fn();
@@ -15,7 +15,12 @@ vi.mock("./firebaseAdmin", () => ({
 // Import after the mock so requireUid/checkUidForDeletion resolve
 // getAdminAuth to the fake above, not the real server-only-guarded
 // firebaseAdmin.ts (which would require real Firebase credentials).
-const { requireUid, requireAdminUid, checkUidForDeletion } = await import("./apiAuth.ts");
+let { requireUid, requireAdminUid, checkUidForDeletion } = await import("./apiAuth.ts");
+
+beforeEach(async () => {
+  vi.resetModules();
+  ({ requireUid, requireAdminUid, checkUidForDeletion } = await import("./apiAuth.ts"));
+});
 
 const fakeRequest = (headers: Record<string, string>): NextRequest =>
   ({
@@ -58,7 +63,7 @@ describe("requireAdminUid", () => {
   it("throws when ADMIN_UID is not configured -- a deploy misconfiguration, not an auth failure", async () => {
     vi.stubEnv("ADMIN_UID", "");
 
-    await expect(requireAdminUid(authedRequest())).rejects.toThrow("ADMIN_UID is not set");
+    await expect(requireAdminUid(authedRequest())).rejects.toThrow("Application configuration unavailable (missing).");
     expect(verifyIdToken).not.toHaveBeenCalled();
   });
 

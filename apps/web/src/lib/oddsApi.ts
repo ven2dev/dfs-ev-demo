@@ -6,12 +6,12 @@ import {
   recordOddsApiRequest,
   type OddsApiRequestSource,
 } from "./oddsApiTelemetryRepo";
-import { requireLiveOddsDataSource } from "./oddsDataSource";
+import { serverConfig, sanitizedFailure } from "./config.server";
 import { requireOddsEventId, requireOddsSport } from "./oddsRequestInputs";
 import { getPlayerPropMarket } from "./playerPropMarkets";
 // Enforced, not just documented: importing this from a "use client"
-// component now fails the build, since it reads ODDS_API_KEY, which must
-// never reach the browser bundle.
+// component fails the build. The server boundary supplies ODDS_API_KEY;
+// its value stays outside the browser bundle.
 
 const ODDS_API_BASE = "https://api.the-odds-api.com/v4";
 
@@ -117,11 +117,11 @@ const safelyRecordRequest = async (
   // Odds calls historically remain usable without Postgres in local setup.
   // When a database is configured, telemetry failure is isolated from the
   // provider result so observability cannot turn current odds into an outage.
-  if (!process.env.DATABASE_URL) return;
   try {
+    if (!serverConfig.databaseConfigured()) return;
     await recordOddsApiRequest(telemetry);
   } catch (error) {
-    console.error("[oddsApi] failed to persist request telemetry:", error);
+    console.error("[oddsApi] failed to persist request telemetry:", sanitizedFailure(error));
   }
 };
 
@@ -154,18 +154,13 @@ export const fetchEventOdds = async (
   signal?: AbortSignal,
   source: OddsApiRequestSource = "direct"
 ): Promise<OddsApiFetch<EventOddsResponse>> => {
-  requireLiveOddsDataSource();
+  const { apiKey } = serverConfig.liveOdds();
   if (marketKeys.length === 0) {
     throw new Error("fetchEventOdds requires at least one market key");
   }
   sportKey = requireOddsSport(sportKey);
   eventId = requireOddsEventId(eventId);
   marketKeys = marketKeys.map(requireOddsMarket);
-
-  const apiKey = process.env.ODDS_API_KEY;
-  if (!apiKey) {
-    throw new Error("ODDS_API_KEY is not set");
-  }
 
   const url = new URL(`${ODDS_API_BASE}/sports/${sportKey}/events/${encodeURIComponent(eventId)}/odds/`);
   url.search = new URLSearchParams({ apiKey, regions: "us", markets: marketKeys.join(",") }).toString();
@@ -188,7 +183,7 @@ export const fetchEventOdds = async (
       httpStatus: null,
       quota: emptyQuota(),
     });
-    throw error;
+    throw sanitizedFailure(error);
   }
   const metadata = responseMetadata(res);
   await safelyRecordRequest({
@@ -213,7 +208,8 @@ export const fetchEventOdds = async (
     );
   }
 
-  return { data: await res.json(), ...metadata };
+  try { return { data: await res.json(), ...metadata }; }
+  catch (error) { throw sanitizedFailure(error); }
 };
 
 export const fetchSlateEvents = async (
@@ -222,12 +218,8 @@ export const fetchSlateEvents = async (
   signal?: AbortSignal,
   source: OddsApiRequestSource = "slate"
 ): Promise<OddsApiFetch<SlateEvent[]>> => {
-  requireLiveOddsDataSource();
+  const { apiKey } = serverConfig.liveOdds();
   sportKey = requireOddsSport(sportKey);
-  const apiKey = process.env.ODDS_API_KEY;
-  if (!apiKey) {
-    throw new Error("ODDS_API_KEY is not set");
-  }
 
   const url = new URL(`${ODDS_API_BASE}/sports/${sportKey}/events`);
   url.search = new URLSearchParams({ apiKey }).toString();
@@ -250,7 +242,7 @@ export const fetchSlateEvents = async (
       httpStatus: null,
       quota: emptyQuota(),
     });
-    throw error;
+    throw sanitizedFailure(error);
   }
   const metadata = responseMetadata(res);
   await safelyRecordRequest({
@@ -275,7 +267,9 @@ export const fetchSlateEvents = async (
     );
   }
 
-  const data: RawSlateEvent[] = await res.json();
+  let data: RawSlateEvent[];
+  try { data = await res.json(); }
+  catch (error) { throw sanitizedFailure(error); }
   const window = getCurrentNflSlateWindow(now);
   const events = data
     .map((event) => ({

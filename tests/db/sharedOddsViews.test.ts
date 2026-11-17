@@ -21,15 +21,16 @@ beforeAll(async () => {
   await withTestClient(c => c.query(proposalSql));
 });
 beforeEach(async () => {
-  vi.resetModules();
   Object.values(m).forEach(mock => mock.mockReset());
   client = await openTestClient();
   await client.query('TRUNCATE public.event_market_odds_cache');
   m.query.mockImplementation(async (text, params) => (await client.query(text, params)).rows);
   m.weather.mockResolvedValue({ temperatureF: 62, windSpeedMph: 8, precipitationMm: 0 });
   m.persist.mockResolvedValue({ inserted: true });
-  // The driver is mocked to the guarded fixture client; this is never a URL.
-  vi.stubEnv('DATABASE_URL', 'configured-mocked-driver');
+  // This synthetic URL is never dialed; the mocked driver uses the guarded fixture client.
+  vi.stubEnv('DATABASE_URL', 'postgres://synthetic:synthetic@mocked-driver.invalid/synthetic');
+  // Reset after stubbing so startup receives fresh cached configuration each test.
+  vi.resetModules();
   const { initializeOddsCache } = await import('../../apps/web/src/lib/oddsCacheStartup');
   expect(await initializeOddsCache()).toBe('shared');
 });

@@ -26,14 +26,16 @@ vi.mock("./livePropCacheRepo", () => ({
   getSharedLivePropInputs: getSharedLivePropInputsMock,
 }));
 
-const { GET } = await import("@/app/api/stream/route");
+let { GET } = await import("@/app/api/stream/route");
 
 const requestFor = (searchParams: Record<string, string>) =>
   ({
     nextUrl: new URL(`https://example.test/api/stream?${new URLSearchParams(searchParams)}`),
   }) as NextRequest;
 
-beforeEach(() => {
+beforeEach(async () => {
+  vi.resetModules();
+  ({ GET } = await import("@/app/api/stream/route"));
   vi.stubEnv("ODDS_DATA_SOURCE", "live");
   vi.stubEnv("ODDS_API_KEY", "test-key");
   fetchSlateEventsMock.mockResolvedValue({
@@ -277,6 +279,12 @@ describe("GET /api/stream consensus devig ticks", () => {
     expect(tick.evScore.impliedProb).toBeCloseTo(0.475, 12);
     expect(tick.quote).toEqual({ bookmakerKey: "draftkings", price: 2 });
     expect(tick.marketConsensus.contributingBookCount).toBe(3);
+  });
+
+  it("never sends a driver failure or credential marker through the SSE error payload", async () => {
+    getSharedLivePropInputsMock.mockRejectedValueOnce(new Error("synthetic-server-marker-99-stream"));
+    await expect(openStream()).resolves.toEqual({ type: "error", message: "Application dependency unavailable." });
+    expect(getSharedLivePropInputsMock).toHaveBeenCalledOnce();
   });
 
   it("reuses the existing per-tick error shape when the selected quote is invalid", async () => {

@@ -1,16 +1,6 @@
 import { getApp, getApps, initializeApp } from "firebase/app";
 import { GoogleAuthProvider, getAuth, type Auth } from "firebase/auth";
-
-// getApps().length check avoids "app already exists" during Next.js
-// hot-reload, which re-executes this module without a fresh page load.
-const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-};
+import { publicConfig } from "./config.client";
 
 // undefined = not yet attempted, null = attempted and failed (don't
 // retry/re-log every call), Auth = succeeded.
@@ -33,12 +23,19 @@ export function getFirebaseAuth(): Auth | null {
   if (typeof window === "undefined") {
     throw new Error("getFirebaseAuth() called outside the browser");
   }
-  if (cachedAuth !== undefined) return cachedAuth;
+  if (cachedAuth === null) return null;
   try {
-    const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+    const options = publicConfig.firebaseAuth(cachedAuth?.app.options);
+    if (cachedAuth) return cachedAuth;
+    // Preserve the default app's Auth persistence key and hot-reload behavior,
+    // but verify any existing app before asking it for an Auth client.
+    const app = getApps().length ? getApp() : initializeApp(options);
+    publicConfig.firebaseAuth(app.options);
     cachedAuth = getAuth(app);
-  } catch (err) {
-    console.error("[firebaseClient] Firebase Auth failed to initialize:", err);
+  } catch (error) {
+    const code = error && typeof error === "object" && "code" in error &&
+      typeof error.code === "string" && error.code.match(/^[a-z-]+\/[a-z0-9-]+$/)?.[0] === error.code ? error.code : undefined;
+    console.error("[firebaseClient] Firebase Auth failed to initialize:", "Browser configuration unavailable.", ...(code ? [{ code }] : []));
     cachedAuth = null;
   }
   return cachedAuth;

@@ -13,10 +13,13 @@ vi.mock("./oddsCacheRepo", () => ({
   getOrFetchMarketOdds: getOrFetchMarketOddsMock,
 }));
 
-const { GET: getSlate } = await import("@/app/api/slate/route");
-const { GET: getProps } = await import("@/app/api/slate/[eventId]/props/route");
+let { GET: getSlate } = await import("@/app/api/slate/route");
+let { GET: getProps } = await import("@/app/api/slate/[eventId]/props/route");
 
-beforeEach(() => {
+beforeEach(async () => {
+  vi.resetModules();
+  ({ GET: getSlate } = await import("@/app/api/slate/route"));
+  ({ GET: getProps } = await import("@/app/api/slate/[eventId]/props/route"));
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-10-03T12:00:00.000Z"));
   vi.stubEnv("VERCEL_ENV", "preview");

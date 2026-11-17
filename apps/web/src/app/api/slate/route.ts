@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchSlateEvents } from "@/lib/oddsApi";
 import { DEFAULT_SPORT_KEY, isSupportedOddsSport } from "@/lib/oddsRequestInputs";
-import { resolveOddsDataSource } from "@/lib/oddsDataSource";
+import { serverConfig, sanitizedFailure } from "@/lib/config.server";
 import { getFixtureSlateEvents } from "@/lib/oddsFixtures";
 import { getCurrentNflSlateWindow } from "@dfs-ev/domain/nfl-week";
 
@@ -22,14 +22,14 @@ export const GET = async (request: NextRequest) => {
     const sportKey = DEFAULT_SPORT_KEY;
     const now = new Date();
     const window = getCurrentNflSlateWindow(now);
-    const dataSource = resolveOddsDataSource();
+    const dataSource = serverConfig.odds().source;
     const events =
       dataSource === "fixture"
         ? getFixtureSlateEvents(sportKey, now)
         : (await fetchSlateEvents(sportKey, now)).data;
     return NextResponse.json({ success: true, dataSource, events, window });
   } catch (err) {
-    console.error("[api/slate] GET failed:", err);
+    console.error("[api/slate] GET failed:", sanitizedFailure(err));
     return NextResponse.json({ success: false, reason: "Internal error" }, { status: 500 });
   }
 };

@@ -111,9 +111,10 @@ Every Vercel item has distinct environment instances where applicable.
 | `DB_READINESS_SECRET` | An owner-approved readiness caller: read-only database readiness endpoint. | Vercel authority/snapshots. External caller and copies are unresolved; #101 needs a named caller/owner before adding or rotating a copy. |
 
 Exact deployed Firebase IAM and database grants are evidence still needed, not
-permissions inferred from these descriptions. #99/#101 map the listed
-operations to the provider's exact grants and verify them in an isolated
-environment before rollout. Any required wider grant is an owner decision.
+permissions inferred from these descriptions. #101 maps the listed operations
+to the provider's exact grants and verifies them in an isolated environment
+before rollout. #99 performs local configuration checks only. Any required
+wider grant is an owner decision.
 The proposed runtime has no Google secret-access role and no static Google
 bootstrap key. This separates the required permission contract from an
 unperformed live access audit.
@@ -171,34 +172,38 @@ silently introducing an unrecorded readable copy.
 #99 implements one `server-only` typed configuration boundary, consumed before
 Firebase Admin, database clients, live provider calls or protected operational
 capabilities initialize. Validation is capability-scoped: fixture/public routes
-and builds do not require unused live credentials. Successful parsing alone is
-insufficient; validate the resource against owner-approved environment identity
-metadata before side effects. No fallback to another store, environment,
+and builds do not require unused live credentials. The owner's lighter identity
+decision compares the Firebase service account's `project_id` with the existing
+`NEXT_PUBLIC_FIREBASE_PROJECT_ID` before initialization and reuse. Database URL
+validation is structural only; #101 verifies the intended deployed host,
+database, role and permissions. No fallback to another store, environment,
 ambient credential or fixture data in Production is allowed, to prevent a failed
 configuration from selecting an unintended authority or data source.
 
 | Condition | Required behavior and reason |
 | --- | --- |
 | Missing/blank/malformed required value | Capability unavailable with a stable sanitized configuration error; no client initialization or protected work. Do not emit input, decoded JSON, connection strings or raw SDK errors. |
-| Invalid deployment class or resource mismatch | Reject before network/database work. Validate Firebase project and service identity, the intended database target and environment-specific policy. `VERCEL_ENV` alone cannot prove isolation. |
-| Missing/invalid caller bearer | Reject authorization without protected work. Distinguish a caller's 401 from missing server configuration; #99 preserves/reviews each route's stable 500/503 contract. |
+| Invalid deployment class, Firebase project disagreement or malformed database URL | Reject locally before protected work. Firebase agreement is checked before initialization/reuse; database host/name/role verification remains #101's deployed check. `VERCEL_ENV` alone cannot prove isolation. |
+| Missing/invalid caller bearer | With a configured receiver, reject with the existing 401/403 without protected work. Missing receiver `CRON_SECRET` returns sanitized 500; missing `ODDS_HEALTH_SECRET` returns 503; database readiness retains 503. This distinguishes deployment failures from bad caller credentials. |
 | Provider denial, revocation or outage | Return the route's sanitized dependency failure; no alternate credential, environment, fixture substitution or secret-fetch retry storm. |
-| Prior cached or already-initialized SDK app | Validate the configured environment and cached client's identity before reuse, preventing global SDK state from bypassing configuration validation. |
+| Prior cached or already-initialized SDK app | Verify the configured account/project before reuse. Firebase Admin's named `dfs-ev-server` app records its project explicitly and survives reload only when it matches; a default app is never selected. This prevents SDK state bypassing validation. |
 | Preview live odds request | Refuse live access and collection; fixture use does not read or require a Production key. |
 
-The expected identity metadata is not present as a unified schema today. #99
-proposes and catalogs any additional non-secret identity inputs with their
-trusted source before implementing checks; this document invents no deployed
-setting or proof of isolation. Privileged control of both a credential and its
-expected identity can bypass such a check, so deployment access remains trusted.
+Separate `EXPECTED_*` identity settings were rejected: they would live beside
+the credentials in the same Vercel environment, could be pasted wrong together,
+add five settings per environment and duplicate #101's deployed checks. The two
+Firebase values agreeing does not prove that they identify the intended project.
+Deployment access remains trusted. #101 verifies deployed Firebase/database
+targets, effective IAM and opaque provider/bearer provenance; these are the
+approved limits of #99, not claims established by its local parsing.
 
-Current code already has server-only Firebase/DB modules, lazy clients and
-odds environment refusals. It does not yet prove the complete contract above:
-cached Firebase apps can bypass env parsing, resource identity validation is
-not unified and some route errors log raw exceptions. The owner subsequently
-added DB test guard repair to #98: it now refuses the catalog's secret shell
-inputs, with synthetic catalog coverage and explicit non-shell exceptions.
-That local test guard is separate from #99's runtime configuration boundary.
+The [#99 runtime boundary](typed-configuration-boundary.md) implements the local
+checks and cached-client verification with synthetic evidence. Dependency
+logging keeps only safe diagnostic fields and app-source stack locations,
+omitting incoming messages, causes and configuration values. Unknown compiled
+origins omit stacks. #98's catalog-backed DB test guard remains separate: it
+refuses secret shell inputs, with synthetic coverage and explicit non-shell
+exceptions. #287 owns lint enforcement and catalog/schema alignment.
 
 ## Catalog and #99's typed configuration module
 

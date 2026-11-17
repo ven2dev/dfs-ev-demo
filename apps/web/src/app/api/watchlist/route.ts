@@ -1,3 +1,4 @@
+import { sanitizedFailure } from "@/lib/config.server";
 import { NextRequest, NextResponse } from "next/server";
 import { FieldValue } from "firebase-admin/firestore";
 import { getFirestoreDb } from "@/lib/firebaseAdmin";
@@ -38,7 +39,7 @@ export const POST = async (request: NextRequest) => {
       .set({ watchlist: { [propId]: entry } }, { merge: true });
     return NextResponse.json({ success: true, propId });
   } catch (err) {
-    console.error("[api/watchlist] POST failed:", err);
+    console.error("[api/watchlist] POST failed:", sanitizedFailure(err));
     return NextResponse.json({ success: false, reason: "Internal error" }, { status: 500 });
   }
 };
@@ -66,7 +67,7 @@ export const DELETE = async (request: NextRequest) => {
     if ((err as { code?: number }).code === 5) {
       return NextResponse.json({ success: true, propId });
     }
-    console.error("[api/watchlist] DELETE failed:", err);
+    console.error("[api/watchlist] DELETE failed:", sanitizedFailure(err));
     return NextResponse.json({ success: false, reason: "Internal error" }, { status: 500 });
   }
 };

@@ -1,8 +1,9 @@
 import "server-only";
 
-import { getApp, getApps, initializeApp, cert, type App } from "firebase-admin/app";
+import { getApps, initializeApp, cert } from "firebase-admin/app";
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
 import { getAuth, type Auth } from "firebase-admin/auth";
+import { ConfigurationError, serverConfig, sanitizedFailure } from "./config.server";
 
 // Unlike firebaseClient.ts's getFirebaseAuth(), this never runs during
 // prerendering or in the browser -- only inside API route handlers, at
@@ -10,27 +11,25 @@ import { getAuth, type Auth } from "firebase-admin/auth";
 // misconfiguration, not something to degrade around: it throws, and each
 // route's own try/catch turns that into a controlled 500 instead of a
 // silent bad state.
-let cachedApp: App | undefined;
-
-const getAdminApp = (): App => {
-  if (cachedApp) return cachedApp;
-  if (getApps().length) {
-    cachedApp = getApp();
-    return cachedApp;
+// Reloads can retain the SDK's named app after the boundary cache is replaced.
+// Verify its explicit project identity after validating the current account.
+const getAdminApp = () => serverConfig.firebaseApp(account => {
+  const existing = getApps().find(app => app.name === "dfs-ev-server");
+  if (existing) {
+    if (existing.options.projectId !== account.projectId) {
+      throw new ConfigurationError("firebase-project-mismatch");
+    }
+    return existing;
   }
+  return initializeApp({ projectId: account.projectId, credential: cert(account) }, "dfs-ev-server");
+});
 
-  const encoded = process.env.FIREBASE_SERVICE_ACCOUNT_KEY_BASE64;
-  if (!encoded) {
-    throw new Error(
-      "FIREBASE_SERVICE_ACCOUNT_KEY_BASE64 is not set -- Admin SDK cannot initialize"
-    );
-  }
-
-  const serviceAccount = JSON.parse(Buffer.from(encoded, "base64").toString("utf-8"));
-  cachedApp = initializeApp({ credential: cert(serviceAccount) });
-  return cachedApp;
+export const getFirestoreDb = (): Firestore => {
+  try { return getFirestore(getAdminApp()); }
+  catch (error) { throw sanitizedFailure(error); }
 };
 
-export const getFirestoreDb = (): Firestore => getFirestore(getAdminApp());
-
-export const getAdminAuth = (): Auth => getAuth(getAdminApp());
+export const getAdminAuth = (): Auth => {
+  try { return getAuth(getAdminApp()); }
+  catch (error) { throw sanitizedFailure(error); }
+};

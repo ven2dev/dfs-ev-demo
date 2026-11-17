@@ -4,7 +4,7 @@ import { DB_READINESS_MANIFEST } from "@dfs-ev/db/runtime";
 
 const snapshotMock = vi.fn();
 vi.mock("./dbReadinessRepo", () => ({ getDatabaseReadinessSnapshot: snapshotMock }));
-const { GET } = await import("@/app/api/health/database/route");
+let { GET } = await import("@/app/api/health/database/route");
 const request = (authorization?: string) => ({
   headers: new Headers(authorization ? { authorization } : {}),
 }) as NextRequest;
@@ -12,9 +12,11 @@ const history = () => DB_READINESS_MANIFEST.migrations.map((migration) => ({
   ...migration, runner_version: 1, provenance: "adopted", applied_at: "2026-10-07T00:00:00.000Z",
 }));
 const maximum = DB_READINESS_MANIFEST.maximumKnownVersion;
-beforeEach(() => {
+beforeEach(async () => {
+  vi.resetModules();
+  ({ GET } = await import("@/app/api/health/database/route"));
   vi.stubEnv("DB_READINESS_SECRET", "readiness-secret");
-  vi.stubEnv("DATABASE_URL", "synthetic-only-not-a-connection-string");
+  vi.stubEnv("DATABASE_URL", "postgresql://synthetic:synthetic@database.invalid/synthetic");
   snapshotMock.mockResolvedValue({ ledgerPresent: true, requiredTablesPresent: true, history: history() });
 });
 afterEach(() => { snapshotMock.mockReset(); vi.unstubAllEnvs(); vi.restoreAllMocks(); });
@@ -22,6 +24,8 @@ afterEach(() => { snapshotMock.mockReset(); vi.unstubAllEnvs(); vi.restoreAllMoc
 describe("GET /api/health/database", () => {
   it("returns 503 not-configured without database access when the dedicated secret is absent", async () => {
     for (const secret of [undefined, "", "   "]) {
+      vi.resetModules();
+      ({ GET } = await import("@/app/api/health/database/route"));
       vi.stubEnv("DB_READINESS_SECRET", secret);
       const response = await GET(request());
       expect(response.status).toBe(503);
