@@ -6,9 +6,17 @@ const read = path => readFileSync(new URL(`../${path}`, import.meta.url), "utf8"
 const json = path => JSON.parse(read(path));
 const turbo = json("turbo.json");
 const root = json("package.json");
+const lock = json("package-lock.json");
 
 test("Turbo is pinned and uses declared workspace tasks with shared inputs", () => {
-  assert.equal(root.devDependencies.turbo, "2.11.10");
+  // Pin exactly (no range) and match the lockfile, without naming a release,
+  // so routine patch updates do not need a test edit.
+  const pinned = root.devDependencies.turbo;
+  assert.match(pinned, /^\d+\.\d+\.\d+$/, "turbo must be an exact version");
+  const installed = Object.entries(lock.packages)
+    .filter(([path]) => /^node_modules\/(turbo|@turbo\/[^/]+)$/.test(path));
+  assert.ok(installed.some(([path]) => path === "node_modules/turbo"), "turbo missing from lockfile");
+  for (const [path, entry] of installed) assert.equal(entry.version, pinned, `${path} does not match the turbo pin`);
   assert.equal(root.packageManager, "npm@11.16.0");
   for (const input of ["package-lock.json", ".nvmrc", "docs/**", ".github/workflows/**", "scripts/**"])
     assert.ok(turbo.globalDependencies.includes(input), `missing global input ${input}`);
