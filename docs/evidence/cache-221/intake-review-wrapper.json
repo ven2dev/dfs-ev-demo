@@ -1,0 +1,45 @@
+{
+  "baseSha": "4962d1729354ac4942f4aaa0b0bf5014eaae2b09",
+  "receipt": "2026-11-16T00-03-33.164Z-existing-behavior.json",
+  "sha256": "3a93416f4a9418829a73af7835c18836f93b33bf1c133805f5e31b7148572ddd",
+  "receiptBytesUnchanged": true,
+  "probeSource": "existing-behavior-probe.mjs (retained in local intake planning directory)",
+  "probeSha256": "1f12de16f24c2d863aa7b236b8625e8e6864d56defedfcb3a80588c2a16d6e06",
+  "sourceBlobs": [
+    {
+      "path": "packages/db/src/livePropCache.ts",
+      "blob": "505c2d57e7515be0f295fca560960809e2efc03d",
+      "sha256": "8c4964fb97f7c92423e0cadce94442c5d4437a534fb394c3790988902b954749"
+    },
+    {
+      "path": "packages/db/src/livePropRefresh.ts",
+      "blob": "d42aae8bc067445fcf33f3f786434cfe601e1b74",
+      "sha256": "5917bff6afdf6410abd1a068d497e6fec1d5750372327a347820ef706c4199c4"
+    },
+    {
+      "path": "apps/web/src/lib/oddsCacheRepo.ts",
+      "blob": "93df4160afd24b5c9276256e87f680f2f5d140a8",
+      "sha256": "5fef24c9a3754e9cf4982efd19dc2d12f6bfead220d5a1a0ddd4fb5c283a69f9"
+    },
+    {
+      "path": "apps/web/src/lib/livePropCacheRepo.ts",
+      "blob": "a35df87c406502a6be490969909e1197b0193b90",
+      "sha256": "127cac18f3884cfda578f286394e72b5be76b0cfef324bd21ec83e97941dd32a"
+    },
+    {
+      "path": "apps/web/src/lib/oddsApi.ts",
+      "blob": "9e3080be91acf2c3e9c5ffc88df47883e810f0bb",
+      "sha256": "8eada4a057c1f66c7cd1ffe20220319fe2e982643567877898c823a393c33ee9"
+    },
+    {
+      "path": "apps/web/src/lib/playerPropMarkets.ts",
+      "blob": "ba00ecd9145580c4d843e7fd405fd2c95efd2698",
+      "sha256": "d4d9eec96a64d4fbecd25d1d48f7eb7686d7e12cf4c0f18c1cad249be93e3a0f"
+    }
+  ],
+  "interpretation": "Existing kernel plus shared-store dependency double only. This proves the old key/write-failure behavior, not PostgreSQL concurrency or a new candidate implementation.",
+  "candidateSqlMeasured": false,
+  "hostedWork": false,
+  "databaseConnections": 0,
+  "featureBranchCreated": false
+}

@@ -37,7 +37,7 @@
   },
   "dependencies": {
     "@dfs-ev/db": "0.1.0",
-    "@neondatabase/serverless": "1.2.0",
+    "@neondatabase/serverless": "1.2.1",
     "pg": "8.23.1"
   },
   "devDependencies": {

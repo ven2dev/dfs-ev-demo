@@ -121,3 +121,26 @@ describe.each(["live", "fixture"])("%s slate request validation", (mode) => {
     expect(getOrFetchMarketOddsMock).not.toHaveBeenCalled();
   });
 });
+
+
+describe("shared market availability at the route boundary", () => {
+  it("returns explicit stale/unavailable statuses from the shared odds path", async () => {
+    vi.stubEnv("ODDS_DATA_SOURCE", "live");
+    vi.stubEnv("VERCEL_ENV", "production");
+    getOrFetchMarketOddsMock.mockResolvedValue({
+      odds: { id: "evt-1", bookmakers: [] },
+      origins: { player_pass_yds: { status: "stale" }, player_receptions: { status: "unavailable" } },
+    });
+    const response = await getProps(new NextRequest("http://localhost/api/slate/evt-1/props?markets=player_pass_yds,player_receptions"),
+      { params: Promise.resolve({ eventId: "evt-1" }) });
+    expect((await response.json()).marketStatuses).toEqual({ player_pass_yds: "stale", player_receptions: "unavailable" });
+  });
+  it("keeps the legacy response shape when the current schema provides no statuses", async () => {
+    vi.stubEnv("ODDS_DATA_SOURCE", "live");
+    vi.stubEnv("VERCEL_ENV", "production");
+    getOrFetchMarketOddsMock.mockResolvedValue({ odds: { id: "evt-1", bookmakers: [] }, origins: {} });
+    const response = await getProps(new NextRequest("http://localhost/api/slate/evt-1/props?markets=player_pass_yds"),
+      { params: Promise.resolve({ eventId: "evt-1" }) });
+    expect(await response.json()).toEqual({ success: true, dataSource: "live", eventId: "evt-1", players: [] });
+  });
+});

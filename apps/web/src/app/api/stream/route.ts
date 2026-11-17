@@ -20,7 +20,7 @@ import { getRealRecentGameStats } from "@/lib/playerStatsRepo";
 import { buildWatchPropId } from "@/lib/watchPropId";
 import { getPlayerPropMarket } from "@/lib/playerPropMarkets";
 import type { PlayerPropDirection } from "@dfs-ev/domain";
-import { getSharedLivePropInputs } from "@/lib/livePropCacheRepo";
+import { getSharedLivePropInputs, type LivePropInputs } from "@/lib/livePropCacheRepo";
 
 // SSE endpoint. Production resolves real odds, weather, and player history
 // server-side; fixture deployments resolve the same product-facing shape from
@@ -238,7 +238,7 @@ export async function GET(request: NextRequest) {
         tickCount += 1;
 
         try {
-          const inputs =
+          const inputs: LivePropInputs | null =
             dataSource === "fixture"
               ? getFixtureLivePropInputs(
                   eventId,
@@ -305,10 +305,14 @@ export async function GET(request: NextRequest) {
           });
 
           send({
-            type: "tick",
+            type: inputs.oddsObservation?.status === "stale" ? "stale" : "tick",
             dataSource,
             propId,
             timestamp: Date.now(),
+            ...(inputs.oddsObservation?.status ? {
+              oddsStatus: inputs.oddsObservation.status,
+              oddsCapturedAt: inputs.oddsObservation.capturedAt,
+            } : {}),
             line: oddsLine.point,
             direction: selectedDirection,
             quote: {

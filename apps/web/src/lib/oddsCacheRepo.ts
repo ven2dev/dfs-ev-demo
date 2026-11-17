@@ -1,5 +1,7 @@
 import "server-only";
 
+import { sliceOddsByMarket, mergeOddsSlices, type CachedMarketPayload } from "./oddsProjection";
+
 import { randomUUID } from "node:crypto";
 import { getSql } from "./db";
 import {
@@ -7,9 +9,10 @@ import {
   type EventOddsResponse,
   type OddsApiFetch,
   type OddsApiQuota,
-  type OddsMarket,
 } from "./oddsApi";
-import { persistOddsObservation } from "./oddsSnapshotRepo";
+import { persistRawOddsObservation } from "./oddsObservation";
+import { getSharedMarketOdds } from "./sharedOddsRepo";
+import { selectOddsCachePath } from "./oddsCacheStartup";
 
 // Discovery costs real credits (1 per market requested), so re-fetching
 // a market that was checked moments ago -- even by a different request
@@ -50,58 +53,6 @@ type FreshEventOdds = OddsApiFetch<EventOddsResponse> & {
 
 const inFlightFetches = new Map<string, Promise<FreshEventOdds>>();
 
-const persistDiscoveryObservation = async (
-  sportKey: string,
-  eventId: string,
-  marketKeys: string[],
-  fetched: OddsApiFetch<EventOddsResponse>,
-  observationId: string
-): Promise<boolean> => {
-  const event = fetched.data;
-  if (!event.commence_time || !event.home_team || !event.away_team) {
-    console.error(
-      `[oddsCacheRepo] skipped observation "${observationId}": upstream event metadata is incomplete`
-    );
-    return false;
-  }
-  const eventStartMs = Date.parse(event.commence_time);
-  const capturedAtMs = Date.parse(fetched.capturedAt);
-  if (
-    Number.isFinite(eventStartMs) &&
-    Number.isFinite(capturedAtMs) &&
-    capturedAtMs >= eventStartMs
-  ) {
-    return false;
-  }
-
-  try {
-    await persistOddsObservation(
-      {
-        observationId,
-        sportKey: event.sport_key ?? sportKey,
-        eventId,
-        homeTeam: event.home_team,
-        awayTeam: event.away_team,
-        eventStartTime: new Date(event.commence_time),
-        source: "discovery",
-        capturedAt: new Date(fetched.capturedAt),
-        requestedMarketKeys: marketKeys,
-        quota: fetched.quota,
-      },
-      event
-    );
-    return true;
-  } catch (error) {
-    // History must never make a current-odds request fail after the provider
-    // already returned usable data. The gap is explicit in server logs.
-    console.error(
-      `[oddsCacheRepo] failed to persist observation "${observationId}":`,
-      error
-    );
-    return false;
-  }
-};
-
 const dedupedFetchEventOdds = (
   sportKey: string,
   eventId: string,
@@ -114,7 +65,7 @@ const dedupedFetchEventOdds = (
   const observationId = randomUUID();
   const fetchPromise = fetchEventOdds(sportKey, eventId, marketKeys, undefined, "discovery")
     .then(async (fetched) => {
-      const observationPersisted = await persistDiscoveryObservation(
+      const observationPersisted = await persistRawOddsObservation(
         sportKey,
         eventId,
         marketKeys,
@@ -130,10 +81,6 @@ const dedupedFetchEventOdds = (
   return fetchPromise;
 };
 
-type CachedMarketPayload = {
-  bookmakers: { key: string; markets: OddsMarket[] }[];
-};
-
 type CacheRow = {
   market_key: string;
   payload: CachedMarketPayload;
@@ -142,55 +89,16 @@ type CacheRow = {
 
 export type MarketOddsOrigin = {
   origin: "cache" | "upstream";
-  capturedAt: string;
+  capturedAt: string | null;
   observationId: string | null;
   observationPersisted: boolean;
   quota: OddsApiQuota | null;
+  status?: "fresh" | "upstream" | "stale" | "unavailable";
 };
 
 export type MarketOddsResult = {
   odds: EventOddsResponse;
   origins: Record<string, MarketOddsOrigin>;
-};
-
-// Slices a multi-market API response down to just one market's data --
-// this is the shape actually written to (and read back from) the
-// per-(event, market) cache row, so a request for a DIFFERENT subset of
-// markets on the same event can reuse whichever of these it needs
-// without re-fetching markets it already has fresh.
-const sliceByMarket = (response: EventOddsResponse, marketKey: string): CachedMarketPayload => ({
-  bookmakers: response.bookmakers
-    .map((bookmaker) => ({
-      key: bookmaker.key,
-      markets: bookmaker.markets.filter((market) => market.key === marketKey),
-    }))
-    .filter((bookmaker) => bookmaker.markets.length > 0),
-});
-
-// Merges any number of per-market slices (some from the cache, some
-// freshly fetched) back into one combined response -- bookmakers that
-// offer more than one of the requested markets get their markets
-// combined onto a single entry, rather than appearing once per market.
-const mergeSlices = (eventId: string, slices: CachedMarketPayload[]): EventOddsResponse => {
-  const bookmakersByKey = new Map<string, Map<string, OddsMarket>>();
-
-  for (const slice of slices) {
-    for (const bookmaker of slice.bookmakers) {
-      const marketsByKey = bookmakersByKey.get(bookmaker.key) ?? new Map<string, OddsMarket>();
-      for (const market of bookmaker.markets) {
-        marketsByKey.set(market.key, market);
-      }
-      bookmakersByKey.set(bookmaker.key, marketsByKey);
-    }
-  }
-
-  return {
-    id: eventId,
-    bookmakers: Array.from(bookmakersByKey.entries()).map(([key, marketsByKey]) => ({
-      key,
-      markets: Array.from(marketsByKey.values()),
-    })),
-  };
 };
 
 export type GetOrFetchMarketOddsOptions = {
@@ -202,7 +110,7 @@ export type GetOrFetchMarketOddsOptions = {
   forceRefresh?: boolean;
 };
 
-export const getOrFetchMarketOdds = async (
+export const getLegacyMarketOdds = async (
   sportKey: string,
   eventId: string,
   marketKeys: string[],
@@ -254,7 +162,7 @@ export const getOrFetchMarketOdds = async (
     const fetched = await dedupedFetchEventOdds(sportKey, eventId, missingMarketKeys);
 
     for (const marketKey of missingMarketKeys) {
-      freshlyFetchedSlices.set(marketKey, sliceByMarket(fetched.data, marketKey));
+      freshlyFetchedSlices.set(marketKey, sliceOddsByMarket(fetched.data, marketKey));
       origins[marketKey] = {
         origin: "upstream",
         capturedAt: fetched.capturedAt,
@@ -291,10 +199,13 @@ export const getOrFetchMarketOdds = async (
   }
 
   return {
-    odds: mergeSlices(eventId, [
+    odds: mergeOddsSlices(eventId, [
       ...Array.from(freshRowsByMarket.values()),
       ...Array.from(freshlyFetchedSlices.values()),
     ]),
     origins,
   };
 };
+
+export const getOrFetchMarketOdds: typeof getLegacyMarketOdds = async (...args) =>
+  (await selectOddsCachePath(getLegacyMarketOdds, getSharedMarketOdds))(...args);

@@ -56,7 +56,7 @@
     "test:r2:live": "R2_LIVE_CONTRACT=1 vitest run --disableConsoleIntercept --config vitest.node.config.ts services/pipeline/tests/feature-store/featureStoreR2.process.test.ts"
   },
   "dependencies": {
-    "@neondatabase/serverless": "1.2.0",
+    "@neondatabase/serverless": "1.2.1",
     "csv-parse": "7.0.3",
     "firebase": "13.3.0",
     "firebase-admin": "14.5.1",
