@@ -100,29 +100,41 @@ export function useLiveOddsStream() {
           return;
         }
 
-        if (data.type !== "tick" || data.propId !== expectedPropId) return;
+        if (!["tick", "stale"].includes(data.type) || data.propId !== expectedPropId) return;
         if (data.sampleWindow !== undefined && data.sampleWindow !== sampleWindow) return;
         if (!data.evScore || !data.stages || !Number.isFinite(data.timestamp)
           || !Number.isFinite(data.evScore.edge)) return;
+
+        const staleOdds = data.type === "stale" || data.oddsStatus === "stale";
+        const observedAt = staleOdds ? Date.parse(data.oddsCapturedAt) : data.timestamp;
+        if (!Number.isFinite(observedAt) || (data.oddsStatus !== undefined
+          && !["fresh", "upstream", "stale"].includes(data.oddsStatus))) {
+          markRefresh("failed");
+          setConnectionStatus("stale");
+          if (staleTimer) clearTimeout(staleTimer);
+          return;
+        }
 
         const line = Number.isFinite(data.line) ? data.line as number : undefined;
         const quote = line !== undefined && data.quote?.bookmakerKey === primaryWatch.bookmakerKey
           && Number.isFinite(data.quote.price) && data.quote.price > 1
           ? { bookmakerKey: data.quote.bookmakerKey as string, price: data.quote.price as number,
-            line, timestamp: data.timestamp as number,
+            line, timestamp: observedAt as number,
             dataSource: isOddsDataSource(data.dataSource) ? data.dataSource : undefined }
           : undefined;
 
         const state = useAppStore.getState();
         const existing = state.watchlist[data.propId];
+        const retainedHistory = existing?.sampleWindow === sampleWindow && existing.historySessionId === historySessionId
+          ? existing.evHistory : [];
         state.setWatchlist({
           ...state.watchlist,
           [data.propId]: {
             propId: data.propId,
             dataSource: data.dataSource,
             evScore: data.evScore,
-            evHistory: [
-              ...(existing?.sampleWindow === sampleWindow && existing.historySessionId === historySessionId ? existing.evHistory : []),
+            evHistory: staleOdds ? retainedHistory : [
+              ...retainedHistory,
               { timestamp: data.timestamp, evScore: data.evScore.edge, context: {
                 propId: expectedPropId, bookmakerKey: quote?.bookmakerKey,
                 direction: primaryWatch.direction, sampleWindow,
@@ -138,16 +150,18 @@ export function useLiveOddsStream() {
             sampleWindow,
             sampleSize: Number.isInteger(data.sampleSize) && data.sampleSize > 0 && data.sampleSize <= sampleWindow
               ? data.sampleSize : undefined,
-            updatedAt: data.timestamp,
-            refreshState: undefined,
+            updatedAt: observedAt,
+            refreshState: staleOdds ? "paused" : undefined,
             recentStatAverage: data.recentStatAverage,
             line: data.line,
             marketConsensus: data.marketConsensus,
             weather: data.weather,
           },
         });
-        setConnectionStatus("live");
-        resetStaleTimer();
+        setConnectionStatus(staleOdds ? "stale" : "live");
+        if (staleOdds) {
+          if (staleTimer) clearTimeout(staleTimer);
+        } else resetStaleTimer();
       };
 
       source.onerror = () => {

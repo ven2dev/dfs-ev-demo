@@ -1,0 +1,129 @@
+{
+  "at": "2026-11-16T05:07:36.194781+00:00",
+  "parentSha": "f7d815fd7e8b1c51f0ab8c58d6b74d38a9584e14",
+  "branch": "feature/dfsEV-221-shared-odds-cache",
+  "scope": "Untimed local checkpoint-2 behavior checks; final checkpoint-3 full suites and speed qualification pending.",
+  "reports": [
+    {
+      "kind": "app",
+      "passed": 160,
+      "failed": 0,
+      "files": 12,
+      "sha256": "7991906f9a7da3939536a418ed26fa6ae7dddfb6be63e9edec4e1e5eebfe3012",
+      "rawReport": "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/221-intake/2026-11-16T05-07-36Z-checkpoint2-app.json"
+    },
+    {
+      "kind": "db",
+      "passed": 12,
+      "failed": 0,
+      "files": 2,
+      "sha256": "a268cc0e928c82cfbb51cd68627a21e009a50bcdcfe92d4a4c096fe4b4a20880",
+      "rawReport": "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/221-intake/2026-11-16T05-07-36Z-checkpoint2-db.json"
+    }
+  ],
+  "typecheck": "passed",
+  "scopedLint": "passed",
+  "importAndLayoutChecks": {
+    "passed": 25,
+    "failed": 0
+  },
+  "webpackProductionBuild": "passed",
+  "defaultTurbopackBuild": "not rerun; environment port-binding restriction recorded at checkpoint 1",
+  "workBudgets": {
+    "freshRawHitSql": 1,
+    "uncontendedLeaderPreProviderSql": 2,
+    "uncontendedLeaderTotalSql": 3,
+    "followerWaitMs": 45000,
+    "followerPollMs": 250,
+    "exhaustedFollowerReads": 181,
+    "exhaustedFollowerFailedClaims": 181,
+    "exhaustedFollowerProviderCalls": 0,
+    "renewalSqlBefore20SecondAbort": 1
+  },
+  "claimCooldownMs": 20000,
+  "claimCooldownIndependentOfCallerTtl": true,
+  "failedKeyPlus12KeyDiscovery": {
+    "providerRequestsForRemaining11": 1,
+    "providerRequestsForFailedKey": 0,
+    "withPriorPayload": "stale",
+    "withoutPriorPayload": "unavailable"
+  },
+  "lane": "lane-2",
+  "tier": "standard",
+  "teardown": {
+    "remainingContainers": [],
+    "remainingNetworks": []
+  },
+  "realProviderCalls": 0,
+  "hostedActions": 0,
+  "sources": [
+    {
+      "path": "apps/web/src/app/api/slate/[eventId]/props/route.ts",
+      "sha256": "e3e74b892b8ed8b5a41cfed240a2ea4d693b38cfaeb75735fd726107b94ef749"
+    },
+    {
+      "path": "apps/web/src/lib/livePropCacheRepo.ts",
+      "sha256": "2641da1d99689339956f317bc8c88383626aeec1ebd381eaa8ac73c33972048d"
+    },
+    {
+      "path": "apps/web/src/lib/oddsApi.ts",
+      "sha256": "b69149c100b48b5f6fe45533eb15888160c73fc18fa8e2c4d7a897715681ff04"
+    },
+    {
+      "path": "apps/web/src/lib/oddsCacheRepo.ts",
+      "sha256": "c53c48331db0e659b19a84ed3afd92af9878c39acf70eaa00a3b429caf24448b"
+    },
+    {
+      "path": "apps/web/src/lib/oddsCacheStartup.ts",
+      "sha256": "afa3cbc9274799f36d97bebbb4d2391fc0b244f3e425c684a3970c0d1e80c6be"
+    },
+    {
+      "path": "apps/web/src/lib/oddsObservation.ts",
+      "sha256": "0bf087e2edd07acd428750f3d3a8be4011ce58369e6cd2fd2cf02550832450bb"
+    },
+    {
+      "path": "apps/web/src/lib/sharedOddsRepo.server.test.ts",
+      "sha256": "32d99e0c4a0c5f6f81d548ae10dafb2192962202e355ac2c00df9cd0998454bc"
+    },
+    {
+      "path": "apps/web/src/lib/sharedOddsRepo.ts",
+      "sha256": "e59f5e61fc819cf34e4abb4fde0f82803ae671bf995e57694ae01814f28c341f"
+    },
+    {
+      "path": "apps/web/src/lib/slateFixtureRoutes.server.test.ts",
+      "sha256": "1f70f40466361d29616828a96fcba7b7556fef231105c67fb6a006e71e5a38c0"
+    },
+    {
+      "path": "packages/db/proposals/221_shared_odds_cache.sql",
+      "sha256": "148a8180dc3cc89abac2f5a7525f6f3516219e48bd394ef2758d81bacbff8055"
+    },
+    {
+      "path": "packages/db/src/runtime.ts",
+      "sha256": "f29f343eb5f09f3783956c4e49f8b46661e215e967bf5ce886c102fde1244327"
+    },
+    {
+      "path": "packages/db/src/sharedOddsCache.ts",
+      "sha256": "935db404715bbafe8dcb5507a4ec3406a0eb33b4cfccfde44c626e5bb6c4cf66"
+    },
+    {
+      "path": "packages/db/tooling/tests/sharedOdds.test.ts",
+      "sha256": "9298910e3c1df5f71559cace211af1b20271ec2699f790a5c9c47c4a82d496d4"
+    },
+    {
+      "path": "packages/db/tooling/tests/unit/sharedOddsCache.test.ts",
+      "sha256": "9160c1a23741b4b29c0b14a27d90dcc5263d62d126bd52f168cd816a7190511b"
+    },
+    {
+      "path": "tests/db/sharedOddsViews.test.ts",
+      "sha256": "791d355561c62c804f20afe4ad316395193f541a937182e412c44f50ed51c67a"
+    },
+    {
+      "path": "vitest.db.config.mts",
+      "sha256": "3c6105e4fc95d612669231ab2fcc0d8b3c2f3bc70f8ad0cab18f51b3cff7b073"
+    }
+  ],
+  "outerViewFreshness": {
+    "copiesMatchingRawDatabasePublicationTime": true,
+    "failedOrObsoleteRawPublicationCreatesFreshOuterView": false
+  }
+}

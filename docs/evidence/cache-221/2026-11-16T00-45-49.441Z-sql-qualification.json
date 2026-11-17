@@ -1,0 +1,97 @@
+{
+  "at": "2026-11-16T00:45:49.435Z",
+  "baseSha": "4962d1729354ac4942f4aaa0b0bf5014eaae2b09",
+  "lane": "lane-2",
+  "tier": "standard",
+  "postgres": {
+    "server_version": "18.6"
+  },
+  "databaseSize": {
+    "size": "8390 kB"
+  },
+  "checks": [
+    {
+      "name": "startup metadata failure refuses readiness rather than silently enabling legacy paid work",
+      "passed": true
+    },
+    {
+      "name": "current schema selects exact original live/discovery function references",
+      "passed": true
+    },
+    {
+      "name": "partial schema stays on legacy path",
+      "passed": true
+    },
+    {
+      "name": "complete proposal selects shared path once at startup",
+      "passed": true
+    },
+    {
+      "name": "two DB-backed instances, sorted duplicate/permuted batch: one provider callback",
+      "passed": true
+    },
+    {
+      "name": "fresh batch hit: one SELECT and zero claim/publish/provider callbacks",
+      "passed": true
+    },
+    {
+      "name": "partially overlapping batches claim only remaining stale keys, no overlapping sends",
+      "passed": true
+    },
+    {
+      "name": "mixed fresh/stale batch preserves fresh slice and fetches only missing market",
+      "passed": true
+    },
+    {
+      "name": "empty batch performs no SQL and no provider callback",
+      "passed": true
+    },
+    {
+      "name": "disjoint event resources may refresh independently",
+      "passed": true
+    },
+    {
+      "name": "SQL-trigger publication failure plus second request inside 20 seconds: zero added provider calls",
+      "passed": true
+    },
+    {
+      "name": "second request at simulated claim age 19 seconds adds zero sends",
+      "passed": true
+    },
+    {
+      "name": "cooldown returns flagged stale only when prior payload exists",
+      "passed": true
+    },
+    {
+      "name": "ambiguous outcome not automatically retried; next immediate request adds zero sends",
+      "passed": true
+    },
+    {
+      "name": "claim timestamp gates TTL 20000 ms (DB time, no wall-clock assertion)",
+      "passed": true
+    },
+    {
+      "name": "claim timestamp gates TTL 90000 ms (DB time, no wall-clock assertion)",
+      "passed": true
+    },
+    {
+      "name": "claim timestamp gates TTL 300000 ms (DB time, no wall-clock assertion)",
+      "passed": true
+    },
+    {
+      "name": "late owner cannot publish, renew or release successor",
+      "passed": true
+    },
+    {
+      "name": "paused owner past lease cannot begin a provider callback",
+      "passed": true
+    }
+  ],
+  "providerCalls": 9,
+  "overlappingSends": 0,
+  "realProviderCalls": 0,
+  "credentialsUsed": "only public disposable fixture credentials",
+  "proposalSha256": "0d41a22a239b508e18779adfe1c7bafbb94abf3284228d4f2468d25a95c05e42",
+  "candidateTimingMeasured": false,
+  "fullApplicationIntegration": false
+}

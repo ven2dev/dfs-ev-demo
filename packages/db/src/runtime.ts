@@ -4,3 +4,5 @@ export { createLivePropCacheStore } from "./livePropCache.ts";
 export type { LivePropCacheKey, LivePropCacheEntry, LivePropCacheQuery, LivePropCacheStore } from "./livePropCache.ts";
 export { getOrRefresh } from "./livePropRefresh.ts";
 export type { LivePropCacheDeps, LivePropCacheOptions } from "./livePropRefresh.ts";
+export { getSharedOddsBatch } from "./sharedOddsCache.ts";
+export type { SharedOddsResource, SharedOddsBatch, SharedOddsQuery, SharedOddsDependencies } from "./sharedOddsCache.ts";
