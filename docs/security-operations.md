@@ -6,6 +6,12 @@ they are best-effort planning targets, not public acknowledgement or remediation
 guarantees. Record availability constraints, mitigations, and review dates for
 exceptions.
 
+Configuration names, ownership and handling are recorded in the value-free
+[inventory](secrets-inventory.md) and [delivery design](secrets-delivery-design.md).
+Follow their environment/copy boundaries during onboarding and recovery.
+Actual Production replacement or revocation needs its separate owner approval
+because it can interrupt active consumers; #98 changes no deployed credential.
+
 | Finding | Internal initial response target | Internal action target |
 | --- | --- | --- |
 | Exposed credential | Investigate immediately | Revoke/rotate immediately; assess access and dependent configuration. |
