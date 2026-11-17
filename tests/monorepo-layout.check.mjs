@@ -1,15 +1,15 @@
 import assert from "node:assert/strict";
 import { createHash, randomUUID } from "node:crypto";
 import { spawnSync } from "node:child_process";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
-import { isBuiltin } from "node:module";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { createRequire, isBuiltin } from "node:module";
 import ts from "typescript";
 import postcss from "../apps/web/postcss.config.mjs";
 import { test } from "node:test";
-import { webCommand } from "../scripts/web.mjs";
+import { resolveWebEnvironment, webCommand } from "../scripts/web.mjs";
 
 const root = new URL("../", import.meta.url);
 const launcher = new URL("../scripts/web.mjs", import.meta.url).href;
@@ -64,6 +64,81 @@ test("root web commands preserve argument boundaries and reject unsupported comm
   assert.throws(() => webCommand("deploy"));
 });
 
+test("the web loader resolves the exact module owned by installed Next.js", async () => {
+  const appRequire = createRequire(new URL("apps/web/package.json", root));
+  const nextRequire = createRequire(appRequire.resolve("next/package.json"));
+  const required = nextRequire("./package.json").dependencies["@next/env"];
+  const environmentPath = resolveWebEnvironment();
+  assert.equal(environmentPath, nextRequire.resolve("@next/env"));
+  assert.strictEqual(appRequire(environmentPath), nextRequire("@next/env"));
+  assert.equal(nextRequire("@next/env/package.json").version, required);
+  const lock = JSON.parse(await readFile(new URL("package-lock.json", root)));
+  assert.ok(!lock.packages[""].dependencies["@next/env"]);
+  const installed = Object.entries(lock.packages).filter(([path]) => path.endsWith("node_modules/@next/env"));
+  assert.equal(installed.length, 1, "one installed @next/env copy, owned by Next.js");
+  assert.equal(installed[0][1].version, required);
+  assert.equal(lock.packages["node_modules/next"].dependencies["@next/env"], required);
+});
+
+const withSyntheticNext = async (requirement, installedVersion, check) => {
+  const directory = await realpath(await mkdtemp(join(tmpdir(), "dfs282-owner-")));
+  const appManifest = join(directory, "apps/web/package.json");
+  const nextDirectory = join(dirname(appManifest), "node_modules/next");
+  const ownedDirectory = join(nextDirectory, "node_modules/@next/env");
+  const rootDirectory = join(directory, "node_modules/@next/env");
+  try {
+    for (const path of [ownedDirectory, rootDirectory]) await mkdir(path, { recursive: true });
+    await writeFile(appManifest, JSON.stringify({ private: true, dependencies: { next: "16.4.6" } }));
+    await writeFile(join(nextDirectory, "package.json"), JSON.stringify({
+      name: "next", version: "16.4.6", dependencies: requirement === null ? {} : { "@next/env": requirement },
+    }));
+    await writeFile(join(ownedDirectory, "package.json"), JSON.stringify({ name: "@next/env", version: installedVersion, main: "index.cjs" }));
+    await writeFile(join(ownedDirectory, "index.cjs"), 'module.exports = { owner: "next", loadEnvConfig() { process.env.DFS282_ROOT_LOADED = "yes"; } };');
+    await writeFile(join(rootDirectory, "package.json"), JSON.stringify({ name: "@next/env", version: "99.0.0", main: "index.cjs" }));
+    await writeFile(join(rootDirectory, "index.cjs"), 'throw new Error("Conflicting root loader was loaded.");');
+    await check({ directory, manifest: pathToFileURL(appManifest), ownedPath: await realpath(join(ownedDirectory, "index.cjs")), nextDirectory });
+  } finally { await rm(directory, { recursive: true, force: true }); }
+};
+
+test("owner resolution ignores a conflicting root copy in a temporary package tree", async () => {
+  await withSyntheticNext("16.4.6", "16.4.6", async ({ directory, manifest, ownedPath, nextDirectory }) => {
+    assert.equal(resolveWebEnvironment(manifest), ownedPath);
+    // Exercise the actual launcher's module initialization and load path as well
+    // as its resolver, without installing packages or reading real dotenv files.
+    await mkdir(join(directory, "scripts"));
+    const fixtureLauncher = join(directory, "scripts/web.mjs");
+    await writeFile(fixtureLauncher, await readFile(new URL("scripts/web.mjs", root)));
+    const script = `import { loadLocalWebEnvironment } from ${JSON.stringify(pathToFileURL(fixtureLauncher).href)}; loadLocalWebEnvironment(${JSON.stringify(directory)}, "dev", {}); process.stdout.write(process.env.DFS282_ROOT_LOADED ?? "missing");`;
+    const result = spawnSync(process.execPath, ["--input-type=module", "-e", script], {
+      env: { PATH: process.env.PATH }, encoding: "utf8", timeout: 10000,
+    });
+    assert.ifError(result.error);
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(result.stdout, "yes");
+    await mkdir(join(nextDirectory, "dist/bin"), { recursive: true });
+    await writeFile(join(nextDirectory, "dist/bin/next"), 'process.stdout.write(process.env.DFS282_ROOT_LOADED ?? "missing");');
+    for (const flag of ["--help", "-h"]) {
+      const help = spawnSync(process.execPath, [fixtureLauncher, "dev", flag], {
+        env: { PATH: process.env.PATH }, encoding: "utf8", timeout: 10000,
+      });
+      assert.ifError(help.error);
+      assert.equal(help.status, 0, help.stderr);
+      assert.equal(help.stdout, "missing", `${flag} skips root dotenv loading`);
+    }
+  });
+});
+
+test("missing, non-exact or mismatched Next loader ownership refuses a root fallback", async () => {
+  for (const requirement of [null, "^16.4.6", "~16.4.6", "*", "latest"]) {
+    await withSyntheticNext(requirement, "16.4.6", async ({ manifest }) => {
+      assert.throws(() => resolveWebEnvironment(manifest), { message: "Installed Next.js must declare an exact @next/env dependency." });
+    });
+  }
+  await withSyntheticNext("16.4.6", "16.4.5", async ({ manifest }) => {
+    assert.throws(() => resolveWebEnvironment(manifest), { message: "Installed @next/env must match the dependency declared by Next.js." });
+  });
+});
+
 test("local root dotenv compatibility preserves precedence while hosted and typegen skip loading", async () => {
   const directory = await mkdtemp(join(tmpdir(), "dfs148-env-"));
   const key = "DFS148_SENTINEL_" + randomUUID().replaceAll("-", "");
@@ -76,22 +151,49 @@ test("local root dotenv compatibility preserves precedence while hosted and type
 `);
     await writeFile(join(directory, ".env.production.local"), `${key}=production
 `);
+    const appDirectory = join(directory, "apps/web");
+    await mkdir(appDirectory, { recursive: true });
+    await writeFile(join(appDirectory, ".env"), `${key}=app\n${key}_APP_ONLY=app-only\n`);
     const run = (mode, extra = {}) => {
-      const script = `import { loadLocalWebEnvironment } from ${JSON.stringify(launcher)}; loadLocalWebEnvironment(process.argv[1], process.argv[2]); process.stdout.write(process.env[process.argv[3]] ?? "missing");`;
+      // The real launcher loads root values in the parent, then starts Next in a
+      // new process. Reusing one @next/env instance would exercise its cache,
+      // rather than the inherited root > app precedence used by root commands.
+      const appScript = `
+        import { createRequire } from "node:module";
+        import { resolveWebEnvironment } from ${JSON.stringify(launcher)};
+        createRequire(${JSON.stringify(launcher)})(resolveWebEnvironment()).loadEnvConfig(process.argv[1] + "/apps/web", process.argv[2] === "dev", { info() {}, error() {} });
+        process.stdout.write(JSON.stringify([process.env[process.argv[3]] ?? "missing", process.env[process.argv[3] + "_APP_ONLY"] ?? "missing"]));
+      `;
+      const script = `
+        import { spawnSync } from "node:child_process";
+        import { loadLocalWebEnvironment } from ${JSON.stringify(launcher)};
+        loadLocalWebEnvironment(process.argv[1], process.argv[2]);
+        if (process.argv[2] === "typegen") {
+          process.stdout.write(JSON.stringify([process.env[process.argv[3]] ?? "missing", process.env[process.argv[3] + "_APP_ONLY"] ?? "missing"]));
+        } else {
+          const environment = { ...process.env };
+          delete environment.__NEXT_PROCESSED_ENV;
+          const child = spawnSync(process.execPath, ["--input-type=module", "-e", ${JSON.stringify(appScript)}, ...process.argv.slice(1)], { env: environment, encoding: "utf8", timeout: 10000 });
+          if (child.error) throw child.error;
+          process.stdout.write(child.stdout);
+          process.stderr.write(child.stderr);
+          process.exitCode = child.status;
+        }
+      `;
       const result = spawnSync(process.execPath, ["--input-type=module", "-e", script, directory, mode, key], {
         env: { PATH: process.env.PATH, NODE_ENV: mode === "dev" ? "development" : "production", ...extra }, encoding: "utf8", timeout: 10000,
       });
       assert.ifError(result.error);
       assert.equal(result.status, 0, result.stderr);
-      return result.stdout;
+      return JSON.parse(result.stdout);
     };
-    assert.equal(run("dev"), "development");
-    assert.equal(run("build"), "production");
-    assert.equal(run("start"), "production");
-    assert.equal(run("dev", { [key]: "process" }), "process");
-    assert.equal(run("dev", { VERCEL: "1" }), "missing");
-    assert.equal(run("dev", { VERCEL_ENV: "preview" }), "missing");
-    assert.equal(run("typegen"), "missing");
+    assert.deepEqual(run("dev"), ["development", "app-only"]);
+    assert.deepEqual(run("build"), ["production", "app-only"]);
+    assert.deepEqual(run("start"), ["production", "app-only"]);
+    assert.deepEqual(run("dev", { [key]: "process" }), ["process", "app-only"]);
+    assert.deepEqual(run("dev", { VERCEL: "1" }), ["app", "app-only"]);
+    assert.deepEqual(run("dev", { VERCEL_ENV: "preview" }), ["app", "app-only"]);
+    assert.deepEqual(run("typegen"), ["missing", "missing"]);
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
 
@@ -166,7 +268,7 @@ const assertWebDependencies = (web, repository, required) => {
   for (const [name, version] of Object.entries(declared)) {
     if (rootDeclared[name]) assert.equal(version, rootDeclared[name], `${name} differs between root and web`);
   }
-  assert.equal(rootDeclared["@next/env"], declared.next, "root @next/env must match web Next.js to prevent internal version drift");
+  assert.ok(!rootDeclared["@next/env"], "root must leave @next/env ownership to Next.js");
 };
 
 test("web declares every build import, PostCSS/CSS plugin and compiler dependency at matching root versions", async () => {
@@ -224,11 +326,14 @@ test("shared versions and workspace dependency declarations stay identical, incl
     .map(async path => JSON.parse(await readFile(new URL(path, root), "utf8"))));
   assertWorkspaceVersions(manifests);
   const [repository, web] = manifests;
-  for (const name of ["next", "react", "react-dom", "@next/env"]) {
+  for (const name of ["next", "react", "react-dom"]) {
     const changed = structuredClone(repository);
     changed.dependencies[name] = "0.0.0";
-    assert.throws(() => assertWebDependencies(web, changed, new Set()), name === "@next/env" ? /must match web Next.js/ : /differs between root and web/);
+    assert.throws(() => assertWebDependencies(web, changed, new Set()), /differs between root and web/);
   }
+  const independentLoader = structuredClone(repository);
+  independentLoader.dependencies["@next/env"] = "16.4.6";
+  assert.throws(() => assertWebDependencies(web, independentLoader, new Set()), /leave @next\/env ownership to Next.js/);
   for (const index of [1, 3]) {
     const changed = structuredClone(manifests);
     delete changed[index].dependencies["@dfs-ev/domain"];

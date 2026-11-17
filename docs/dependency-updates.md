@@ -28,7 +28,10 @@ exempt. See [Dependabot's rebase strategy](https://docs.github.com/en/code-secur
 
 Related version groups come before production/development minor-and-patch
 fallbacks. Next.js and `eslint-config-next` must retain identical exact
-versions. React includes React DOM and both corresponding `@types` packages.
+versions to prevent framework/lint integration drift. `@next/env` is owned by
+the installed `next` package, not declared independently at root or included
+in the Dependabot group; grouping updates does not enforce version equality.
+React includes React DOM and both corresponding `@types` packages.
 Tailwind includes its PostCSS integration. Test tooling includes Vitest,
 jsdom, Testing Library, the Vite plugins used by the test configurations, and
 the development-only `pg`/`@types/pg` driver pair. Driver updates must pass the
@@ -64,6 +67,44 @@ Local schema validation is preparatory. GitHub's acceptance of
 `dependabot.yml`, update-job results, and actual grouping/assignment can only
 be recorded after the configuration is merged into the default branch.
 
+## Next environment-loader ownership (#282)
+
+`scripts/web.mjs` resolves Next from `apps/web/package.json`, then resolves
+`@next/env` from that installed Next package's context. The loader checks that
+Next declares an exact version and the resolved package matches it. A missing,
+non-exact or mismatched dependency fails clearly instead of selecting another
+loader. npm may hoist the dependency; ownership follows resolution context,
+not a hard-coded `node_modules` path. There is no independent root pin.
+
+### Design basis
+
+- **Pattern:** resolve a dependency relative to its owning package. Next owns
+  the environment loader used by the root launcher.
+- **Alternatives:** a separate root pin and Dependabot group already drifted
+  in #278; dropping root dotenv loading breaks local commands; a custom parser
+  duplicates Next's precedence and expansion behavior.
+- **Targets:** no root `@next/env` declaration; loader path/version match Next's
+  exact dependency; shell > root > app precedence and hosted/typegen/help skips
+  unchanged; no dependency version upgrades in this change. Node 24 tests,
+  CI gate, typecheck, lint, production build and publication guard pass.
+- **Requirement reasons:** owner-relative resolution avoids relying on hoisting;
+  exact-version and module-identity checks detect an upstream contract change;
+  refusing fallback prevents quietly using an unrelated loader; synthetic
+  temporary packages test conflicts without installing another repo dependency
+  or reading owner dotenv files; skip/precedence checks prevent credential and
+  local-command regressions. The complete #282 lockfile comparison allows only
+  removal of the root declaration, preventing unrelated upgrades.
+- **Assumptions:** Node 24, npm workspaces, one lockfile and Next's exact loader
+  dependency. An upstream change to that contract needs review rather than an
+  automatic fallback. This change introduces no application or database work.
+
+The layout checks exercise the installed module identity, a conflicting root
+copy, missing/non-exact/mismatched ownership, and the actual launcher's help
+boundary. Conflicting packages exist only in temporary synthetic directories.
+The dotenv probe uses separate parent/child processes to match the launcher.
+Historical relocation and extraction receipts keep their original assertions;
+this policy supersedes their independent root-loader equality check.
+
 ## Every update
 
 Use Node 24 and a clean `npm ci` to check the resulting lockfile. Dependabot
@@ -73,7 +114,8 @@ and compatibility; record unexplained changes for review.
 
 - Confirm package versions, release notes, group membership, and peer ranges.
 - For Next.js updates, read the installed version's relevant guides in
-  `node_modules/next/dist/docs/` and verify the exact Next/ESLint version match.
+  `node_modules/next/dist/docs/` and verify the exact Next/ESLint version match
+  and the installed Next-owned loader via `npm run test:repo-layout`.
 - Run the full CI contract: typecheck, lint, whitespace checks, tests, Firestore
   rules emulator, CI-gate regression, DB target guards and PostgreSQL suite,
   build, and production audit. Record the Node version and

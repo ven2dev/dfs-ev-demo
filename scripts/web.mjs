@@ -2,10 +2,25 @@ import { spawn } from "node:child_process";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
-import nextEnvironment from "@next/env";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const app = fileURLToPath(new URL("../apps/web/", import.meta.url));
+const appManifest = new URL("../apps/web/package.json", import.meta.url);
+
+export const resolveWebEnvironment = (manifest = appManifest) => {
+  const appRequire = createRequire(manifest);
+  const nextRequire = createRequire(appRequire.resolve("next/package.json"));
+  const required = nextRequire("./package.json").dependencies?.["@next/env"];
+  if (typeof required !== "string" || !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.test(required)) {
+    throw new Error("Installed Next.js must declare an exact @next/env dependency.");
+  }
+  if (nextRequire("@next/env/package.json").version !== required) {
+    throw new Error("Installed @next/env must match the dependency declared by Next.js.");
+  }
+  return nextRequire.resolve("@next/env");
+};
+
+const nextEnvironment = createRequire(import.meta.url)(resolveWebEnvironment());
 
 // Root commands preserve existing local .env files. Hosted deployments keep
 // the app's native environment boundary and never load repository-root files.
@@ -16,7 +31,7 @@ export const loadLocalWebEnvironment = (directory, mode, environment = process.e
 
 export const webCommand = (mode, args = []) => {
   if (!["dev", "build", "start", "typegen"].includes(mode)) throw new Error("Unsupported web command.");
-  return [createRequire(new URL("../apps/web/package.json", import.meta.url)).resolve("next/dist/bin/next"), mode, ...args];
+  return [createRequire(appManifest).resolve("next/dist/bin/next"), mode, ...args];
 };
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

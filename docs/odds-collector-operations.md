@@ -115,6 +115,13 @@ silently marking it complete.
 
 ## Deployment and Hostinger trigger
 
+Use the [configuration inventory](secrets-inventory.md) and
+[delivery design](secrets-delivery-design.md) for environment-scoped Vercel
+Secret setup and the Hostinger/GitHub copy ledger. The app credential authority
+is Vercel; the callers receive only their endpoint bearers. Coordinate actual
+replacement, redeployment and caller rollover under #101 with owner approval
+to avoid rejecting a caller still using the prior bearer.
+
 Verify that the configured Postgres database has the required collector schema
 before enabling collection. Follow the [migration delivery and activation
 guide](database-migrations.md); `db/schema.sql` is a generated reference, not a
