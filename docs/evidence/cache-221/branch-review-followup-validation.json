@@ -1,0 +1,84 @@
+{
+  "at": "2026-11-16T16:26:45.122229+00:00",
+  "parentSha": "daeb7a789ebb618f6400f6a405de78cf9e64d34f",
+  "status": "uncommitted branch-review follow-up",
+  "validation": {
+    "browserPassed": 949,
+    "nodePassed": 900,
+    "nodeOptInSkipped": 1,
+    "coreDbVitestPassed": 60,
+    "coreDbNodePassed": 76,
+    "featureStorePassed": 301,
+    "lint": "passed",
+    "typecheck": "passed",
+    "webpackBuild": "passed",
+    "lane2ContainersAndNetworksAbsent": true
+  },
+  "timingReceipt": {
+    "path": "docs/evidence/cache-221/2026-11-16T16-25-54.068Z-final-local-qualification.json",
+    "sha256": "b098b4da8709f76e92cd9f3a6083dd98eafb5f30ae9f32e55eb9fef58c37b67f",
+    "parentShaNote": "Raw runner retains historical hard-coded parentSha; this wrapper records actual parent. Raw bytes unchanged.",
+    "shared20LeaderP95Ms": [
+      8.739,
+      9.776,
+      7.693
+    ],
+    "fullPathQualified": false
+  },
+  "realProviderCalls": 0,
+  "hostedActions": 0,
+  "sources": [
+    {
+      "path": "apps/web/src/instrumentation.ts",
+      "sha256": "7d1325ae1a0d4ef9a9d75675dff19cbce44f84dfa8e45283e59bc77a7d88a052"
+    },
+    {
+      "path": "apps/web/src/lib/livePropCacheRepo.ts",
+      "sha256": "4f07c7fd0354c205b25d7e945885d1b7e25432f55b8e9fee1b0575d26d5e9c5a"
+    },
+    {
+      "path": "apps/web/src/lib/oddsCacheInstrumentation.server.test.ts",
+      "sha256": "4233009e816ebc3a7c5d64c62db292bbfb52e9042ef70da0cb4468b8d2e45d09"
+    },
+    {
+      "path": "apps/web/src/lib/oddsCacheRepo.ts",
+      "sha256": "8e759b483443bc7777eba50eb333de0ac2ff6fd86b6d09ff2530d3045847e8b5"
+    },
+    {
+      "path": "apps/web/src/lib/oddsCacheStartup.server.test.ts",
+      "sha256": "e1ed0ea353f8e4794831cefd04c611bf25626b7b16aac2ba5730172f6d363b8e"
+    },
+    {
+      "path": "apps/web/src/lib/oddsCacheStartup.ts",
+      "sha256": "fb96d4af19ff8e75ad55a12dbe1b2a9137a67beaccab1625a1c79fcbfec5505e"
+    },
+    {
+      "path": "apps/web/src/lib/streamRoute.server.test.ts",
+      "sha256": "3acc9d369429124430c1873b3f61703f779b1d993725956f36afb0a4f1da8c29"
+    },
+    {
+      "path": "docs/221-acceptance-amendment-draft.md",
+      "sha256": "dc76bbf117b34c7ceb2e11aa1b9b6b14ba1eb4dca688890c6a0f1b3b387888f0"
+    },
+    {
+      "path": "docs/221-roadmap.md",
+      "sha256": "c90a3b096ef58e481cc2b962520681a09022b13b9ffb796fb3edf228fa0a93d4"
+    },
+    {
+      "path": "packages/db/proposals/221_shared_odds_cache.sql",
+      "sha256": "a15117d5fe7846d14dc244ce8402b1c483a3c91bf40919a21313f26f201d2d40"
+    },
+    {
+      "path": "packages/db/src/sharedOddsCache.ts",
+      "sha256": "d3d4d1b0470e1868cd62d2615d14a6478c490584bfce1fcbb81d815c8c0e719a"
+    },
+    {
+      "path": "packages/db/tooling/tests/sharedOdds.test.ts",
+      "sha256": "61d48b05da4f1dc7b1a81e89d65065323ccccbe3ed34b7d758f1eaa033b6aed5"
+    },
+    {
+      "path": "tests/db/sharedOddsViews.test.ts",
+      "sha256": "2ba88df334db3407fc9674d4e380f1a93009aebefaf4ac448aa7cebd238ac323"
+    }
+  ]
+}

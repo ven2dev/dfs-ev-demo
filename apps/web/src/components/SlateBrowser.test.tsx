@@ -184,6 +184,40 @@ describe("SlateBrowser", () => {
     expect(requestedUrl).not.toContain("refresh=true");
   });
 
+  it("labels partial stale/unavailable discovery and clears the notice after a fresh response", async () => {
+    global.fetch = vi.fn();
+    mockFetchOnce({ success: true, dataSource: "live", events: sampleEvents });
+    render(<SlateBrowser />);
+    fireEvent.change(await screen.findByLabelText("Select a game"), { target: { value: "evt-1" } });
+    fireEvent.click(await screen.findByLabelText("Passing Yards"));
+    fireEvent.click(screen.getByLabelText("Receptions"));
+    const players = [{ playerName: "Jalen Hurts", markets: [{ marketKey: "player_pass_yds",
+      lines: [{ bookmakerKey: "draftkings", side: "over", price: 1.91, point: 214.5 }] }] }];
+    mockFetchOnce({ success: true, dataSource: "live", eventId: "evt-1", players,
+      marketStatuses: { player_pass_yds: "stale", player_receptions: "unavailable" } });
+    fireEvent.click(screen.getByRole("button", { name: "Show props" }));
+    expect(await screen.findByText(/Stale odds: Passing Yards/)).toBeInTheDocument();
+    expect(screen.getByText(/Temporarily unavailable markets: Receptions/)).toBeInTheDocument();
+    expect(screen.getByText("Jalen Hurts")).toBeInTheDocument();
+    mockFetchOnce({ success: true, dataSource: "live", eventId: "evt-1", players,
+      marketStatuses: { player_pass_yds: "fresh", player_receptions: "upstream" } });
+    fireEvent.click(screen.getByRole("button", { name: "Refresh odds" }));
+    await waitFor(() => expect(screen.queryByText(/Stale odds: Passing Yards/)).not.toBeInTheDocument());
+    expect(screen.queryByText(/Temporarily unavailable markets/)).not.toBeInTheDocument();
+  });
+
+  it("shows unavailable markets even when there are no discovered player rows", async () => {
+    global.fetch = vi.fn();
+    mockFetchOnce({ success: true, dataSource: "live", events: sampleEvents });
+    render(<SlateBrowser />);
+    fireEvent.change(await screen.findByLabelText("Select a game"), { target: { value: "evt-1" } });
+    fireEvent.click(await screen.findByLabelText("Passing Yards"));
+    mockFetchOnce({ success: true, dataSource: "live", eventId: "evt-1", players: [],
+      marketStatuses: { player_pass_yds: "unavailable" } });
+    fireEvent.click(screen.getByRole("button", { name: "Show props" }));
+    expect(await screen.findByText(/Temporarily unavailable markets: Passing Yards/)).toBeInTheDocument();
+  });
+
   it("rejects props whose data source differs from the loaded slate", async () => {
     global.fetch = vi.fn();
     mockFetchOnce({ success: true, dataSource: "live", events: sampleEvents });

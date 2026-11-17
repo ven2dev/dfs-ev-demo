@@ -1,0 +1,31 @@
+{
+  "baseSha": "4962d1729354ac4942f4aaa0b0bf5014eaae2b09",
+  "prototypeRoot": "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/221-intake",
+  "sources": [
+    {
+      "path": "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/221-intake/batch-prototype.mjs",
+      "sha256": "5a1b72ec42e0e6efd4340955362cf636086be172ff66da44ffd2fb1b4ca77496"
+    },
+    {
+      "path": "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/221-intake/qualify.mjs",
+      "sha256": "45c702467b83dd4f05b15953c31bf74c83e445924b2015b470a4db8bbfe1f0bb"
+    },
+    {
+      "path": "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/221-intake/process-worker.mjs",
+      "sha256": "c9ce93e88f967303e7a7c4cfcea1375ae0a9650a6d953b4db99f0113816781f5"
+    },
+    {
+      "path": "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/221-intake/process-and-timing.mjs",
+      "sha256": "f45d025db9d4631e174c688379facb428e34c24d113f5d1219a5656a53f55217"
+    },
+    {
+      "path": "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/221-intake/221-qualification.server.test.ts",
+      "sha256": "a780d650b88adeed882c8ae5c780101bf5424d4cf37c3ae5c84b954db8f0db84"
+    }
+  ],
+  "proposal": {
+    "path": "packages/db/proposals/221_shared_odds_cache.sql",
+    "sha256": "0d41a22a239b508e18779adfe1c7bafbb94abf3284228d4f2468d25a95c05e42"
+  },
+  "note": "Disposable qualification sources retained outside default app test discovery. No production runtime implementation is included."
+}

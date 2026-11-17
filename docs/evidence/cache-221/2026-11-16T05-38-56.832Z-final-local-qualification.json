@@ -1,0 +1,328 @@
+{
+  "at": "2026-11-16T05:38:56.832Z",
+  "lane": "lane-2",
+  "tier": "standard",
+  "parentSha": "bf3fe3257dba5d301dc1dd769b30da8d01ddf693",
+  "baseline": "legacy path on this branch, with current-schema compatibility separately verified; not a new hosted main baseline",
+  "measured": "actual live-view cache entry to mocked raw provider callback; excludes startup and admission",
+  "poolWarmup": [
+    {
+      "distinctBackends": 20
+    },
+    {
+      "distinctBackends": 20
+    }
+  ],
+  "applicationWarmup": [
+    {
+      "pool": 0,
+      "mode": "legacy",
+      "backends": 20
+    },
+    {
+      "pool": 0,
+      "mode": "shared",
+      "backends": 20
+    },
+    {
+      "pool": 1,
+      "mode": "legacy",
+      "backends": 20
+    },
+    {
+      "pool": 1,
+      "mode": "shared",
+      "backends": 20
+    }
+  ],
+  "trials": [
+    {
+      "mode": "legacy",
+      "workers": 1,
+      "round": 0,
+      "preProvider": {
+        "samples": 100,
+        "p50Ms": 1.0737080000000105,
+        "p95Ms": 1.4881669999999758,
+        "maxMs": 1.9047090000000253
+      },
+      "queryTimeBeforeProvider": {
+        "samples": 100,
+        "p50Ms": 1.0241249999999127,
+        "p95Ms": 1.4465420000000222,
+        "maxMs": 1.7502499999999372
+      },
+      "sqlBeforeSend": 2,
+      "totalCacheSql": 3,
+      "successfulLeaders": 100
+    },
+    {
+      "mode": "shared",
+      "workers": 1,
+      "round": 0,
+      "preProvider": {
+        "samples": 100,
+        "p50Ms": 2.9909999999999854,
+        "p95Ms": 3.6068330000000515,
+        "maxMs": 4.166541999999936
+      },
+      "queryTimeBeforeProvider": {
+        "samples": 100,
+        "p50Ms": 2.803123999999798,
+        "p95Ms": 3.450583000000279,
+        "maxMs": 4.059039999999868
+      },
+      "sqlBeforeSend": 4,
+      "totalCacheSql": 6,
+      "successfulLeaders": 100
+    },
+    {
+      "mode": "shared",
+      "workers": 1,
+      "round": 1,
+      "preProvider": {
+        "samples": 100,
+        "p50Ms": 2.732666999999992,
+        "p95Ms": 3.1792089999999007,
+        "maxMs": 4.355332999999973
+      },
+      "queryTimeBeforeProvider": {
+        "samples": 100,
+        "p50Ms": 2.5656249999999545,
+        "p95Ms": 3.0331670000000486,
+        "maxMs": 4.220331999999871
+      },
+      "sqlBeforeSend": 4,
+      "totalCacheSql": 6,
+      "successfulLeaders": 100
+    },
+    {
+      "mode": "legacy",
+      "workers": 1,
+      "round": 1,
+      "preProvider": {
+        "samples": 100,
+        "p50Ms": 1.0761670000001686,
+        "p95Ms": 1.3959159999999429,
+        "maxMs": 2.0493329999999332
+      },
+      "queryTimeBeforeProvider": {
+        "samples": 100,
+        "p50Ms": 1.047208999999384,
+        "p95Ms": 1.292833999999857,
+        "maxMs": 1.9053329999997004
+      },
+      "sqlBeforeSend": 2,
+      "totalCacheSql": 3,
+      "successfulLeaders": 100
+    },
+    {
+      "mode": "legacy",
+      "workers": 1,
+      "round": 2,
+      "preProvider": {
+        "samples": 100,
+        "p50Ms": 1.1186670000001868,
+        "p95Ms": 1.2949579999999514,
+        "maxMs": 1.4949580000002243
+      },
+      "queryTimeBeforeProvider": {
+        "samples": 100,
+        "p50Ms": 1.05145900000025,
+        "p95Ms": 1.2099999999995816,
+        "maxMs": 1.388166000000183
+      },
+      "sqlBeforeSend": 2,
+      "totalCacheSql": 3,
+      "successfulLeaders": 100
+    },
+    {
+      "mode": "shared",
+      "workers": 1,
+      "round": 2,
+      "preProvider": {
+        "samples": 100,
+        "p50Ms": 2.2195419999998194,
+        "p95Ms": 3.257625000000189,
+        "maxMs": 7.550291000000016
+      },
+      "queryTimeBeforeProvider": {
+        "samples": 100,
+        "p50Ms": 2.1881659999994554,
+        "p95Ms": 3.116790999999921,
+        "maxMs": 7.203667000001133
+      },
+      "sqlBeforeSend": 4,
+      "totalCacheSql": 6,
+      "successfulLeaders": 100
+    },
+    {
+      "mode": "legacy",
+      "workers": 20,
+      "round": 0,
+      "preProvider": {
+        "samples": 100,
+        "p50Ms": 2.9765419999998812,
+        "p95Ms": 4.006667000000107,
+        "maxMs": 4.526292000000012
+      },
+      "queryTimeBeforeProvider": {
+        "samples": 100,
+        "p50Ms": 2.958125000000109,
+        "p95Ms": 3.983541999999943,
+        "maxMs": 4.507375000000138
+      },
+      "sqlBeforeSend": 2,
+      "totalCacheSql": 3,
+      "successfulLeaders": 100
+    },
+    {
+      "mode": "shared",
+      "workers": 20,
+      "round": 0,
+      "preProvider": {
+        "samples": 100,
+        "p50Ms": 6.092541999999867,
+        "p95Ms": 9.110125000000153,
+        "maxMs": 10.739083000000392
+      },
+      "queryTimeBeforeProvider": {
+        "samples": 100,
+        "p50Ms": 6.078748999999789,
+        "p95Ms": 9.094792000000325,
+        "maxMs": 10.703998999999385
+      },
+      "sqlBeforeSend": 4,
+      "totalCacheSql": 6,
+      "successfulLeaders": 100
+    },
+    {
+      "mode": "shared",
+      "workers": 20,
+      "round": 1,
+      "preProvider": {
+        "samples": 100,
+        "p50Ms": 5.587332999999944,
+        "p95Ms": 7.413167000000158,
+        "maxMs": 8.59479199999987
+      },
+      "queryTimeBeforeProvider": {
+        "samples": 100,
+        "p50Ms": 5.573416999999154,
+        "p95Ms": 7.35833300000013,
+        "maxMs": 8.533375000000433
+      },
+      "sqlBeforeSend": 4,
+      "totalCacheSql": 6,
+      "successfulLeaders": 100
+    },
+    {
+      "mode": "legacy",
+      "workers": 20,
+      "round": 1,
+      "preProvider": {
+        "samples": 100,
+        "p50Ms": 2.181415999999899,
+        "p95Ms": 2.8443750000001273,
+        "maxMs": 3.1850830000003043
+      },
+      "queryTimeBeforeProvider": {
+        "samples": 100,
+        "p50Ms": 2.173957999999857,
+        "p95Ms": 2.8313750000002074,
+        "maxMs": 3.1759170000000267
+      },
+      "sqlBeforeSend": 2,
+      "totalCacheSql": 3,
+      "successfulLeaders": 100
+    },
+    {
+      "mode": "legacy",
+      "workers": 20,
+      "round": 2,
+      "preProvider": {
+        "samples": 100,
+        "p50Ms": 2.2925829999999223,
+        "p95Ms": 2.9297919999999067,
+        "maxMs": 3.311667000000398
+      },
+      "queryTimeBeforeProvider": {
+        "samples": 100,
+        "p50Ms": 2.2844590000004246,
+        "p95Ms": 2.9236660000001393,
+        "maxMs": 3.3053749999999127
+      },
+      "sqlBeforeSend": 2,
+      "totalCacheSql": 3,
+      "successfulLeaders": 100
+    },
+    {
+      "mode": "shared",
+      "workers": 20,
+      "round": 2,
+      "preProvider": {
+        "samples": 100,
+        "p50Ms": 5.576624999999694,
+        "p95Ms": 7.7035829999999805,
+        "maxMs": 8.88616699999966
+      },
+      "queryTimeBeforeProvider": {
+        "samples": 100,
+        "p50Ms": 5.5555420000000595,
+        "p95Ms": 7.6805410000006304,
+        "maxMs": 8.867831999999908
+      },
+      "sqlBeforeSend": 4,
+      "totalCacheSql": 6,
+      "successfulLeaders": 100
+    }
+  ],
+  "budget": {
+    "fullWarmPreProviderMs": 90,
+    "fourCacheStatementsMs": 10,
+    "admissionMs": 53,
+    "headroomMs": 27,
+    "cacheAllocationMetEvery20LeaderRound": true,
+    "fullPathQualified": false
+  },
+  "fixture": {
+    "events": 20,
+    "markets": 12,
+    "rows": 240,
+    "logicalPayloadBytes": 4198040,
+    "fixtureOnlyCeilingBytes": 8388608,
+    "physical": {
+      "heap_bytes": "114688",
+      "index_bytes": "49152",
+      "total_bytes": "966656"
+    }
+  },
+  "sources": [
+    {
+      "path": "packages/db/src/sharedOddsCache.ts",
+      "sha256": "6b56b5239ae96a3ea6307fdae1dd919b095ee4eb62d521daf61beafe58d463a7"
+    },
+    {
+      "path": "packages/db/src/livePropRefresh.ts",
+      "sha256": "5917bff6afdf6410abd1a068d497e6fec1d5750372327a347820ef706c4199c4"
+    },
+    {
+      "path": "packages/db/src/livePropCache.ts",
+      "sha256": "8c4964fb97f7c92423e0cadce94442c5d4437a534fb394c3790988902b954749"
+    },
+    {
+      "path": "packages/db/proposals/221_shared_odds_cache.sql",
+      "sha256": "148a8180dc3cc89abac2f5a7525f6f3516219e48bd394ef2758d81bacbff8055"
+    },
+    {
+      "path": "apps/web/src/lib/livePropCacheRepo.ts",
+      "sha256": "2641da1d99689339956f317bc8c88383626aeec1ebd381eaa8ac73c33972048d"
+    },
+    {
+      "path": "apps/web/src/lib/sharedOddsRepo.ts",
+      "sha256": "96ce467de7df1282dfd55d2337f42f489ae90ad710fe7114156dd5e9405973cc"
+    }
+  ],
+  "realProviderCalls": 0,
+  "hostedActions": 0
+}
