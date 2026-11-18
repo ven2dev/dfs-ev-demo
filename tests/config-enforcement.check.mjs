@@ -107,7 +107,26 @@ test("named disables of environment rules fail independently of lint suppression
   assert.notEqual((await eslint.calculateConfigForFile(page)).linterOptions.noInlineConfig, true);
 });
 
-test("the current production tree has no environment bypass or named rule disable", async () => {
+test("ruleless disables refuse even when ESLint suppresses every environment violation", async () => {
+  const file = "apps/web/src/lib/environment-probe.ts";
+  for (const reason of ["", " -- synthetic probe"]) for (const source of [
+    `// eslint-disable-next-line${reason}\nprocess.env.PROBE_INPUT;`,
+    `process.env.PROBE_INPUT; // eslint-disable-line${reason}`,
+    `/* eslint-disable${reason} */\nprocess.env.PROBE_INPUT;`,
+    `/* eslint-disable${reason} */\nprocess.env.PROBE_INPUT;\n/* eslint-enable */`,
+  ]) {
+    const [result] = await eslint.lintText(source, { filePath: resolve(root, file) });
+    assert.equal(result.errorCount, 0, JSON.stringify(result.messages));
+    assert(result.suppressedMessages.some(message => environmentRuleIds.includes(message.ruleId)), source);
+    await assert.rejects(checkEnvironmentDisables(new Map([[file, source]]), eslint), /environment rule disable refused/);
+  }
+  // An enable restores rules; it does not itself suppress an environment read.
+  const enabled = "/* eslint-enable */\nprocess.env.PROBE_INPUT;";
+  assert.equal((await checkEnvironmentDisables(new Map([[file, enabled]]), eslint)).checkedFiles, 1);
+  await refuses(file, enabled);
+});
+
+test("the current production tree has no environment bypass or rule disable", async () => {
   const result = await checkEnvironmentDisables(readInventorySources(root), eslint);
   assert(result.checkedFiles > 0);
   const messages = (await eslint.lintFiles(["apps/web/src"])).flatMap(result =>

@@ -27,8 +27,8 @@
   two-way names catch missing and unread app rows. Capabilities and parsing
   contexts stay code-owned to prevent competing runtime specifications. Narrow
   exceptions preserve synthetic tests and the compiler guard without exempting
-  new runtime helpers. Targeted directive checking prevents named rule disables
-  from hiding bypasses while preserving unrelated legitimate disables. Value-free
+  new runtime helpers. Targeted directive checking prevents named and ruleless
+  disables from hiding bypasses while preserving unrelated legitimate disables. Value-free
   imports keep inventory tooling from retrieving credentials. Discovery is
   retired only after replacement checks pass to avoid a coverage gap.
 - **Assumptions:** Node 24, ESLint 9, Next 16.4.6 and the current TS-aware test
@@ -67,10 +67,19 @@ The final integration checkpoint separately verifies executable Edge output.
 
 `scripts/security/config-enforcement.mjs` uses the actual ESLint parser to
 inspect comments. It rejects named disables or inline `off` configuration for
-the two environment-access rule IDs in guarded production sources. It does not
-set `noInlineConfig`. The legitimate `react-hooks/exhaustive-deps` disable in
+the two environment-access rule IDs in guarded production sources. A disable
+with no rule names disables every rule, so all three forms (`eslint-disable`,
+`eslint-disable-line`, `eslint-disable-next-line`) are rejected too, including
+description-only directives and a block followed by `eslint-enable`. An enable
+alone is allowed and does not suppress a raw-read violation. The checker does
+not set `noInlineConfig`. The legitimate `react-hooks/exhaustive-deps` disable in
 the creator-submissions page is tested through the real ESLint configuration.
 Strings or discussion text resembling directives do not count as disables.
+The ruleless probes first confirm actual ESLint suppression, then require the
+independent directive check to refuse it. The creator-submissions page still
+passes and its named React disable remains effective. This closes the ruleless
+directive gap found in pre-push review; the earlier qualification receipt
+remains a record of its exact original source.
 
 `test:ci-gate` runs enforcement and import probes unconditionally, so affected
 app selection cannot skip them. The definition probe uses the existing
