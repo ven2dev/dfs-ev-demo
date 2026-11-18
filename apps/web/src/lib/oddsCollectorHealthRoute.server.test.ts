@@ -3,6 +3,9 @@ import type { NextRequest } from "next/server";
 import type { OddsCollectorHealthSnapshot } from "./oddsCollectorHealth";
 
 const snapshotMock = vi.fn();
+const quotaHealthMock = vi.fn();
+const quotaHealth = { status: "available", remaining: 478, used: 22, ageSeconds: 60 };
+vi.mock("./providerQuota", () => ({ readQuotaHealth: quotaHealthMock }));
 
 vi.mock("./oddsCollectorHealthRepo", () => ({
   getOddsCollectorHealthSnapshot: snapshotMock,
@@ -44,10 +47,12 @@ beforeEach(async () => {
   vi.stubEnv("ODDS_DATA_SOURCE", "live");
   vi.stubEnv("ODDS_API_KEY", "test-key");
   snapshotMock.mockResolvedValue(healthySnapshot());
+  quotaHealthMock.mockResolvedValue(quotaHealth);
 });
 
 afterEach(() => {
   snapshotMock.mockReset();
+  quotaHealthMock.mockReset();
   vi.useRealTimers();
   vi.unstubAllEnvs();
   vi.restoreAllMocks();
@@ -60,6 +65,7 @@ describe("GET /api/health/odds-collector", () => {
     expect(response.status).toBe(401);
     await expect(response.json()).resolves.toEqual({ status: "unauthorized" });
     expect(snapshotMock).not.toHaveBeenCalled();
+    expect(quotaHealthMock).not.toHaveBeenCalled();
   });
 
   it("returns 503 for a missing receiver secret without querying Postgres", async () => {
@@ -68,6 +74,7 @@ describe("GET /api/health/odds-collector", () => {
     expect(response.status).toBe(503);
     expect(await response.json()).toEqual({ status: "unavailable", reasons: ["not-configured"] });
     expect(snapshotMock).not.toHaveBeenCalled();
+    expect(quotaHealthMock).not.toHaveBeenCalled();
   });
 
   it("refuses invalid health policy before any database query", async () => {
@@ -75,6 +82,7 @@ describe("GET /api/health/odds-collector", () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     expect((await GET(request("Bearer health-secret"))).status).toBe(500);
     expect(snapshotMock).not.toHaveBeenCalled();
+    expect(quotaHealthMock).not.toHaveBeenCalled();
   });
 
   it("returns only public-safe health reason codes", async () => {
@@ -86,6 +94,7 @@ describe("GET /api/health/odds-collector", () => {
       status: "healthy",
       reasons: [],
       warnings: [],
+      quota: quotaHealth,
     });
     expect(snapshotMock).toHaveBeenCalledWith(new Date("2026-10-03T12:00:00.000Z"), {
       unknownCostLookbackMs: 86_400_000,
@@ -124,6 +133,7 @@ describe("GET /api/health/odds-collector", () => {
       reasons: ["data-source-not-live"],
     });
     expect(snapshotMock).not.toHaveBeenCalled();
+    expect(quotaHealthMock).not.toHaveBeenCalled();
   });
 
   it("uses 503 for an unhealthy collector and keeps warnings non-failing", async () => {
@@ -136,6 +146,7 @@ describe("GET /api/health/odds-collector", () => {
       status: "unhealthy",
       reasons: ["repeated-checkpoint-failure"],
       warnings: [],
+      quota: quotaHealth,
     });
 
     const warning = healthySnapshot();
@@ -148,6 +159,7 @@ describe("GET /api/health/odds-collector", () => {
       status: "healthy",
       reasons: [],
       warnings: ["quota-policy-degraded"],
+      quota: quotaHealth,
     });
   });
 
@@ -168,5 +180,15 @@ describe("GET /api/health/odds-collector", () => {
       "[api/health/odds-collector] health query failed:",
       expect.objectContaining({ message: "Application dependency unavailable." })
     );
+  });
+  it("reports a real zero without silently activating unapproved alert thresholds", async () => {
+    quotaHealthMock.mockResolvedValue({ status: "available", remaining: 0, used: 500, ageSeconds: 30 });
+    const response = await GET(request("Bearer health-secret"));
+    expect(await response.json()).toMatchObject({ quota: { remaining: 0, used: 500, ageSeconds: 30 } });
+  });
+  it("reports missing reading as unavailable/null, never zero", async () => {
+    quotaHealthMock.mockResolvedValue({ status: "unavailable", remaining: null, used: null, ageSeconds: null });
+    const response = await GET(request("Bearer health-secret"));
+    expect(await response.json()).toMatchObject({ quota: { status: "unavailable", remaining: null, used: null, ageSeconds: null } });
   });
 });

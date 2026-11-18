@@ -1,6 +1,7 @@
 import "server-only";
+import { InteractiveQuotaUnavailable } from "./providerQuota";
 
-import { createLivePropCacheStore, getOrRefresh, type LivePropCacheKey } from "@dfs-ev/db/runtime";
+import { createLivePropCacheStore, getOrRefresh, type LivePropCacheEntry, type LivePropCacheKey } from "@dfs-ev/db/runtime";
 import { randomUUID } from "node:crypto";
 import { getSql } from "./db";
 import { selectOddsCachePath } from "./oddsCacheStartup";
@@ -40,11 +41,13 @@ type ViewOddsFetcher = (key: LivePropCacheKey, context: LivePropFetchContext, si
 const createLivePropInputs = (fetchOdds: ViewOddsFetcher) => async (
   key: LivePropCacheKey,
   context: LivePropFetchContext
-): Promise<LivePropInputs> =>
-  getOrRefresh<LivePropInputs>(
+): Promise<LivePropInputs> => {
+  let prior: LivePropCacheEntry<LivePropInputs> | null = null;
+  return getOrRefresh<LivePropInputs>(
     key,
     {
       ...cacheStore,
+      read: async cacheKey => { prior = await cacheStore.read(cacheKey); return prior; },
       write: async (cacheKey, owner, payload) => {
         if (payload.oddsObservation?.status === "stale") {
           // Returning explicitly stale raw odds must not re-age the outer view.
@@ -155,6 +158,14 @@ const createLivePropInputs = (fetchOdds: ViewOddsFetcher) => async (
           };
         } catch (error) {
           siblingController.abort(error);
+          if (error instanceof InteractiveQuotaUnavailable && prior?.payload.oddsByBookmaker.length) {
+            return { ...prior.payload, oddsObservation: {
+              origin: "cache", status: "stale", observationId: prior.payload.oddsObservation?.observationId ?? null,
+              persisted: prior.payload.oddsObservation?.persisted ?? false,
+              capturedAt: prior.payload.oddsObservation?.capturedAt ?? new Date(prior.fetchedAtMs).toISOString(),
+              quota: { remaining: null, used: null, last: null },
+            } };
+          }
           throw error;
         } finally {
           ownerSignal.removeEventListener("abort", abortFromOwner);
@@ -168,6 +179,7 @@ const createLivePropInputs = (fetchOdds: ViewOddsFetcher) => async (
     },
     { ttlMs: POLL_INTERVAL_MS }
   );
+};
 
 const legacyLiveInputs = createLivePropInputs((key, _context, signal) =>
   fetchPlayerPropMarketOdds(key.sportKey, key.eventId, key.marketKey, key.playerName, signal, "live"));

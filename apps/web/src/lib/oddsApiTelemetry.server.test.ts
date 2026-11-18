@@ -6,6 +6,7 @@ const fetchMock = vi.fn();
 vi.mock("./oddsApiTelemetryRepo", () => ({
   recordOddsApiRequest: recordOddsApiRequestMock,
 }));
+vi.mock("./providerQuota", () => ({ checkInteractiveQuotaFloor: async () => {} }));
 vi.stubGlobal("fetch", fetchMock);
 
 let { fetchEventOdds, fetchPlayerPropMarketOdds, fetchSlateEvents } =
@@ -161,8 +162,10 @@ describe("Odds API request telemetry", () => {
     vi.stubEnv("ODDS_API_KEY", "test-key");
     vi.stubEnv("DATABASE_URL", "postgresql://synthetic:synthetic@database.invalid/synthetic");
     const controller = new AbortController();
-    controller.abort();
-    fetchMock.mockRejectedValueOnce(new DOMException("aborted", "AbortError"));
+    fetchMock.mockImplementationOnce(() => {
+      controller.abort();
+      return Promise.reject(new DOMException("aborted", "AbortError"));
+    });
 
     await expect(
       fetchEventOdds(

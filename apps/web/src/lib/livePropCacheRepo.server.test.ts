@@ -1,3 +1,4 @@
+import { InteractiveQuotaUnavailable } from "./providerQuota";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const queryMock = vi.fn();
@@ -281,4 +282,18 @@ describe("getSharedLivePropInputs", () => {
     expect(oddsSignal?.aborted).toBe(true);
     expect(queryMock.mock.calls[2][0]).toContain("refresh_owner = NULL");
   });
+  it("quota refusal returns the existing live view as stale with no fallback SELECT or cache write", async () => {
+    const capturedAt = "2026-10-05T16:00:00.000Z";
+    queryMock.mockResolvedValueOnce([{ payload: { oddsByBookmaker, weather,
+      oddsObservation: { origin: "upstream", capturedAt, quota: { remaining: 100, used: 400, last: 1 } } },
+      fetched_at: "2000-01-01T00:00:00.000Z" }])
+      .mockResolvedValueOnce([{ refresh_owner: "owner" }]).mockResolvedValueOnce([]);
+    fetchOddsMock.mockRejectedValueOnce(new InteractiveQuotaUnavailable());
+    fetchWeatherMock.mockResolvedValueOnce(weather);
+    expect(await getSharedLivePropInputs(key, context)).toMatchObject({ oddsByBookmaker, weather,
+      oddsObservation: { origin: "cache", status: "stale", capturedAt } });
+    expect(queryMock).toHaveBeenCalledTimes(3); // existing read, claim, release
+    expect(persistObservationMock).not.toHaveBeenCalled();
+  });
+
 });

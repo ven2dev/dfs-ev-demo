@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
+vi.mock("./providerQuota", () => ({ checkInteractiveQuotaFloor: async () => {} }));
 let { fetchEventOdds, fetchPlayerPropMarketOdds, fetchPlayerPropOdds, fetchSlateEvents, OddsApiHttpError } = await import("./oddsApi.ts");
 
 const fetchMock = vi.fn();
@@ -89,7 +90,7 @@ describe("provider request boundaries", () => {
       return parsed;
     });
     expect(urls[0].pathname).toBe("/v4/sports/americanfootball_nfl/events/fixture-week_4/odds/");
-    expect([...urls[0].searchParams]).toEqual([["apiKey", apiKey], ["regions", "us"], ["markets", "player_pass_yds,player_anytime_td"]]);
+    expect([...urls[0].searchParams]).toEqual([["apiKey", apiKey], ["regions", "us"], ["markets", "player_anytime_td,player_pass_yds"]]);
     expect(urls[1].pathname).toBe(`/v4/sports/americanfootball_nfl/events/${"a".repeat(128)}/odds/`);
     expect(urls[1].searchParams.get("markets")).toBe("player_receptions");
     expect(urls[2].pathname).toBe("/v4/sports/americanfootball_nfl/events");

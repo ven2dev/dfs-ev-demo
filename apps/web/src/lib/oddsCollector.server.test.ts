@@ -155,7 +155,8 @@ describe("runOddsCollector", () => {
       "event-1",
       claimed().market_keys,
       expect.any(AbortSignal),
-      "scheduled"
+      "scheduled",
+      { kind: "collector", checkpointId: "checkpoint-1", ownerId: "collector-1", marketKeys: claimed().market_keys, deadline: expect.any(Number) }
     );
     expect(mocks.persistObservation).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -382,4 +383,15 @@ describe("runOddsCollector", () => {
     );
     expect(result).toMatchObject({ skipped: 1, completed: 0, knownCreditsUsed: 9 });
   });
+  it("binds the final paid-send deadline to the event/window cutoff as well as the lease", async () => {
+    const clock = vi.spyOn(performance, "now").mockReturnValue(1000);
+    try {
+      mocks.claimDue.mockResolvedValueOnce({ claimed: [{ ...claimed(),
+        event_start_time: "2026-10-04T19:46:00.025Z", due_window_end: "2026-10-04T19:46:00.050Z",
+      }], skippedCount: 0 });
+      await runOddsCollector(config(), deps);
+      expect(mocks.fetchEventOdds.mock.calls[0][5]).toMatchObject({ kind: "collector", deadline: 1025 });
+    } finally { clock.mockRestore(); }
+  });
+
 });

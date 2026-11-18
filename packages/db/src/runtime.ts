@@ -6,3 +6,5 @@ export { getOrRefresh } from "./livePropRefresh.ts";
 export type { LivePropCacheDeps, LivePropCacheOptions } from "./livePropRefresh.ts";
 export { getSharedOddsBatch } from "./sharedOddsCache.ts";
 export type { SharedOddsResource, SharedOddsBatch, SharedOddsQuery, SharedOddsDependencies } from "./sharedOddsCache.ts";
+export { readLatestProviderQuota, latestProviderQuotaSql } from "./providerQuota.ts";
+export type { ProviderQuotaReading, ProviderQuotaQuery } from "./providerQuota.ts";

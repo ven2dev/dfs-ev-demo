@@ -1,4 +1,5 @@
 import "server-only";
+import { checkInteractiveQuotaFloor, type PaidOddsContext } from "./providerQuota";
 import { projectPlayerPropLines } from "./oddsProjection";
 import { randomUUID } from "node:crypto";
 import { getCurrentNflSlateWindow, isEventInNflSlateWindow } from "@dfs-ev/domain/nfl-week";
@@ -152,22 +153,40 @@ export const fetchEventOdds = async (
   eventId: string,
   marketKeys: string[],
   signal?: AbortSignal,
-  source: OddsApiRequestSource = "direct"
+  source: OddsApiRequestSource = "direct",
+  ownership?: PaidOddsContext
 ): Promise<OddsApiFetch<EventOddsResponse>> => {
-  const { apiKey } = serverConfig.liveOdds();
+  serverConfig.liveOdds();
   if (marketKeys.length === 0) {
     throw new Error("fetchEventOdds requires at least one market key");
   }
   sportKey = requireOddsSport(sportKey);
   eventId = requireOddsEventId(eventId);
-  marketKeys = marketKeys.map(requireOddsMarket);
-
+  marketKeys = [...new Set(marketKeys.map(requireOddsMarket))].sort();
+  signal?.throwIfAborted();
+  if (ownership?.kind === "collector") {
+    const bound = [...new Set(ownership.marketKeys)].sort();
+    if (!ownership.checkpointId || !ownership.ownerId || bound.join(",") !== marketKeys.join(",")) {
+      throw new Error("Collector markets do not match the claimed checkpoint");
+    }
+  } else {
+    await checkInteractiveQuotaFloor();
+  }
+  const assertSendLifetime = () => {
+    signal?.throwIfAborted();
+    if (ownership && (!Number.isFinite(ownership.deadline) || performance.now() >= ownership.deadline)) {
+      throw new Error("Paid odds send deadline expired");
+    }
+  };
+  assertSendLifetime();
+  const { apiKey } = serverConfig.liveOdds();
   const url = new URL(`${ODDS_API_BASE}/sports/${sportKey}/events/${encodeURIComponent(eventId)}/odds/`);
   url.search = new URLSearchParams({ apiKey, regions: "us", markets: marketKeys.join(",") }).toString();
   const requestId = randomUUID();
   const requestedAt = new Date();
   let res: Response;
   try {
+    assertSendLifetime();
     res = await fetch(url.toString(), { cache: "no-store", signal, redirect: "error" });
   } catch (error) {
     await safelyRecordRequest({
@@ -176,7 +195,7 @@ export const fetchEventOdds = async (
       source,
       sportKey,
       eventId,
-      requestedMarkets: marketKeys,
+      requestedMarkets: [...marketKeys],
       requestedAt,
       responseReceivedAt: null,
       outcome: signal?.aborted ? "aborted" : "network-error",
@@ -192,7 +211,7 @@ export const fetchEventOdds = async (
     source,
     sportKey,
     eventId,
-    requestedMarkets: marketKeys,
+    requestedMarkets: [...marketKeys],
     requestedAt,
     responseReceivedAt: new Date(metadata.capturedAt),
     outcome: res.ok ? "success" : "http-error",

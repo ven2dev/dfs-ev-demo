@@ -1,3 +1,4 @@
+import { InteractiveQuotaUnavailable } from "@/lib/providerQuota";
 import { NextRequest, NextResponse } from "next/server";
 import { consensusDevigAtLine } from "@dfs-ev/domain/consensus-devig";
 import { computeEV } from "@dfs-ev/domain/ev";
@@ -337,7 +338,8 @@ export async function GET(request: NextRequest) {
             sampleSize: recentStatWindow.length,
           });
         } catch (err) {
-          send({ type: "error", message: sanitizedFailure(err).message });
+          send({ type: "error", message: err instanceof InteractiveQuotaUnavailable ? err.message : sanitizedFailure(err).message,
+            ...(err instanceof InteractiveQuotaUnavailable ? { oddsStatus: "unavailable", reason: err.reason } : {}) });
         }
       };
 

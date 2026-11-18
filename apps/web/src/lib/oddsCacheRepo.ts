@@ -1,4 +1,5 @@
 import "server-only";
+import { InteractiveQuotaUnavailable } from "./providerQuota";
 
 import { sliceOddsByMarket, mergeOddsSlices, type CachedMarketPayload } from "./oddsProjection";
 
@@ -159,7 +160,20 @@ export const getLegacyMarketOdds = async (
 
   const freshlyFetchedSlices = new Map<string, CachedMarketPayload>();
   if (missingMarketKeys.length > 0) {
-    const fetched = await dedupedFetchEventOdds(sportKey, eventId, missingMarketKeys);
+    let fetched: FreshEventOdds;
+    try { fetched = await dedupedFetchEventOdds(sportKey, eventId, missingMarketKeys); }
+    catch (error) {
+      if (!(error instanceof InteractiveQuotaUnavailable)) throw error;
+      const stale: CachedMarketPayload[] = [];
+      for (const marketKey of missingMarketKeys) {
+        const prior = cachedRows.find(row => row.market_key === marketKey && Date.parse(row.fetched_at) > 0);
+        if (prior) stale.push(prior.payload);
+        origins[marketKey] = { origin: "cache", status: prior ? "stale" : "unavailable",
+          capturedAt: prior ? new Date(prior.fetched_at).toISOString() : null,
+          observationId: null, observationPersisted: false, quota: null };
+      }
+      return { odds: mergeOddsSlices(eventId, [...freshRowsByMarket.values(), ...stale]), origins };
+    }
 
     for (const marketKey of missingMarketKeys) {
       freshlyFetchedSlices.set(marketKey, sliceOddsByMarket(fetched.data, marketKey));

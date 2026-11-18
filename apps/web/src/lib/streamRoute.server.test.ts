@@ -281,6 +281,13 @@ describe("GET /api/stream consensus devig ticks", () => {
     expect(tick.marketConsensus.contributingBookCount).toBe(3);
   });
 
+  it("flags an unavailable quota-floor refresh without sending a fresh tick", async () => {
+    const { InteractiveQuotaUnavailable } = await import("./providerQuota");
+    getSharedLivePropInputsMock.mockRejectedValueOnce(new InteractiveQuotaUnavailable());
+    expect(await openStream()).toMatchObject({ type: "error", oddsStatus: "unavailable", reason: "quota-floor" });
+    expect(getSharedLivePropInputsMock).toHaveBeenCalledOnce();
+  });
+
   it("never sends a driver failure or credential marker through the SSE error payload", async () => {
     getSharedLivePropInputsMock.mockRejectedValueOnce(new Error("synthetic-server-marker-99-stream"));
     await expect(openStream()).resolves.toEqual({ type: "error", message: "Application dependency unavailable." });
