@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
+vi.mock("./providerQuota", () => ({ checkInteractiveQuotaFloor: async () => {} }));
 let { fetchEventOdds, fetchPlayerPropMarketOdds, fetchPlayerPropOdds, fetchSlateEvents, OddsApiHttpError } = await import("./oddsApi.ts");
 
 const fetchMock = vi.fn();

@@ -6,7 +6,7 @@ const fetchMock = vi.fn();
 vi.mock("./oddsApiTelemetryRepo", () => ({
   recordOddsApiRequest: recordOddsApiRequestMock,
 }));
-vi.mock("./db", () => ({ getSql: () => { throw new Error("fixture accounting unavailable"); } }));
+vi.mock("./providerQuota", () => ({ checkInteractiveQuotaFloor: async () => {} }));
 vi.stubGlobal("fetch", fetchMock);
 
 let { fetchEventOdds, fetchPlayerPropMarketOdds, fetchSlateEvents } =

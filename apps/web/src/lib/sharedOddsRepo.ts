@@ -1,4 +1,5 @@
 import "server-only";
+import { InteractiveQuotaUnavailable } from "./providerQuota";
 import { randomUUID } from "node:crypto";
 import { getSharedOddsBatch } from "@dfs-ev/db/runtime";
 import { getSql } from "./db";
@@ -29,6 +30,7 @@ const readSharedOdds = async (
     query: (text, params) => getSql().query(text, params),
     makeOwnerId: randomUUID, monotonicNow: () => performance.now(),
     wait: ms => new Promise(resolve => setTimeout(resolve, ms)),
+    isFetchUnavailable: error => error instanceof InteractiveQuotaUnavailable,
     onCacheWriteError: error => console.error("[sharedOddsRepo] failed to publish odds:", error),
     fetch: async (owned, ownerSignal, claim) => {
       const combinedSignal = signal ? AbortSignal.any([signal, ownerSignal]) : ownerSignal;
@@ -80,7 +82,10 @@ export const fetchSharedPlayerPropOdds = async (
 ): Promise<PlayerPropMarketOddsFetch> => {
   const resources = await readSharedOdds(sportKey, eventId, [key], 90_000, "live", signal, context);
   const resource = resources[key];
-  if (!resource?.payload) throw new Error("Shared odds observation unavailable during refresh cooldown");
+  if (!resource?.payload) {
+    if (resource?.fetchUnavailable) throw new InteractiveQuotaUnavailable();
+    throw new Error("Shared odds observation unavailable during refresh cooldown");
+  }
   const origin = originFor(resource);
   const response = { ...resource.payload.event, ...mergeOddsSlices(eventId, [resource.payload]) };
   if (!origin.capturedAt) throw new Error("Shared odds observation has no capture time");

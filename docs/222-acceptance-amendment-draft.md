@@ -1,28 +1,42 @@
-# #222 acceptance amendment — owner approval required before posting
+# #222 rescope and related issue updates — owner approval before posting
 
-Draft only. This text updates #222's acceptance/targets and supersedes its old statement that the paid-path deadline is unapproved. It does not authorize enforce, hosted work or a schema apply.
+These are drafts. The existing branch is reworked through new commits; historical commits are not rebased or rewritten.
 
-## Proposed acceptance criteria
+## #222 proposed title
 
-- Twenty distinct eligible paid leaders, with WAF/GCRA disabled, cannot overspend or breach the collector floor. Each newly eligible batch performs one atomic reservation/audit statement before its mock provider send, with no per-market reservation fanout. Contention denials are not counted as successful eligible leaders.
-- Cache hits, followers, cooldown returns and explicitly free `/events` calls perform zero reservations and zero paid sends. New denied reservations retain one audit row per batch; shared-key denial audits are bounded by #221's durable 20-second per-key cooldown. Replays add no audit or send authority.
-- All paid live/discovery/forced-refresh/collector/direct wrappers converge on the permit-only transport. Only the reservation primitive mints process-local, single-use permits bound to canonical selectors, owner signal and pre-send deadline. A late, aborted, forged or reused permit cannot send. A public telemetry source cannot select collector class; collector cost is bound to the checkpoint's canonical market set.
-- Unknown or ambiguous outcomes retain worst-case liability until restricted, audited operator resolution. There is no automatic reserve retry, provider resend, or time/header-only refund. Known-response reconciliation is idempotent and runs before HTTP/decode errors discard response metadata; missing actual cost never becomes an invented zero. Quota headers alone do not forgive an unknown send.
-- Ship log-only first: shadow accounting has no authoritative debit or quota-safety claim, and storage failure preserves existing live refresh with sanitized failure visibility. Test log-only, explicit observed initialization, enforce and rollback to log-only. Enforce refuses uninitialized/stale/unknown budget, expired ownership and storage failure. No production enforcement switch is enabled by this issue.
-- Operator initialization of a new period carries every unresolved old-period liability forward against new availability without blocking rollover or changing original provenance. Core #222 requires manual monthly initialization. Later audited resolution releases the carried liability/count exactly once; old-period headers cannot overwrite the current baseline. Health reports period mismatch as critical.
-- The authenticated health contract exposes typed unresolved liability total, count and age. A failed/missing authority read is unavailable/null, never fabricated zero. Numeric warning/critical thresholds remain owner proposals until approved before enforce.
-- SQL remains proposal-only in `packages/db/proposals/`. Use account-only locking and ordinary parameterized SQL, safe through transaction-mode PgBouncer: no session advisory locks, session SET, named prepared statements, temp tables or LISTEN/NOTIFY. Preserve the existing web driver. Schema freeze/apply, roles and activation need separate owner approval.
+feat(odds): guard the paid-call boundary with a quota floor and alerts
 
-## Targets and qualification boundary
+## #222 proposed replacement acceptance and scope
 
-The owner-approved full warm path is **90 ms = four cache statements 10 ms + admission 53 ms + headroom 27 ms**, before the provider call. The admission allocation comes from PlanetScale #220; reservation and #223 fairness share it. Historical #206/old 50 ms misses remain historical evidence, not current passes.
+Owner decision (2026-11-17): the app does not maintain a provider-credit ledger. Plan capacity is an owner forecasting decision. Remove reservations, reconciliation, initialization, operator resolution, periods, unknown liabilities and enforcement modes, with their SQL/tests/evidence. Preserve historical commits, and retain old evidence in the final tree only if a publication guard requires it.
 
-Local qualification uses `provider-credit-222-v1`, PostgreSQL 18, lane-2 standard 512 MiB, 20 distinct leaders, a mock provider, restricted test roles and transaction-mode PgBouncer. It proves correctness and deterministic work budgets only. Neither elapsed local test time nor historical PlanetScale timing qualifies the production provider/driver; hosted timing waits for #294 and separate approval.
+- [ ] All paid live, discovery, forced-refresh, collector and internal calls converge on one guarded `fetchEventOdds` entry point. CI rejects provider URLs/calls outside `oddsApi.ts` and a missing interactive floor check. No ledger permit is needed after ledger removal.
+- [ ] Interactive paid refreshes read at most one latest recorded non-null `remaining` observation from the existing telemetry index, once per leader/batch. At or below the configured collector reserve plus one trackable collector batch (the existing collector scarcity rule), they make zero provider calls and return flagged stale data with its original capture time, or unavailable when no real prior payload exists. No denial is published as fresh.
+- [ ] No reading allows the first call, whose existing response telemetry supplies a reading. A failed quota read allows the interactive call and logs one warning containing only a bounded reason class (no SQL, target or credentials); health reports the reading as unavailable/null. This is the owner-selected availability policy because the floor is advisory and the provider enforces its own cap. Database-free local setup has no recorded reading. There is no new quota snapshot write, polling call or automatic provider retry.
+- [ ] Cache hits, followers and cooldown results add zero quota reads. The collector keeps its existing admission check, adds zero interactive floor reads, and binds the paid market set to its claimed checkpoint. A public `scheduled` telemetry label alone cannot bypass the interactive floor. Free `/events` stays free of this floor.
+- [ ] Existing telemetry retains provider `remaining`, `used` and actual request cost on successful and HTTP-error responses, including before a decode error. A persistence error cannot discard an already received provider response.
+- [ ] The authenticated health route reports remaining, used and reading age. Missing reading reports unavailable/null, never invented zero. Age uses the database receipt stamp and database clock. Warning/critical thresholds remain proposals requiring owner approval; no arbitrary alert thresholds are activated in this change.
+- [ ] Full app, lint, typecheck, default production build, provider-boundary guard, core DB/catalog/readiness and feature-store DB suites pass on lane-2 standard in a quiet window. Prove the existing index at 10,000 historical readings and keep serving work counts in CI. Remove the owned fixture afterward.
 
-#295 owns the deferred bounded free observer, confirmed provider-reset detection and automatic rollover, and actual-cost serving breaker. It blocks #224. Real header semantics, health policy, provider choice, schema release and activation remain before-enforce gates. Completing #222 does not complete or authorize those gates.
+The approved warm pre-provider budget remains **90 ms = cache 10 + admission 53 + headroom 27**, with the 53 ms allocation informed by PlanetScale #220. Local tests establish correctness and work budgets, not hosted latency. #294 still owns production provider/driver qualification. This floor is advisory: concurrent distinct leaders can pass the same observation; no atomic no-overspend guarantee or purchased-plan forecasting is claimed.
 
-## Separate #206 closing-summary draft — approval required
+Proposed health policy for review: warning at remaining <= reserve + two trackable batches, critical at <= reserve + one batch. Proposed reading-age warning after 15 minutes and critical after 60 minutes only during expected activity; idle overnight age alone should not page. These thresholds are not active until approved.
 
-Recommend closing #206 as the completed historical admission profiling spike. Its Neon contention/durability findings and original receipts remain valid historical evidence, including the 64.294 ms candidate miss and earlier 152–162 ms guarded profiling. #220 supersedes the next admission-screening step; it does not invalidate those findings or choose a production provider. #294 owns the provider/driver decision and any new hosted comparison. The owner has approved a 90 ms full warm pre-provider budget (cache 10 / admission 53 / headroom 27); this is a design budget, not a reclassification of #206 as a pass.
+## #295 proposed comment and closure
 
-Do not post this summary or close #206 without the owner's separate approval.
+Close as **not planned**, after approval:
+
+> Owner decision (2026-11-17): #222 no longer maintains a provider-credit ledger. Plan capacity is an owner forecasting decision; the app instead guards the paid-call boundary with a provider-header quota floor and quota health. The ledger free-observer/reset/automatic-rollover/actual-cost-breaker scope in #295 is no longer planned. See the approved rescope recorded in [#223's amendment](https://github.com/ven2dev/dfs-ev-demo/issues/223#issuecomment-6967791584) and the owner-approved replacement acceptance for #222. Remove #295 as a blocker of #224 after approval of that dependency change. No hosted cleanup or provider operation is authorized by this closure.
+
+## #224 proposed dependency removal and flag
+
+After approval, remove only the native **#295 blocks #224** dependency edge; keep the other dependencies intact. Add the following amendment-needed notice (do not silently rewrite the remaining acceptance criteria):
+
+> The owner rescoped #222 to a single paid-call boundary, an interactive quota floor and quota health, with no application credit ledger. #295 is no longer a rollout prerequisite and is proposed for not-planned closure. This issue's credit initialization, unknown-liability handling, ledger rollback and account-safety enforcement steps are obsolete and require a separately reviewed acceptance/rollout amendment before implementation. WAF, per-subject limiter observation/enforcement, HMAC rotation and the #223 abuse-visibility rollout remain separately reviewed work. The approved warm pre-provider budget is 90 ms; the old statement that a replacement deadline is unapproved also needs correction in that later amendment.
+
+## Already authorized housekeeping
+
+- #206 approved summary posted and issue closed: https://github.com/ven2dev/dfs-ev-demo/issues/206#issuecomment-6967573539
+- #223 approved amendment posted, with the separately approved “#295 is proposed for closure” correction: https://github.com/ven2dev/dfs-ev-demo/issues/223#issuecomment-6967791584
+
+No #222/#295/#224 mutation is authorized by this draft.

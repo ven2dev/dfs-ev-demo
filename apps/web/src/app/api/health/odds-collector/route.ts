@@ -1,4 +1,4 @@
-import { readProviderCreditHealth, type ProviderCreditHealthReport } from "@/lib/providerCreditHealth";
+import { readQuotaHealth, type QuotaHealth } from "@/lib/providerQuota";
 import { NextRequest, NextResponse } from "next/server";
 import { isAuthorizedCronHeader } from "@/lib/cronAuth";
 import { evaluateOddsCollectorHealth } from "@/lib/oddsCollectorHealth";
@@ -23,7 +23,7 @@ const response = (
     status: "healthy" | "unhealthy" | "unavailable" | "error" | "unauthorized";
     reasons?: string[];
     warnings?: string[];
-    providerCredits?: ProviderCreditHealthReport;
+    quota?: QuotaHealth;
   },
   status: number
 ) =>
@@ -60,13 +60,8 @@ export const GET = async (request: NextRequest) => {
       maxWakeAgeMs: MAX_WAKE_AGE_MS,
       pinCreationGraceMs: PIN_CREATION_GRACE_MS,
     });
-    const providerCredits = await readProviderCreditHealth(now);
-    const status = providerCredits.severity === "critical" ? "unhealthy" : result.status;
-    const reasons = providerCredits.severity === "critical"
-      ? [...result.reasons, `provider-credit-${providerCredits.reason}`] : result.reasons;
-    const warnings = providerCredits.severity === "unavailable"
-      ? [...result.warnings, "provider-credit-state-unavailable"] : result.warnings;
-    return response({ status, reasons, warnings, providerCredits }, status === "healthy" ? 200 : 503);
+    const quota = await readQuotaHealth();
+    return response({ ...result, quota }, result.status === "healthy" ? 200 : 503);
   } catch (error) {
     console.error(
       "[api/health/odds-collector] health query failed:",

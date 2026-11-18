@@ -365,7 +365,7 @@ export const runOddsCollector = async (
         checkpoint.market_keys,
         AbortSignal.timeout(config.requestTimeoutMs),
         "scheduled",
-        { kind: "collector", checkpointId: checkpoint.id, ownerId: config.ownerId,
+        { kind: "collector", checkpointId: checkpoint.id, ownerId: config.ownerId, marketKeys: checkpoint.market_keys,
           deadline: Math.min(claimStarted + config.leaseMs, performance.now() + Math.min(config.requestTimeoutMs,
             Date.parse(checkpoint.event_start_time) - beforeFetch.getTime(),
             Date.parse(checkpoint.due_window_end) - beforeFetch.getTime())) }

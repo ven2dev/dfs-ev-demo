@@ -12,17 +12,12 @@ for (const [name, source] of [
   ["provider fetch", 'fetch("https://api.the-odds-api.com/v4/sports/example");'],
   ["decoded escaped URL", 'const url = "https://api.the-odds-api\\u002ecom/v4"; const send = fetch; send(url);'],
   ["constant concatenation", 'fetch("https://api.the-" + "odds-api.com/v4");'],
-  ["escaped permit consumer", 'import { consumeProviderCreditPermit as send } from "@dfs-ev/db/runtime";'],
 ]) test(`guard rejects ${name}`, () => assert.ok(checkProviderBoundary([...sources, { path: "apps/web/src/lib/bypass.ts", source }]).length));
 test("guard refuses an extra provider fetch inside the transport module", () => {
   assert.ok(checkProviderBoundary(mutateTransport(source => source + '\nconst bypass = () => fetch("synthetic");')).length);
 });
-test("guard refuses a weakened parameter or omitted final consumption", () => {
-  assert.ok(checkProviderBoundary(mutateTransport(source => source.replace("permit: ProviderCreditPermit", "permit: unknown"))).length);
-  assert.ok(checkProviderBoundary(mutateTransport(source => source.replace("    consumeProviderCreditPermit(permit);", ""))).length);
-});
-test("guard rejects exporting the private paid transport", () => {
-  assert.ok(checkProviderBoundary(mutateTransport(source => source.replace("const fetchReservedEventOdds", "export const fetchReservedEventOdds"))).length);
+test("guard refuses removing or relocating the paid-leader floor check", () => {
+  assert.ok(checkProviderBoundary(mutateTransport(source => source.replace("await checkInteractiveQuotaFloor();", ""))).length);
 });
 test("ordinary weather fetch and test fixtures remain permitted", () => {
   assert.deepEqual(checkProviderBoundary([...sources, { path: "apps/web/src/lib/weather-example.ts", source: 'fetch("https://weather.invalid");' }]), []);

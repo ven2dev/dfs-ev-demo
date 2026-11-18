@@ -156,7 +156,7 @@ describe("runOddsCollector", () => {
       claimed().market_keys,
       expect.any(AbortSignal),
       "scheduled",
-      { kind: "collector", checkpointId: "checkpoint-1", ownerId: "collector-1", deadline: expect.any(Number) }
+      { kind: "collector", checkpointId: "checkpoint-1", ownerId: "collector-1", marketKeys: claimed().market_keys, deadline: expect.any(Number) }
     );
     expect(mocks.persistObservation).toHaveBeenCalledWith(
       expect.objectContaining({
