@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
-test("#287 real executable definitions import through the established TS loader without input or client work", () => {
+test("#287 real definitions align with catalog policy through the TS loader without input or client work", () => {
   const directory = mkdtempSync(join(tmpdir(), "dfs287-config-import-"));
   try {
     // A private dotenv read would introduce this synthetic marker in the child.
@@ -24,6 +24,7 @@ test("#287 real executable definitions import through the established TS loader 
     for (const name of ["inputReads", "parserCalls", "sdkCalls", "sqlCalls", "networkCalls", "privateDotenvReads"])
       assert.equal(receipt[name], 0, name);
     assert(receipt.serverInputs > 0 && receipt.clientInputs > 0);
+    assert.deepEqual(receipt.alignment, { server: receipt.serverInputs, client: receipt.clientInputs });
     console.info("CONFIGURATION_IMPORT_PROBE " + JSON.stringify(receipt));
   } finally { rmSync(directory, { recursive: true, force: true }); }
 });

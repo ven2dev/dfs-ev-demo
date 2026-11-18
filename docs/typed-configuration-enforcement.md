@@ -86,17 +86,38 @@ An initial parser-invocation bug and an overly broad `window` selector were
 stopped and corrected with owner approval before any commit; their local
 receipts remain history. Positive cases cover those regressions directly.
 
-## Remaining checkpoints and limits
+## Checkpoint 2: catalog alignment and discovery retirement
 
-Checkpoint 2 adds catalog app-reader fields and compares only exact names in
+The catalog has app `reader` fields and alignment compares only exact names in
 both directions, reader and classification resolved from existing profiles or
 overrides. Existing `secret`, `sensitive identifier` and `ordinary configuration`
 literals remain unchanged; public Firebase settings currently classify as
 ordinary configuration with a client reader. The catalog keeps authority,
 delivery scope and its copy ledger. Capabilities and parsing contexts remain
-solely in executable definitions. Generic executable-code discovery remains
-active until the replacement is qualified. Template/workflow extraction,
-source/reference safety, ledger policy and DB credential refusals remain.
+solely in executable definitions. The pure `checkConfigurationAlignment`
+function inspects the actual definition maps through the value-free import
+probe. No second schema, configuration reader or parser is executed. The
+unconditional CI gate runs both policy checks and actual-definition alignment.
+
+The focused replacement checks pass with all 20 server and seven client
+definitions aligned, and zero input, parser, SDK, SQL, network or private-dotenv
+activity. Mutation tests refuse missing/renamed rows, removed reader bindings,
+unread app rows, switched/unknown readers, duplicate owners and classification
+changes. Profile overrides resolve before comparison; code-owned capabilities
+and contexts are not inspected.
+
+Generic executable-code AST discovery is retired. Template/workflow extraction,
+source/reference safety, policy fields, ledger/alias coverage, blank secret
+templates and DB credential refusals remain. The approved exclusion list still
+records scope decisions for template/workflow names; it cannot hide runtime
+definition drift or lint bypasses. Non-app scripts/tools keep their explicit
+catalog/review obligations, with no claim of automatic code completeness.
+The catalog remains 88 rows/14 profiles with 27 reader bindings. Missing reader
+source references for `ADMIN_UID` and `VERCEL` now point to `config.server.ts`.
+No runtime source, classification, delivery policy, copy ledger, dependency or
+work budget changes.
+
+## Remaining checkpoint and limits
 
 Checkpoint 3 rediscovers all open feature branches and owner-local work. Ask the
 owner whether the two local #220 harness branches (`planetscale-harness` and

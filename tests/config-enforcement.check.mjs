@@ -115,9 +115,11 @@ test("the current production tree has no environment bypass or named rule disabl
   assert.deepEqual(messages, []);
 });
 
-test("the CI gate includes the environment enforcement checks unconditionally", () => {
+test("the CI gate includes environment enforcement and real-definition alignment unconditionally", () => {
   const pkg = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
   assert(pkg.scripts["test:ci-gate"].includes("tests/config-enforcement.check.mjs"));
+  assert(pkg.scripts["test:ci-gate"].includes("tests/config-definition-import.check.mjs"));
+  assert(pkg.scripts["test:ci-gate"].includes("tests/secrets-inventory.check.mjs"));
   const workflow = readFileSync(resolve(root, ".github/workflows/ci.yml"), "utf8");
   assert.match(workflow, /name: Verify aggregate CI gate\n\s+run: npm run test:ci-gate/);
 });

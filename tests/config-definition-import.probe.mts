@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import fsp from "node:fs/promises";
 import { describe, expect, it, vi } from "vitest";
+import { checkConfigurationAlignment } from "../scripts/security/secrets-inventory.mjs";
 
 const counters = vi.hoisted(() => ({ inputReads: 0, parserCalls: 0, sdkCalls: 0, sqlCalls: 0, networkCalls: 0, privateDotenvReads: 0 }));
 vi.mock("firebase-admin/app", () => ({
@@ -48,9 +49,15 @@ describe("value-free executable definition import", () => {
       const read = () => { counters.inputReads++; throw new Error("Unexpected synthetic input read."); };
       server.createServerConfig(read, { firebaseProjectId: read });
       client.createPublicConfig(read);
+      const catalog = JSON.parse(fs.readFileSync(new URL("../docs/secrets-inventory.json", import.meta.url), "utf8"));
+      const alignment = checkConfigurationAlignment(catalog, {
+        server: server.serverInputDefinitions, client: client.publicInputDefinitions,
+      });
+      counters.inputReads = reads.filter(name => Object.hasOwn(definitions, name)).length;
       for (const parser of parsers) expect(parser).not.toHaveBeenCalled();
       expect(counters).toEqual({ inputReads: 0, parserCalls: 0, sdkCalls: 0, sqlCalls: 0, networkCalls: 0, privateDotenvReads: 0 });
       console.info("CONFIGURATION_IMPORT_PROBE " + JSON.stringify({ ...counters,
+        alignment,
         serverInputs: Object.keys(server.serverInputDefinitions).length,
         clientInputs: Object.keys(client.publicInputDefinitions).length }));
     } finally {
