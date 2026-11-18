@@ -23,11 +23,11 @@ that checkpoint.
 - **Pattern:** a value-free configuration catalog with source references and
   shared handling profiles. A row names its consumers and overrides a profile
   only when its handling differs. This inventories supplied inputs without
-  introducing a secret broker. An offline policy validator and bounded syntax
-  discovery check it in CI; no source code is imported or executed for discovery.
-  #99's future typed server configuration schema
-  will own the executable input definition; catalog coverage will be generated
-  from or checked against it, rather than maintained as an independent schema.
+  introducing a secret broker. Offline policy checks and #287's two-way
+  alignment with #99's executable server/client definitions check it in CI.
+  Definition imports use the existing TS test loader with dotenv disabled and
+  synthetic traps; no input reader or parser is called. The catalog records
+  policy rather than maintaining a second runtime schema.
 - **Alternatives:** an unstructured prose-only list makes completeness and
   missing fields difficult to review; separately repeating every policy in
   every row encourages contradictory updates; discovery by exporting deployed
@@ -62,6 +62,15 @@ taking its profile, adding its explicit consumers, then applying overrides.
 There is no inheritance between profiles. An unresolved field is an error,
 not permission to infer access.
 
+App runtime rows also declare `reader: "server"` or `reader: "client"` as
+browser-exposure policy. Other rows have no app reader. CI compares exact names
+in both directions, reader and classification resolved through profile/override.
+A missing row/binding, unread app row, switched reader or changed classification
+fails. Existing classification literals stay unchanged: public Firebase inputs
+are `ordinary configuration` with a client reader. Capabilities and parsing
+contexts remain in the executable definitions only; catalog `environments`
+continues to describe authorized delivery scope, not parser contexts.
+
 | Required field | Meaning |
 | --- | --- |
 | `classification` | Secret, sensitive identifier, or ordinary configuration |
@@ -95,12 +104,26 @@ key paths, constants, workflow-internal state and artifact paths unless they
 carry or select a credential. A name's appearance in an `env` map does not by
 itself make workflow bookkeeping a supplied configuration input.
 
-Discovery reviewed tracked TypeScript/JavaScript accesses and destructuring,
+The initial inventory review examined tracked TypeScript/JavaScript accesses and destructuring,
 child-process maps, computed collector setting calls, both `.env.example`
 templates, workflows, Compose, Turbo and operator runbooks, then applied that
 rule. Both literal and computed supplied names are included. In particular,
-`integerSetting(name)` in the collector and the R2 helper's explicit `values`
-argument are not missed by limiting discovery to `process.env.NAME`.
+computed collector settings and the R2 helper's explicit `values` argument
+were included in that review.
+
+#287 retires the generic executable-code AST discovery. Application coverage
+now comes from the real definitions plus scoped ESLint ownership enforcement.
+`discoverTemplateWorkflowInputs` retains `.env.example` assignments and explicit
+workflow `secrets`/`vars` references and credential aliases. Policy fields,
+source/name references, safe tracked-source reading, copy ledger and DB secret
+refusals remain checked. `discoveryExclusions` retains reviewed scope decisions
+and is checked for reasons and catalog conflicts; it only filters names from
+the remaining template/workflow extraction, not application alignment or lint.
+
+Non-app tools, owner scripts, CLI/runbook inputs and computed names remain
+explicitly cataloged and reviewed when changed. They have no executable-schema
+completeness guarantee. This check does not discover every possible non-app
+input or prove arbitrary JavaScript data flow, deployed permissions or values.
 
 For example, Dependabot/Compose/Next policy key paths, `APP_RESULT`,
 `GITHUB_OUTPUT`, benchmark output paths and source constants are excluded.
@@ -197,8 +220,8 @@ entries, profiles and source references are unchanged in scope.
 
 #99's Google-first premise is superseded by the linked amendment; it owns the
 typed server-only validation boundary, fail-closed behavior and Preview
-isolation. Its executable names, classification, capability and environment
-rules will generate or be checked against the catalog's runtime subset, with
+isolation. #287 checks its executable names, reader and resolved classification
+against the catalog's runtime subset, with
 raw accesses checked outside explicitly approved adapters. #100 owns any
 justified Bitwarden adoption; none is selected today. #101 owns separately
 approved migration/rotation, live-scope verification and retirement of copies.
@@ -207,8 +230,11 @@ approved migration/rotation, live-scope verification and retirement of copies.
 the input names, classifications, delivery authority and copy ledger stay the
 same. The client-safe odds contract no longer reads environment inputs, so its
 server policy tests are referenced at their new executable owner. #287 replaces
-discovery with schema alignment and lint enforcement; discovery remains active
-until that companion is reviewed and merged.
+generic executable discovery with definition alignment and lint enforcement.
+The unconditional CI gate loads the real 20 server and seven client definitions
+without reading inputs or calling parsers/clients. The catalog has 88 entries
+across 14 profiles; `NEXT_RUNTIME` is compiler state under its narrow literal
+instrumentation exemption, outside the runtime definitions.
 
 #99 uses the existing public Firebase project ID to check service-account
 agreement before initialization/reuse, without extra expected-identity inputs.
@@ -245,8 +271,12 @@ claims require their separately approved evidence.
    changes. Keep source paths and name occurrences current. Reasons in
    `discoveryExclusions` document out-of-scope artifact/workflow/generated
    state; editing an exclusion is a scope decision and deserves review.
+   Add app reader policy for runtime definitions; leave capabilities and parsing
+   contexts in code. Review non-app code changes explicitly rather than relying
+   on the retired code-discovery walk.
 5. Run `npm run test:ci-gate` on Node 24. For the focused offline check, use
-   `node --test tests/secrets-inventory.check.mjs`. Full #98 verification also
+   `node --test tests/secrets-inventory.check.mjs tests/config-definition-import.check.mjs`
+   for policy plus actual-definition alignment. Full #98 verification also
    runs typecheck, lint, the normal test suite and a production build with
    synthetic/empty inputs; no provider authentication is needed. The checker
    is included in CI's unconditional App gate verification step so affected
@@ -320,6 +350,6 @@ classification change needs review because it can weaken this boundary.
 Two additional guard tests check real catalog coverage and demonstrate that
 new/reclassified secrets and missing/blank exception reasons fail. They use
 only synthetic values; they neither read credentials nor open a database lane.
-The catalog still has 87 entries and 14 profiles; it now cites 265 source
+Those #98 guard changes had 87 entries and 14 profiles with 265 source
 references, including guard refusals. `consumers` can name a refusing source,
 as distinguished in each row's notes, rather than an authorized consumer.

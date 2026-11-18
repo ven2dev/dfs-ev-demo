@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { lstatSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import ts from "typescript";
 
 const fields = ["classification", "environments", "owner", "consumers", "currentStorageClass",
   "intendedSourceOfTruth", "deliveryMethod", "rotationAuthority", "recoveryDependency",
@@ -33,9 +32,9 @@ export function readInventorySources(root) {
   return files;
 }
 
-// This is bounded discovery of names, not data flow or secret-value scanning.
-// Known environment adapters are included; new adapter forms need review.
-export function discoverInventoryInputs(files) {
+// Only templates and explicit workflow inputs/aliases are extracted here.
+// App inputs come from executable definitions; non-app code needs review.
+export function discoverTemplateWorkflowInputs(files) {
   const names = new Map();
   const aliases = new Map();
   const add = (name, file) => {
@@ -44,23 +43,7 @@ export function discoverInventoryInputs(files) {
     names.get(name).add(file);
   };
   for (const [file, source] of files) {
-    if (codeFile.test(file)) {
-      const tree = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true);
-      const environment = node => /^(?:process\.env|env|environment|values|runtimeEnv|runtimeEnvironment)$/.test(node.getText(tree)) ||
-        (ts.isPropertyAccessExpression(node) && node.name.text === "env");
-      const visit = node => {
-        if (ts.isPropertyAccessExpression(node) && environment(node.expression)) add(node.name.text, file);
-        if (ts.isElementAccessExpression(node) && environment(node.expression) &&
-            node.argumentExpression && ts.isStringLiteralLike(node.argumentExpression)) add(node.argumentExpression.text, file);
-        if (ts.isVariableDeclaration(node) && node.initializer && environment(node.initializer) && ts.isObjectBindingPattern(node.name)) {
-          for (const binding of node.name.elements) add((binding.propertyName ?? binding.name).getText(tree).replace(/^['"]|['"]$/g, ""), file);
-        }
-        if (ts.isCallExpression(node) && node.expression.getText(tree) === "integerSetting" &&
-            node.arguments[0] && ts.isStringLiteralLike(node.arguments[0])) add(node.arguments[0].text, file);
-        ts.forEachChild(node, visit);
-      };
-      visit(tree);
-    } else if (file.endsWith(".env.example")) {
+    if (file.endsWith(".env.example")) {
       for (const match of source.matchAll(/^\s*([A-Z_][A-Z0-9_]*)\s*=/gm)) add(match[1], file);
     } else if (file.startsWith(".github/workflows/") && /\.ya?ml$/.test(file)) {
       for (const match of source.matchAll(/\$\{\{\s*(?:secrets|vars)\.([A-Z_][A-Z0-9_]*)\s*\}\}/g)) add(match[1], file);
@@ -71,6 +54,39 @@ export function discoverInventoryInputs(files) {
     }
   }
   return { names, aliases: [...aliases.values()] };
+}
+
+const resolvePolicy = (catalog, entry) => ({
+  ...catalog.profiles[entry.profile], ...entry.overrides, consumers: entry.consumers,
+});
+
+// Inspect metadata only: no reader, parser, capability or context is evaluated.
+// The caller supplies the real definitions through the existing TS test loader.
+export function checkConfigurationAlignment(catalog, definitions) {
+  assert.deepEqual(Object.keys(definitions).sort(), ["client", "server"], "both configuration readers required");
+  const entries = new Map(catalog.entries.map(entry => [entry.name, entry]));
+  assert.equal(entries.size, catalog.entries.length, "duplicate catalog input");
+  const names = new Set();
+  const counts = {};
+  for (const [reader, inputs] of Object.entries(definitions)) {
+    counts[reader] = Object.keys(inputs).length;
+    for (const [name, definition] of Object.entries(inputs)) {
+      assert(!names.has(name), `input has multiple readers: ${name}`);
+      names.add(name);
+      const entry = entries.get(name);
+      assert(entry, `configuration input missing from catalog: ${name}`);
+      assert.equal(entry.reader, reader, `configuration reader differs: ${name}`);
+      assert.equal(resolvePolicy(catalog, entry).classification, definition.classification,
+        `configuration classification differs: ${name}`);
+    }
+  }
+  for (const entry of catalog.entries) {
+    if (Object.hasOwn(entry, "reader")) {
+      assert(["server", "client"].includes(entry.reader), `invalid configuration reader: ${entry.name}`);
+      assert(names.has(entry.name), `catalog app input has no definition: ${entry.name}`);
+    }
+  }
+  return counts;
 }
 
 export function checkSecretsInventory(catalog, files) {
@@ -85,7 +101,9 @@ export function checkSecretsInventory(catalog, files) {
     assert(entry.kind && catalog.profiles[entry.profile], `input kind/profile missing: ${entry.name}`);
     assert(!entry.overrides || Object.keys(entry.overrides).every(field => fields.includes(field) && field !== "consumers"),
       `unknown policy override: ${entry.name}`);
-    const policy = { ...catalog.profiles[entry.profile], ...entry.overrides, consumers: entry.consumers };
+    if (Object.hasOwn(entry, "reader"))
+      assert(["server", "client"].includes(entry.reader), `invalid configuration reader: ${entry.name}`);
+    const policy = resolvePolicy(catalog, entry);
     for (const field of fields) {
       const value = policy[field];
       assert(field === "environments" || field === "consumers" ?
@@ -104,7 +122,7 @@ export function checkSecretsInventory(catalog, files) {
     }
     entries.set(entry.name, policy);
   }
-  const { names, aliases } = discoverInventoryInputs(files);
+  const { names, aliases } = discoverTemplateWorkflowInputs(files);
   const excluded = new Set();
   for (const group of catalog.discoveryExclusions) {
     assert(group.reason?.trim() && group.names.length, "exclusion reason required");
@@ -137,5 +155,5 @@ export function checkSecretsInventory(catalog, files) {
       `missing workflow alias: ${alias.name}`);
   }
   return { entries: entries.size, profiles: Object.keys(catalog.profiles).length, references,
-    discoveredNames: names.size, credentials: rows.length };
+    templateWorkflowNames: names.size, credentials: rows.length };
 }

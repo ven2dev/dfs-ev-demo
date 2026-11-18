@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { environmentImportPatterns, environmentReaders, environmentSyntax, environmentTestFiles } from "./eslint.environment.mjs";
 
 const domain = JSON.parse(readFileSync(new URL("./packages/domain/package.json", import.meta.url), "utf8"));
 const publicSubpaths = Object.keys(domain.exports).filter(key => key !== ".").map(key => key.slice(2));
@@ -18,6 +19,11 @@ const runtimeReversePackage = String.raw`^(?:@dfs-ev\/(?:web|pipeline|db-tooling
 const pipelineRuntimeForbidden = String.raw`^(?:@dfs-ev\/(?:web|db-tooling)(?:\/|$)|@\/)`;
 const pipelineWebForbidden = String.raw`^(?:@dfs-ev\/web(?:\/|$)|@\/)`;
 const nonRuntimeDatabase = String.raw`^@dfs-ev\/(?:db(?:$|\/(?!runtime$))|db-tooling(?:$|\/))`;
+const webImportPatterns = [{ regex: nonRuntimeDatabase, message: "Web may import only @dfs-ev/db/runtime from the database packages." }];
+const webSyntax = [...typeSyntax,
+  { selector: `ImportExpression[source.value=/${nonRuntimeDatabase}/]`, message: "Web may import only @dfs-ev/db/runtime from the database packages." },
+  { selector: `CallExpression[callee.name='require'] > Literal[value=/${nonRuntimeDatabase}/]`, message: "Web may import only @dfs-ev/db/runtime from the database packages." },
+];
 
 const boundaries = [
   {
@@ -142,13 +148,22 @@ const boundaries = [
     rules: {
       // Checking unresolved/private subpaths too keeps web's build independent
       // of tooling and test-harness dependencies, including in colocated tests.
-      "no-restricted-imports": ["error", { patterns: [{ regex: nonRuntimeDatabase, message: "Web may import only @dfs-ev/db/runtime from the database packages." }] }],
-      "no-restricted-syntax": ["error", ...typeSyntax,
-        { selector: `ImportExpression[source.value=/${nonRuntimeDatabase}/]`, message: "Web may import only @dfs-ev/db/runtime from the database packages." },
-        { selector: `CallExpression[callee.name='require'] > Literal[value=/${nonRuntimeDatabase}/]`, message: "Web may import only @dfs-ev/db/runtime from the database packages." },
-      ],
+      "no-restricted-imports": ["error", { patterns: webImportPatterns }],
+      "no-restricted-syntax": ["error", ...webSyntax],
     },
   },
+  ...[false, true].map(instrumentation => ({
+    files: instrumentation ? ["apps/web/src/instrumentation.ts"] : ["apps/web/src/**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}"],
+    // Exact readers own inputs. Colocated tests need synthetic env injection;
+    // owner/build scripts outside src retain their separate catalog obligations.
+    ignores: [...environmentReaders, ...environmentTestFiles,
+      ...instrumentation ? [] : ["apps/web/src/instrumentation.ts"]],
+    rules: {
+      "no-restricted-imports": ["error", { patterns: [...webImportPatterns, ...environmentImportPatterns] }],
+      // Flat-config arrays replace, so explicitly retain the workspace selectors.
+      "no-restricted-syntax": ["error", ...webSyntax, ...environmentSyntax(instrumentation)],
+    },
+  })),
 ];
 
 export default boundaries;

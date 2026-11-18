@@ -1,0 +1,413 @@
+{
+  "format": "typed-configuration-enforcement-qualification-v1",
+  "recordedAt": "2026-11-18T02:06:41.877051+00:00",
+  "sourceSha": "75b29a3dec560e0c50adfebd5cc4191b450e57cd",
+  "mainSha": "c15e6949c42f7288f09fcb3ad996ab5d19d51c1e",
+  "runtimeSourceAndDependenciesUnchangedFromMain": true,
+  "pattern": "Core ESLint ownership restrictions plus metadata contract checks against the real executable definitions; no custom lint rule or replacement AST discovery engine.",
+  "alignment": {
+    "catalogRows": 88,
+    "profiles": 14,
+    "sourceReferences": 264,
+    "templateWorkflowNames": 31,
+    "runtimeCredentials": 6,
+    "serverDefinitions": 20,
+    "clientDefinitions": 7,
+    "compared": [
+      "exact names in both directions",
+      "reader",
+      "resolved classification"
+    ],
+    "classificationVocabulary": [
+      "secret",
+      "sensitive identifier",
+      "ordinary configuration"
+    ],
+    "capabilitiesAndParsingContextsDuplicated": false,
+    "inputReads": 0,
+    "parserCalls": 0,
+    "sdkCalls": 0,
+    "sqlCalls": 0,
+    "networkCalls": 0,
+    "privateDotenvReads": 0
+  },
+  "retainedChecks": [
+    "eleven policy fields and profile/override resolution",
+    "safe tracked sources and exact cited-name references",
+    "template assignments and blank secret templates",
+    "workflow secret/variable references and aliases",
+    "reviewed exclusion reasons and catalog conflicts",
+    "credential authority/copy ledger coverage",
+    "catalog-backed DB test credential refusal",
+    "existing workspace import boundaries",
+    "legitimate unrelated React inline disable"
+  ],
+  "branchSweep": {
+    "openPullRequests": 0,
+    "openPrInventorySha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "localRefsEnumerated": 62,
+    "alreadyInMain": 51,
+    "activeLocal": [
+      {
+        "snapshot": {
+          "recordedAt": "2026-11-18T02:03:20.303837+00:00",
+          "branch": "feature/dfsEV-222-paid-boundary-reservation",
+          "headSha": "0662f7ded1ce44781432885710dd5862100760ba",
+          "mainSha": "c15e6949c42f7288f09fcb3ad996ab5d19d51c1e",
+          "mergeSha": "0662f7ded1ce44781432885710dd5862100760ba",
+          "mergeOutput": "Already up to date; main is an ancestor.",
+          "checkerSha": "75b29a3dec560e0c50adfebd5cc4191b450e57cd",
+          "checkerOverlayFiles": [
+            "docs/secrets-inventory.json",
+            "docs/secrets-inventory.md",
+            "docs/typed-configuration-enforcement.md",
+            "eslint.boundaries.mjs",
+            "eslint.environment.mjs",
+            "package.json",
+            "scripts/security/config-enforcement.mjs",
+            "scripts/security/secrets-inventory.mjs",
+            "tests/config-definition-import.check.mjs",
+            "tests/config-definition-import.probe.mts",
+            "tests/config-enforcement.check.mjs",
+            "tests/secrets-inventory.check.mjs",
+            "vitest.configuration.config.mts"
+          ],
+          "workingSourceFiles": [
+            {
+              "path": "apps/web/src/lib/providerCreditHealth.server.test.ts",
+              "sha256": "bf5890b01b02a0ae1c33422f430c83b15e3f6a93b90af3aa7d4b703d215af138",
+              "untracked": true
+            },
+            {
+              "path": "apps/web/src/lib/providerCreditHealth.ts",
+              "sha256": "f9ca9c9d9fab4820e014a1d054f75bb849615445a8cf46963d05bb3df719eeb1",
+              "untracked": true
+            },
+            {
+              "path": "scripts/odds/provider-boundary-guard.mjs",
+              "sha256": "249fcb921c1f454b0955c6c185d33c8d0f5da3787049a12db590615071dbcb86",
+              "untracked": true
+            },
+            {
+              "path": "tests/provider-boundary.check.mjs",
+              "sha256": "b2abc0c3b596b71c37f613677eef6daf09c1ffb7ca3a47b1818e070a4f249fe9",
+              "untracked": true
+            },
+            {
+              "path": "apps/web/src/app/api/health/odds-collector/route.ts",
+              "sha256": "52e92f695a5a2b5ed09754b7857413adaae8fbd5bc620e317ac4a82fc587856d",
+              "untracked": false
+            },
+            {
+              "path": "apps/web/src/lib/oddsCollectorHealthRoute.server.test.ts",
+              "sha256": "602185ca872192aebb48c285279145ccdf73400030540d4cf6ad89681c051d59",
+              "untracked": false
+            },
+            {
+              "path": "package.json",
+              "sha256": "d38420e885046137910599cec63f4a4fb22bcee0ddf77e2ac878816d3f548135",
+              "untracked": false
+            },
+            {
+              "path": "packages/db/tooling/tests/providerCredits.test.ts",
+              "sha256": "eaaad1fbea8ba549dea1b166a7b8dc7ecc54e7deaa4b0c5e715c5ccc78d8c5e3",
+              "untracked": false
+            }
+          ],
+          "workingPatchSha256": "6ded870d4d382b91a5bd452f32eba996bb7ae36335e6fb473e03f6143caed89c",
+          "checkerOverlaySha256": "738888e9eff711db2435cc82eafc8d69c431c4e975cb10f06ddf657d2773438e",
+          "packageIntegration": "Keep #222 provider-boundary.check.mjs plus #287 config-enforcement.check.mjs and config-definition-import.check.mjs in the node --test list. Disposable union only; owner package unchanged.",
+          "combinedGate": "node --test tests/ciGate.check.mjs tests/monorepo-layout.check.mjs tests/secrets-inventory.check.mjs tests/provider-boundary.check.mjs tests/config-enforcement.check.mjs tests/config-definition-import.check.mjs",
+          "ownerCheckoutChanged": false
+        },
+        "enforcement": {
+          "checkedFiles": 164,
+          "disables": {
+            "checkedFiles": 94
+          },
+          "violations": []
+        },
+        "ciGatePassed": 60,
+        "alignment": {
+          "server": 20,
+          "client": 7
+        },
+        "violations": [],
+        "ownerHandoff": "Keep both #222 and #287 tests in test:ci-gate when merging. An additive gate union was tested in the disposable checkout and provided as a local patch; no owner branch was edited.",
+        "integrationPatchSha256": "1daaefa5421b6b89668701c864e99f8d8b451cc04558fc7c6efeecff5f22ec73"
+      }
+    ],
+    "ownerExcluded": [
+      {
+        "branch": "feature/dfsEV-220-planetscale-harness",
+        "sha": "6f3ea1a5ce5eaba41cf80cbeba4b3764c0511889",
+        "disposition": "archived spike evidence, never-merge, intentionally not conformed"
+      },
+      {
+        "branch": "feature/dfsEV-220-hosted-harness",
+        "sha": "8bd45a91d24914fac2251fe8fb9d2d13bed17734",
+        "disposition": "archived spike evidence, never-merge, intentionally not conformed"
+      }
+    ],
+    "ownerExclusionReason": "Owner confirmed #220 results accepted 14 Nov, teardown done, both never-merge. hosted-harness containment in planetscale-harness checked locally.",
+    "otherRetainedRefs": [
+      {
+        "branch": "feature/dfsEV-106-real-qb-slice",
+        "sha": "703dd8f85d176e53aa368bc188c58047d5783788",
+        "ancestorOfMain": false,
+        "reason": "Historical retained ref for a closed issue; no open PR or current working changes. Not claimed conformed."
+      },
+      {
+        "branch": "feature/dfsEV-118-training-reads-retention",
+        "sha": "938fa00ccac61fed9222e4fedb4bec96547b1941",
+        "ancestorOfMain": false,
+        "reason": "Historical retained ref for a closed issue; no open PR or current working changes. Not claimed conformed."
+      },
+      {
+        "branch": "feature/dfsEV-140-ci-db-gating",
+        "sha": "009b531bad3ae42a4e8f3bcdc33661cfa5066843",
+        "ancestorOfMain": false,
+        "reason": "Retained non-current ref: no open PR, no current worktree or working changes, and no owner-identified active work. The underlying issue can remain open; this is not a claim that the issue is closed or the ref conforms."
+      },
+      {
+        "branch": "feature/dfsEV-206-budget-latency-profile",
+        "sha": "6e51c3b170d0f5b7ff81b710f4ae510e18d174aa",
+        "ancestorOfMain": false,
+        "reason": "Retained non-current ref: no open PR, no current worktree or working changes, and no owner-identified active work. The underlying issue can remain open; this is not a claim that the issue is closed or the ref conforms."
+      },
+      {
+        "branch": "feature/dfsEV-61-hosted-budget-benchmark",
+        "sha": "73e30c95a87fa56d82cebb6a4a4247310bb96e64",
+        "ancestorOfMain": false,
+        "reason": "Retained non-current ref: no open PR, no current worktree or working changes, and no owner-identified active work. The underlying issue can remain open; this is not a claim that the issue is closed or the ref conforms."
+      },
+      {
+        "branch": "fix/dfsEV-118-foundation-review",
+        "sha": "4064557a8407954f2b84e1285cc736ba3a89536c",
+        "ancestorOfMain": false,
+        "reason": "Historical retained ref for a closed issue; no open PR or current working changes. Not claimed conformed."
+      },
+      {
+        "branch": "spike/dfsEV-127-verify-on-write",
+        "sha": "8df413bd872a1831da6bcf9cadbe19e9581e4bb1",
+        "ancestorOfMain": false,
+        "reason": "Historical retained ref for a closed issue; no open PR or current working changes. Not claimed conformed."
+      }
+    ],
+    "currentBranch": "Qualified separately as sourceSha.",
+    "method": "Disposable detached checkout; main merged locally (already an ancestor), current owner working source copied and hashed, checker-only overlay applied. Independent CI path additions unioned locally. No rebase, owner-worktree edit or push.",
+    "scopeLimit": "As-of snapshots only; refresh affected checks if feature source or main changes before opening the PR."
+  },
+  "build": {
+    "format": "configuration-enforcement-build-v1",
+    "sourceSha": "75b29a3dec560e0c50adfebd5cc4191b450e57cd",
+    "results": [
+      {
+        "mode": "empty",
+        "startedAt": "2026-11-18T02:00:30.830181+00:00",
+        "finishedAt": "2026-11-18T02:00:38.108695+00:00",
+        "exitCode": 0,
+        "logSha256": "afce7883d047edebf5f4e65a9e0bdbd0b6900cf218c5a351db90773080c19178",
+        "scaffolds": [
+          {
+            "path": "apps/web/src/app/configuration-enforcement-probe/page.tsx",
+            "sha256": "8bb2ff8081dab76322123d47be5b6fe917110823f71ec2ef7f8479f0ae68004d"
+          },
+          {
+            "path": "apps/web/src/app/configuration-enforcement-probe/public/page.tsx",
+            "sha256": "7d1ad5b5097155fb5145658e49d1ddb6d9ccf1560cbbf63a9157a45ad6c4eb2b"
+          },
+          {
+            "path": "apps/web/src/app/configuration-enforcement-probe/edge/route.ts",
+            "sha256": "563e40bc83031d0072004376d391769df5b3ad20f3541c9d567331efaf9d2fb9"
+          }
+        ],
+        "fixturePrerender": true
+      },
+      {
+        "mode": "markers",
+        "startedAt": "2026-11-18T02:00:52.003076+00:00",
+        "finishedAt": "2026-11-18T02:00:58.139194+00:00",
+        "exitCode": 0,
+        "logSha256": "a63d66511b7b1163f0ddcc700f1f79ae33d84d7101c1c98232a6f4a0b0e1efba",
+        "scaffolds": [
+          {
+            "path": "apps/web/src/app/configuration-enforcement-probe/page.tsx",
+            "sha256": "8bb2ff8081dab76322123d47be5b6fe917110823f71ec2ef7f8479f0ae68004d"
+          },
+          {
+            "path": "apps/web/src/app/configuration-enforcement-probe/public/page.tsx",
+            "sha256": "7d1ad5b5097155fb5145658e49d1ddb6d9ccf1560cbbf63a9157a45ad6c4eb2b"
+          },
+          {
+            "path": "apps/web/src/app/configuration-enforcement-probe/edge/route.ts",
+            "sha256": "563e40bc83031d0072004376d391769df5b3ad20f3541c9d567331efaf9d2fb9"
+          }
+        ],
+        "fixturePrerender": true,
+        "publicFilesChecked": 55,
+        "serverMarkerLeaks": 0,
+        "publicMarkerPresent": true,
+        "edgeJavaScriptFilesChecked": [
+          "server/edge/chunks/_0vif1vppn_97_._.js",
+          "server/edge/chunks/turbopack-node_modules_next_dist_esm_build_templates_edge-wrapper_16a1-xsbi4w5w.js",
+          "server/middleware-build-manifest.js",
+          "server/interception-route-rewrite-manifest.js",
+          "required-server-files.js",
+          "server/server-reference-manifest.js",
+          "server/app/configuration-enforcement-probe/edge/route_client-reference-manifest.js",
+          "server/edge/chunks/1no0_server_app_configuration-enforcement-probe_edge_route_actions_15qtt6cwiswr7.js",
+          "server/edge/chunks/node_modules_next_dist_esm_0f1lx93lspg4x._.js",
+          "server/edge/chunks/[root-of-the-server]__00scmjkht_azc._.js",
+          "server/edge/chunks/turbopack-node_modules_next_dist_esm_build_templates_edge-wrapper_0fa296etg5u8m.js"
+        ],
+        "edgeMapCount": 6,
+        "edgeSourceEntriesChecked": 255,
+        "nodeOnlyMarkersAbsent": [
+          "claim_shared_odds_batch",
+          "capability check unavailable; odds requests remain gated until retry"
+        ],
+        "nodePositiveControls": {
+          "claim_shared_odds_batch": [
+            "server/chunks/_0i7kzyx_p9q59._.js",
+            "server/chunks/apps_web_src_lib_oddsCacheStartup_ts_03r0akxlgixic._.js",
+            "server/chunks/_08g-bidvzpu5c._.js"
+          ],
+          "capability check unavailable; odds requests remain gated until retry": [
+            "server/chunks/apps_web_src_1vehvab2kcu9o._.js"
+          ]
+        },
+        "originalGuardInSourceMaps": [
+          {
+            "map": "server/edge/chunks/_0vif1vppn_97_._.js.map",
+            "source": "../../../../apps/web/src/instrumentation.ts",
+            "note": "Original guard remains in sourcesContent only; Node import/body absent from executable Edge JavaScript."
+          }
+        ]
+      },
+      {
+        "mode": "refusal",
+        "startedAt": "2026-11-18T02:01:10.600971+00:00",
+        "finishedAt": "2026-11-18T02:01:14.145583+00:00",
+        "exitCode": 1,
+        "logSha256": "8be3dcf08e560f0d80a55dbb56752422435a89e637fa0f9c004fa2c37e83b04d",
+        "scaffolds": [
+          {
+            "path": "apps/web/src/app/configuration-enforcement-probe/page.tsx",
+            "sha256": "8bb2ff8081dab76322123d47be5b6fe917110823f71ec2ef7f8479f0ae68004d"
+          },
+          {
+            "path": "apps/web/src/app/configuration-enforcement-probe/public/page.tsx",
+            "sha256": "7d1ad5b5097155fb5145658e49d1ddb6d9ccf1560cbbf63a9157a45ad6c4eb2b"
+          },
+          {
+            "path": "apps/web/src/app/configuration-enforcement-probe/edge/route.ts",
+            "sha256": "563e40bc83031d0072004376d391769df5b3ad20f3541c9d567331efaf9d2fb9"
+          },
+          {
+            "path": "apps/web/src/app/configuration-enforcement-probe/refusal/page.tsx",
+            "sha256": "111b352c3a6d14243593dda7326a0fc709148200cef60e25c521bf0b5ae0a254"
+          }
+        ],
+        "expectedCompilerRefusal": true
+      }
+    ],
+    "sourceFilesVerifiedPerSnapshot": 978,
+    "sourceManifestSha256": "61ce1d8eccb4812a8ce6bae543d4cfe3bda543ec836c855f49bf6ced59ba8e86",
+    "fontMockSha256": "6d0fa22564434ff0353e759c4b8ccad661fdc2f14e3324b46aab40ee3a4c6043",
+    "fontDependency": "Installed Next test-only font-response hook with exact URL keys and synthetic CSS without font transfers; font rendering is outside this proof.",
+    "environment": "Explicit synthetic-only environment and isolated HOME; no private dotenv files copied. Fixture mode and absent/invalid DB inputs avoid live clients.",
+    "productionCodeOrCompilerConfigurationChanged": false
+  },
+  "initialStops": [
+    {
+      "kind": "local sweep setup",
+      "reason": "Sandbox blocked ORIG_HEAD during initial disposable merge; an early command lacked the completed checker/dependencies and is not a source result. Retained local log."
+    },
+    {
+      "kind": "synthetic font mock",
+      "reason": "Initial proxy response map had no explicit URL keys for Turbopack. Exact-key synthetic CSS fixed the isolated build harness; app/compiler configuration unchanged. Initial build log retained."
+    }
+  ],
+  "verification": {
+    "status": "pass",
+    "node": "24.21.0",
+    "ciGatePassed": 49,
+    "fullSuitePassed": 1877,
+    "optInLiveR2Skipped": 1,
+    "dbToolingGuardPassed": 26,
+    "typecheck": "pass",
+    "lint": "pass; unchanged core lint sources, verified repository snapshot",
+    "importBoundaryTestsPassed": 12,
+    "publicationGuard": {
+      "scope": "complete committed source tree at sourceSha",
+      "trackedPaths": 978,
+      "approvedFindings": 8,
+      "unapprovedFindings": 0
+    },
+    "mainMergeRequired": false,
+    "runtimeWorkBudgetsChanged": false
+  },
+  "limits": [
+    "Named syntax enforcement, not arbitrary JavaScript data-flow or scope analysis.",
+    "Non-app tools remain explicitly cataloged/reviewed; retired executable discovery is not claimed to provide their completeness.",
+    "Metadata agreement is not deployment, IAM, live-resource or credential-copy verification; #101 retains that work.",
+    "Font rendering is outside the compiler proof; isolated builds use installed Next test-only synthetic font CSS responses.",
+    "Original guarded instrumentation source can remain in source-map sourcesContent; executable Edge output and Node-only source-module exclusion are checked separately."
+  ],
+  "operations": {
+    "databaseLanes": false,
+    "hostedWrites": false,
+    "productionCredentials": false,
+    "providerCalls": false,
+    "pushed": false
+  },
+  "checkerSources": [
+    {
+      "path": "eslint.boundaries.mjs",
+      "sha256": "a56e8934da68aed389eb22d9df4eda30047d66e4b21514c865cb642dffa289b5"
+    },
+    {
+      "path": "eslint.environment.mjs",
+      "sha256": "feb79b9cd835a5605f16c4307ed4df465b04c7774349a0e00cf196f21674ccac"
+    },
+    {
+      "path": "package.json",
+      "sha256": "6adf50f80a53c0f3255e503af114f4eb7ca517fe5237b32dba2c17868625ee29"
+    },
+    {
+      "path": "scripts/security/config-enforcement.mjs",
+      "sha256": "303092fc8a88e37cb90baf6cdb2782abda21bd9c8783b20bf3c95d6b524e45a4"
+    },
+    {
+      "path": "scripts/security/secrets-inventory.mjs",
+      "sha256": "1b28391bfe51cd9e259ce1c39acea9cbc88d368cb49b8a71ff0289668296011e"
+    },
+    {
+      "path": "tests/config-definition-import.check.mjs",
+      "sha256": "b66e7a1cd43f59cdf3f4aab8cee6cf9b0f77719c501090a12fbcd7c625fbe80b"
+    },
+    {
+      "path": "tests/config-definition-import.probe.mts",
+      "sha256": "ed8521358ff25806f8eb104dca2adfbe3096e25d0df6d3c075452e557ee5477e"
+    },
+    {
+      "path": "tests/config-enforcement.check.mjs",
+      "sha256": "55c73e6872a6c63c665476b072c3809d54ed3c27fe5d8e8ae39c13b41eeae56a"
+    },
+    {
+      "path": "tests/secrets-inventory.check.mjs",
+      "sha256": "3d23a74cb236131883bbdb26034a22abe671b5c5a34a5216f697ff5dcb6267fc"
+    },
+    {
+      "path": "vitest.configuration.config.mts",
+      "sha256": "6f446333f4a30a48cd4b62cca123fa790c0e3a3cddcf0f04f804d8929e7daedb"
+    }
+  ],
+  "localEvidence": {
+    "buildSourceManifestSha256": "61ce1d8eccb4812a8ce6bae543d4cfe3bda543ec836c855f49bf6ced59ba8e86",
+    "localRefInventorySha256": "30d3804fed42b4c933ee4972cee77570e935a2411bd5fc06cbb74e8e490695fe",
+    "initial222SnapshotSha256": "fa534e8cbf26dc3add21ef4955ac09132b46c7e187db5b37ba2374c11efc115b",
+    "final222SnapshotSha256": "84b1f44499b610a498b18738920ae4c9010df3788820a0240ae9002148222077"
+  }
+}
