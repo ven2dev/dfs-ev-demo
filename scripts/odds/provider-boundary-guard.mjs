@@ -19,6 +19,20 @@ const constantString = node => {
     if (left !== undefined && right !== undefined) return left + right;
   }
 };
+// Detect provider references in trusted source, including bare host constants.
+// Parse the hostname so mentions in paths, queries or lookalike domains do not
+// become false matches. This is a source-boundary rule, not URL sanitization.
+const isProviderLocation = value => {
+  if (value === undefined) return false;
+  const providerHostname = "api.the-odds-api.com";
+  for (const candidate of [value, value.startsWith("//") ? `https:${value}` : `https://${value}`]) {
+    try {
+      const hostname = new URL(candidate).hostname.toLowerCase().replace(/\.$/, "");
+      if (hostname === providerHostname) return true;
+    } catch { /* Non-URL source literals are irrelevant to this rule. */ }
+  }
+  return false;
+};
 const enclosingFunction = node => {
   while (node) {
     if (ts.isArrowFunction(node) || ts.isFunctionExpression(node)) return ts.isVariableDeclaration(node.parent) ? node.parent : undefined;
@@ -37,8 +51,7 @@ export const checkProviderBoundary = sources => {
       if (path !== transport) {
         if (ts.isIdentifier(node) && node.text === "ODDS_API_BASE") fail("ODDS_API_BASE escaped the provider boundary");
         const literal = constantString(node);
-        if (literal?.includes("api.the-odds-api.com")) fail("provider URL escaped the provider boundary");
-
+        if (isProviderLocation(literal)) fail("provider URL escaped the provider boundary");
       }
       if (path === transport && ts.isIdentifier(node) && node.text === "fetch") {
         const parent = node.parent;

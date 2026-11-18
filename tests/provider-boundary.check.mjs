@@ -34,3 +34,23 @@ test("guard refuses aliased or computed fetch inside the provider module", () =>
     assert.ok(checkProviderBoundary(mutateTransport(source => source + "\n" + bypass)).length);
   }
 });
+
+test("provider detection uses parsed canonical hostnames, including authority variants", () => {
+  for (const value of [
+    "https://API.THE-ODDS-API.COM/v4", "https://api.the-odds-api.com.:443/v4",
+    "//api.the-odds-api.com/v4", "api.the-odds-api.com", "api.the-odds-api.com:443/v4",
+    "https://other.invalid@api.the-odds-api.com/v4", "https://%61pi.the-odds-api.com/v4",
+  ]) {
+    const failures = checkProviderBoundary([...sources, { path: "apps/web/src/lib/bypass.ts", source: `fetch(${JSON.stringify(value)});` }]);
+    assert.ok(failures.some(message => message.endsWith("provider URL escaped the provider boundary")), value);
+  }
+});
+test("provider mentions outside the hostname and lookalike hosts do not match", () => {
+  for (const value of [
+    "https://api.the-odds-api.com.other.invalid/v4", "https://prefix-api.the-odds-api.com/v4",
+    "https://other.invalid/api.the-odds-api.com", "https://other.invalid/?next=https://api.the-odds-api.com/v4",
+    "https://api.the-odds-api.com@other.invalid/v4", "not a URL mentioning api.the-odds-api.com",
+  ]) {
+    assert.deepEqual(checkProviderBoundary([...sources, { path: "apps/web/src/lib/ordinary.ts", source: `const reference = ${JSON.stringify(value)};` }]), [], value);
+  }
+});
