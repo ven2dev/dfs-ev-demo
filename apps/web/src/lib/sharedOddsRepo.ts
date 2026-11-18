@@ -30,10 +30,10 @@ const readSharedOdds = async (
     makeOwnerId: randomUUID, monotonicNow: () => performance.now(),
     wait: ms => new Promise(resolve => setTimeout(resolve, ms)),
     onCacheWriteError: error => console.error("[sharedOddsRepo] failed to publish odds:", error),
-    fetch: async (owned, ownerSignal) => {
+    fetch: async (owned, ownerSignal, claim) => {
       const combinedSignal = signal ? AbortSignal.any([signal, ownerSignal]) : ownerSignal;
       combinedSignal.throwIfAborted();
-      const raw = await fetchEventOdds(sportKey, eventId, owned, combinedSignal, source);
+      const raw = await fetchEventOdds(sportKey, eventId, owned, combinedSignal, source, { kind: "raw", ...claim });
       const fetched = context ? { ...raw, data: {
         ...raw.data,
         commence_time: raw.data.commence_time ?? context.startTime,

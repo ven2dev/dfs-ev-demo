@@ -9,3 +9,5 @@ export type { SharedOddsResource, SharedOddsBatch, SharedOddsQuery, SharedOddsDe
 export { createProviderCreditStore } from "./providerCredits.ts";
 export type { ProviderCreditQuery, ProviderCreditReason, ProviderCreditReservationInput, ProviderCreditDecision,
   ProviderCreditHealth, CreditResolutionEvidence } from "./providerCredits.ts";
+export { reserveProviderCreditSend, consumeProviderCreditPermit } from "./providerCreditPermit.ts";
+export type { ProviderCreditPermit, ProviderCreditSend } from "./providerCreditPermit.ts";

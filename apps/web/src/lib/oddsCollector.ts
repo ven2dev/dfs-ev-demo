@@ -320,6 +320,7 @@ export const runOddsCollector = async (
     remaining <= config.quotaReserve + TRACKABLE_PLAYER_PROP_MARKET_KEYS.length;
   summary.claimLimitApplied = scarceOrUnknown ? 1 : config.claimLimit;
   summary.maxCreditCost = quotaLimits.maxCreditCost;
+  const claimStarted = performance.now();
   const claimResult = await deps.claimDue({
     ownerId: config.ownerId,
     now: deps.now(),
@@ -363,7 +364,9 @@ export const runOddsCollector = async (
         checkpoint.event_id,
         checkpoint.market_keys,
         AbortSignal.timeout(config.requestTimeoutMs),
-        "scheduled"
+        "scheduled",
+        { kind: "collector", checkpointId: checkpoint.id, ownerId: config.ownerId,
+          deadline: Math.min(claimStarted + config.leaseMs, performance.now() + config.requestTimeoutMs) }
       );
       attemptCost = fetched.quota.last;
       recordCost(attemptCost);

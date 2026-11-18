@@ -1,0 +1,68 @@
+{
+  "issue": 222,
+  "checkpoint": 2,
+  "status": "uncommitted review",
+  "parentCommit": "7db5eccef3b50c2bdaa1c6f9b18e1c04ea19c723",
+  "rolloutMode": "log-only; no environment/public enforcement selector",
+  "checks": {
+    "browserPassed": 947,
+    "nodePassed": 991,
+    "nodeOptInLiveR2Skipped": 1,
+    "finalFocusedAfterTelemetryCorrelation": 86,
+    "ciGatePassed": 36,
+    "typecheck": "passed",
+    "lintAndImportBoundaries": "passed",
+    "diffCheck": "passed"
+  },
+  "workBudgets": {
+    "eligiblePaidBatchReserveStatements": 1,
+    "freshCacheReservationStatements": 0,
+    "cooldownReservationStatements": 0,
+    "freeEventsReservationStatements": 0,
+    "automaticReserveRetries": 0,
+    "paidRetriesAfterUnknownOutcome": 0,
+    "knownEnforceResponseReconcileStatements": 1,
+    "shadowReconcileStatements": 0
+  },
+  "behavior": [
+    "nominal WeakMap-backed single-use permit with immutable selectors",
+    "owner signal and original monotonic claim deadline checked before and after reservation and at send",
+    "shared raw owner forwarded with no extra cache statement",
+    "collector checkpoint owner and market cost distinct from telemetry source",
+    "unknown enforce storage result refuses send; log-only sanitized compatibility continues",
+    "HTTP/decode headers processed before throwing, no resend after reconciliation failure",
+    "telemetry ID equals reservation ID",
+    "ownerless enforcement refused; current-schema log-only preserved"
+  ],
+  "limits": [
+    "No enforcement activation",
+    "Provider/reset/header semantics remain gated by #294/#295",
+    "No hosted timing, real credentials or provider calls",
+    "No DB SQL or production driver changes in checkpoint 2",
+    "Source guard, build and final DB/pool integration remain checkpoint 3"
+  ],
+  "initialRegressionFailure": "Unprivileged loopback listen EPERM in existing socket/process fixtures; authorized local rerun passed",
+  "sourceSha256": {
+    "apps/web/src/lib/oddsApi.server.test.ts": "81357087f26c9bce91fff776f6d4265ae26ad0a002ac473cdc77812b964463d8",
+    "apps/web/src/lib/oddsApi.ts": "4d7c4754e3489c8249a39279604ee3186e9d1e81321cb74004d382aae0976fa0",
+    "apps/web/src/lib/oddsApiTelemetry.server.test.ts": "06bca5695770b23deae60bd03152d0fa4f6de52bca5a0006ac41419aa0c4eae4",
+    "apps/web/src/lib/oddsCollector.server.test.ts": "b09cec37655be0a5aa5de26b4520a9732f476a532729af99fe8152f50e9ad2d6",
+    "apps/web/src/lib/oddsCollector.ts": "5fae960757732421575a4d8dc7bd9c564da02ef2d0c462fa6bc68190266de56f",
+    "apps/web/src/lib/providerCreditBoundary.server.test.ts": "8a6b9047b979b13bca9cf0b47c865ea6f1222ad4be713be80c5b68f9d7e52275",
+    "apps/web/src/lib/providerCreditBoundary.ts": "6eb5e97fa808ae303fffc8d5e6978c4087caa39fa922e5dd4c97a54c0c44e96c",
+    "apps/web/src/lib/sharedOddsRepo.ts": "c440700d80df0b3ce971ec22ab1bf2202076de1d5f4f685c9df60a23e1f08454",
+    "docs/222-roadmap.md": "5fbb9b950bb159079ff2ce6b3d323988b56ce81af825b8c458beb3d4c3a29ebc",
+    "packages/db/src/providerCreditPermit.ts": "996dffc3f3b23c3199f62fd2660f01ab4899f8ded59083596883cc4f3f1253f5",
+    "packages/db/src/runtime.ts": "e158524ea74a28bab9cfb79577412d8c2b7978b9ad6d7f60a9e51749aacab669",
+    "packages/db/src/sharedOddsCache.ts": "19618c82ac9e0c03b3755fad22691edcefb735d74153754377a8d8c9a86b3839",
+    "packages/db/tooling/tests/unit/providerCreditPermit.test.ts": "50e417541066642acf2dd34e4b7008fa451d8ea04f86d0abea1f7afdd7602640"
+  },
+  "privateRawLogSha256": {
+    "/private/tmp/dfs222-c2-app-final.log": "d60576deddbf8b98bc36fad757fe223d9e0eeeafa411e7ea9705b2ab40b51b27",
+    "/private/tmp/dfs222-c2-final-focused.log": "514b30d5307560b077f397c9a7cfd4907369d86a77e59f4ea0b73fdd4baaed24",
+    "/private/tmp/dfs222-c2-typecheck-final.log": "f65fd97d2a283a6d774c84d936e0bc3d5153bb69f81b0ebef1975371238ff03e",
+    "/private/tmp/dfs222-c2-lint-final.log": "0e0e81b680b668ad0a2b5f385227043f13226a663edd09aeecefcfbfde0e283f",
+    "/private/tmp/dfs222-c2-gate.log": "ca0a3c1071f3fb6dd0c1fc02b85abb7d2fb7492201828bf15545bd998ba01de2",
+    "/private/tmp/dfs222-c2-node.log": "4e9fa8c116be0da47126f3d32c7cb645c03a3424457fc5efa542255ffa6ea965"
+  }
+}

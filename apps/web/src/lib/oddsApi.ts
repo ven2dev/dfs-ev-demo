@@ -1,4 +1,6 @@
 import "server-only";
+import { consumeProviderCreditPermit, type ProviderCreditPermit } from "@dfs-ev/db/runtime";
+import { reservePaidOdds, type PaidOddsOwnership } from "./providerCreditBoundary";
 import { projectPlayerPropLines } from "./oddsProjection";
 import { randomUUID } from "node:crypto";
 import { getCurrentNflSlateWindow, isEventInNflSlateWindow } from "@dfs-ev/domain/nfl-week";
@@ -152,22 +154,34 @@ export const fetchEventOdds = async (
   eventId: string,
   marketKeys: string[],
   signal?: AbortSignal,
-  source: OddsApiRequestSource = "direct"
+  source: OddsApiRequestSource = "direct",
+  ownership?: PaidOddsOwnership
 ): Promise<OddsApiFetch<EventOddsResponse>> => {
-  const { apiKey } = serverConfig.liveOdds();
+  serverConfig.liveOdds();
   if (marketKeys.length === 0) {
     throw new Error("fetchEventOdds requires at least one market key");
   }
   sportKey = requireOddsSport(sportKey);
   eventId = requireOddsEventId(eventId);
-  marketKeys = marketKeys.map(requireOddsMarket);
+  marketKeys = [...new Set(marketKeys.map(requireOddsMarket))].sort();
+  const reservation = await reservePaidOdds(sportKey as "americanfootball_nfl", eventId, marketKeys, signal, ownership);
+  return fetchReservedEventOdds(reservation.permit, source, reservation.reconcile);
+};
+
+// The only paid transport accepts a nominal, runtime single-use reservation.
+const fetchReservedEventOdds = async (
+  permit: ProviderCreditPermit, source: OddsApiRequestSource, reconcile: (quota: OddsApiQuota) => Promise<void>
+): Promise<OddsApiFetch<EventOddsResponse>> => {
+  const { apiKey } = serverConfig.liveOdds();
+  const { sportKey, eventId, marketKeys, signal } = permit;
 
   const url = new URL(`${ODDS_API_BASE}/sports/${sportKey}/events/${encodeURIComponent(eventId)}/odds/`);
   url.search = new URLSearchParams({ apiKey, regions: "us", markets: marketKeys.join(",") }).toString();
-  const requestId = randomUUID();
+  const requestId = permit.reservationId;
   const requestedAt = new Date();
   let res: Response;
   try {
+    consumeProviderCreditPermit(permit);
     res = await fetch(url.toString(), { cache: "no-store", signal, redirect: "error" });
   } catch (error) {
     await safelyRecordRequest({
@@ -176,7 +190,7 @@ export const fetchEventOdds = async (
       source,
       sportKey,
       eventId,
-      requestedMarkets: marketKeys,
+      requestedMarkets: [...marketKeys],
       requestedAt,
       responseReceivedAt: null,
       outcome: signal?.aborted ? "aborted" : "network-error",
@@ -186,13 +200,14 @@ export const fetchEventOdds = async (
     throw sanitizedFailure(error);
   }
   const metadata = responseMetadata(res);
+  await reconcile(metadata.quota);
   await safelyRecordRequest({
     id: requestId,
     requestKind: "event-odds",
     source,
     sportKey,
     eventId,
-    requestedMarkets: marketKeys,
+    requestedMarkets: [...marketKeys],
     requestedAt,
     responseReceivedAt: new Date(metadata.capturedAt),
     outcome: res.ok ? "success" : "http-error",

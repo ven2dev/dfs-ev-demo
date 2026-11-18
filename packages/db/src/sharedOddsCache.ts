@@ -9,7 +9,7 @@ export type SharedOddsBatch<T> = Record<string, SharedOddsResource<T>>;
 export type SharedOddsQuery = (text: string, params: unknown[]) => Promise<Record<string, unknown>[]>;
 export type SharedOddsDependencies<T> = {
   query: SharedOddsQuery;
-  fetch: (keys: string[], signal: AbortSignal) => Promise<Record<string, T>>;
+  fetch: (keys: string[], signal: AbortSignal, claim: { ownerId: string; deadline: number }) => Promise<Record<string, T>>;
   makeOwnerId: () => string;
   monotonicNow: () => number;
   wait: (ms: number) => Promise<void>;
@@ -38,6 +38,7 @@ export const getSharedOddsBatch = async <T>(
   let owned: string[] = [];
   let resources: SharedOddsBatch<T> = {};
   let claimStarted = 0;
+  let claimOwner = "";
   const leaseMs = options.leaseMs ?? 30_000;
   try {
     return await getOrRefresh<SharedOddsBatch<T>>(
@@ -64,6 +65,7 @@ export const getSharedOddsBatch = async <T>(
         tryAcquireRefresh: async (_key, owner) => {
           deps.signal?.throwIfAborted();
           claimStarted = deps.monotonicNow();
+          claimOwner = owner;
           const [claim] = await deps.query(
             "SELECT * FROM public.claim_shared_odds_batch($1,$2,$3,$4,$5)",
             [eventId, keys, owner, options.ttlMs, leaseMs]
@@ -83,7 +85,7 @@ export const getSharedOddsBatch = async <T>(
           if (signal.aborted || deps.monotonicNow() - claimStarted >= leaseMs) {
             throw new Error("Odds batch lease expired before provider send");
           }
-          const payloads = await deps.fetch(owned, signal);
+          const payloads = await deps.fetch(owned, signal, { ownerId: claimOwner, deadline: claimStarted + leaseMs });
           if (owned.some(key => !Object.hasOwn(payloads, key))) {
             throw new Error("Incomplete odds batch: missing markets need explicit empty slices");
           }
