@@ -1,6 +1,6 @@
 # #222 provider credits at the paid-call boundary
 
-Status: roadmap approved; owner authorized ALT to create the implementation branch. Branch `feature/dfsEV-222-paid-boundary-reservation` starts at main `c15e6949c42f7288f09fcb3ad996ab5d19d51c1e`. Checkpoint 1 committed as `7db5eccef3b50c2bdaa1c6f9b18e1c04ea19c723`; checkpoint 2 is implemented and uncommitted for review. No push. #295 owns the deferred observer/reset/breaker work and is a verified dependency of #224; #294 owns provider/driver and hosted timing. #222 acceptance posting and #206 closing remain separate owner approvals.
+Status: roadmap approved; owner authorized ALT to create the implementation branch. Branch `feature/dfsEV-222-paid-boundary-reservation` starts at main `c15e6949c42f7288f09fcb3ad996ab5d19d51c1e`. Checkpoint 1 committed as `7db5eccef3b50c2bdaa1c6f9b18e1c04ea19c723`; checkpoint 2 committed as `0662f7ded1ce44781432885710dd5862100760ba`. Checkpoint 3 is complete and uncommitted for review. No push. #295 owns the deferred observer/reset/breaker work and is a verified dependency of #224; #294 owns provider/driver and hosted timing. #222 acceptance posting and #206 closing remain separate owner approvals.
 
 The pre-branch synthetic spike passed 29 named checks plus 20-client/two-backend transaction pooling. Its source/log/receipt hashes remain in the private planning archive; this document distinguishes that historical prototype from new real-table implementation tests. No hosted/provider calls or real credentials are authorized.
 
@@ -118,7 +118,7 @@ The proposal, provider-neutral primitives and typed health/operator contract pas
 
 Lane-2 containers and its network were removed and confirmed absent after verification. These are local correctness/work-budget results, not hosted latency or production durability qualification. See `docs/evidence/provider-credit-222/checkpoint-1.json` for hashes and limitations. The structural paid-fetch capability and provider-source CI guard remain checkpoint 2/3 work; full application/build and feature-store regression runs remain checkpoint 3. Numeric health thresholds remain proposals, not active policy. Checkpoint 1 was committed with owner approval; no push has been made.
 
-### Checkpoint 2: paid transport boundary (uncommitted)
+### Checkpoint 2: paid transport boundary (committed)
 
 The reservation primitive now mints a nominal, process-local single-use permit bound to canonical markets, event, signal and a monotonic pre-send deadline. Runtime validation rejects forged, copied, reused, aborted and expired permits. Reserve replay or denial cannot mint another send; an ambiguous enforce result cannot send or retry. Explicit log-only storage failure continues compatibility with a bounded, sanitized notice and no authoritative debit. The application selects log-only in code; there is no public or environment switch that enables enforcement.
 
@@ -127,3 +127,23 @@ The reservation primitive now mints a nominal, process-local single-use permit b
 Provider response headers are processed before HTTP/decode exceptions. Qualified enforce orchestration reconciles known costs once; missing costs retain liability, storage errors do not create another send, and shadow headers never mutate the enforce ledger. Telemetry uses the reservation ID for correlation and retains response/error metadata. Monthly period interpretation is only a local contract here: real provider reset/header semantics remain #294/#295 and before-enforce gates. Free `/events` remains outside reservation with its existing call path.
 
 Validation: full application regressions passed 947 browser and 991 Node cases (one opt-in live R2 case skipped). The final focused paid-boundary/telemetry/permit rerun passed 86 cases after adding reservation-ID telemetry correlation. Typecheck, lint/import boundaries, CI gate (36 cases) and whitespace checks pass. Initial unprivileged Node failures were loopback `listen EPERM`; the authorized local socket rerun passed without implementation changes for those failures. No DB DDL or driver changes in this checkpoint; checkpoint 3 still owns provider-source guard mutation checks, build and final real-table/pool/both-DB-suite integration. No hosted work, credentials or provider calls occurred. Report before commit; no push.
+
+### Checkpoint 3: CI guard and final integration (uncommitted)
+
+The provider boundary guard runs in the unconditional `test:ci-gate` step before affected selection. It scans production app/domain/DB/pipeline sources and pipeline scripts, rejects escaped provider URLs/base identifiers or permit consumers, and requires the private paid transport's nominal parameter and immediate single-use consumption. Twelve guard cases cover the real tree and mutations including decoded/concatenated URLs, fetch aliases/computed calls, extra provider fetches, weakened types and removed consumption. This is a trusted-source architecture check, not a malicious-code sandbox. Runtime forgery/reuse and TypeScript nominal rejection remain independently tested.
+
+The authenticated collector health response now includes typed `providerCredits` total/count/age. Unavailable reads give null values and a safe warning, preserving current-schema log-only collector compatibility. A critical state adds a safe reason and makes the response unhealthy; period mismatch remains critical. Numeric age/amount thresholds are still proposals, and there is no new enforce activation switch. Final integration also bounds the collector send deadline by kickoff/window end, so waiting for admission cannot authorize a post-cutoff send.
+
+Final local validation:
+
+- 947 browser and 997 Node cases passed; one opt-in live R2 case skipped. The final focused health/collector/boundary check passed 42 cases.
+- Core: 86 tests plus all mandatory Node contracts and migration artifact/catalog/readiness checks passed through the standard local lifecycle.
+- Feature-store: all 301 cases passed on lane-2 standard.
+- Transaction pool: all 26 reservation cases passed at both exactly 2 and 20 runtime server backends, including real shared-kernel permit minting, a publish failure followed by zero additional sends inside cooldown, post-reservation deadline expiry retaining liability, and collector-owner replacement while waiting on the account. Server defaults 5s/2s/5s and transaction isolation diagnostics stay separate from serving statement budgets.
+- Default Next.js 16.4.6 Turbopack production build, typecheck, lint/import boundaries, 48 CI-gate cases, evidence-publication check and whitespace checks passed.
+
+The initial 20-slot pool attempt used the old ephemeral port after a Docker restart and failed with connection refusal. That original log/report is retained unchanged; the final config uses the newly observed port and the rerun passed. Both owned containers and the lane-2 network were removed and independently confirmed absent. Shared compose, production web driver, ordered migrations and proposal SQL are unchanged by this checkpoint. All runs used local fixtures/public disposable identities and a mock provider; no hosted work, real credentials or provider calls. The 90 ms production budget is not a local elapsed-time pass.
+
+Compact final evidence: `docs/evidence/provider-credit-222/checkpoint-3.json`. Raw logs/reports and spike override/configs remain in the private planning archive with hashes. Core #222 remains within the approved split: #295 owns free observation, confirmed automatic reset/rollover and the actual-cost serving breaker; #224 waits for it. Before any commit, report the diff for owner approval. No trailers or push without fresh consent.
+
+Approval-only text is in `docs/222-acceptance-amendment-draft.md`: the #222 acceptance/target update and the separate #206 historical closing summary. Neither has been posted; #206 remains open. The owner-approved 90 ms budget needs no new decision. Provider choice/hosted timing (#294), numerical health thresholds, schema freeze/apply, roles and enforcement activation remain separate release gates.

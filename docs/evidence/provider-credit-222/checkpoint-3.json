@@ -1,0 +1,109 @@
+{
+  "issue": 222,
+  "checkpoint": 3,
+  "status": "uncommitted review",
+  "parentCommit": "0662f7ded1ce44781432885710dd5862100760ba",
+  "checks": {
+    "browserPassed": 947,
+    "nodePassed": 997,
+    "liveR2Skipped": 1,
+    "finalFocusedPassed": 42,
+    "coreDbPassed": 86,
+    "coreMandatoryContracts": {
+      "nodeRequiredCases": 74,
+      "leaseRequiredCases": 13,
+      "readinessRequiredCases": 4,
+      "corpusRequiredCases": 8,
+      "result": "verified"
+    },
+    "featureStorePassed": 301,
+    "pool2Passed": 26,
+    "pool20Passed": 26,
+    "ciGatePassed": 48,
+    "providerGuardCases": 12,
+    "typecheck": "passed",
+    "lintAndImportBoundaries": "passed",
+    "build": "default Next.js 16.4.6 Turbopack passed",
+    "evidencePublication": "passed",
+    "diffCheck": "passed"
+  },
+  "integration": [
+    "real shared-kernel owner/deadline flows through one reservation and single-use permit",
+    "publish failure plus second request inside fixed cooldown adds zero sends/reservations",
+    "expired send deadline after committed reservation retains liability with no authority replay",
+    "raw and collector ownership rechecked after account-lock wait; resource rows not explicitly locked",
+    "collector deadline includes original lease, request timeout and event/window cutoff",
+    "authenticated health exposes total/count/age; critical mismatch surfaces safe reason; unavailable values remain null with warning",
+    "guard executes unconditionally before affected selection and rejects URL/alias/type/consumption bypass mutations"
+  ],
+  "pool": {
+    "image": "edoburu/pgbouncer@sha256:4a8371e79d6627e74f553d0aaa8e4c5ace20e30034fb296e569b71c89c99e108",
+    "mode": "transaction",
+    "serverBackendsVerified": [
+      2,
+      20
+    ],
+    "timeoutDefaults": [
+      "5s",
+      "2s",
+      "5s"
+    ],
+    "diagnosticTransactionsSeparateFromServingBudgets": true,
+    "sidecar": "private spike-only override; shared compose unchanged"
+  },
+  "initialPool20Failure": "Docker restart changed the ephemeral host port; initial 26 cases refused connection on the prior port. Original log/report retained. Final config uses newly observed port and all 26 pass.",
+  "cleanup": {
+    "lane": 2,
+    "containersAbsent": true,
+    "networkAbsent": true
+  },
+  "limits": [
+    "Local correctness/work budgets only; no hosted or 90 ms latency qualification",
+    "Standard disposable fixture uses test durability settings; no production durability claim",
+    "No real credentials or provider calls",
+    "No proposal SQL, ordered migration, shared compose or production web-driver changes in checkpoint 3",
+    "Log-only application; no enforce activation; #294/#295/#224 and schema/operator/health policy release gates remain",
+    "Acceptance update and #206 closing summary remain unposted drafts requiring separate owner approval"
+  ],
+  "sourceSha256": {
+    "apps/web/src/app/api/health/odds-collector/route.ts": "1a6de01767ea4a00e2c3b6e69b4a2911907e534e613b7c65426a32e9f08881ee",
+    "apps/web/src/lib/oddsCollector.server.test.ts": "edf463e865f5c3a8e56b03066804de1f53aaf0d3695fc7c96d61625113f73a15",
+    "apps/web/src/lib/oddsCollector.ts": "14c19a3c97703ee2ca739459f1075c4e1c39d9aedc6deb9f96f79595b8b24fa7",
+    "apps/web/src/lib/oddsCollectorHealthRoute.server.test.ts": "9f51c29d020bc8be2159a054f9bff99aadddee22071f73003a2a6f4ef91e38a2",
+    "apps/web/src/lib/providerCreditHealth.server.test.ts": "bf5890b01b02a0ae1c33422f430c83b15e3f6a93b90af3aa7d4b703d215af138",
+    "apps/web/src/lib/providerCreditHealth.ts": "f9ca9c9d9fab4820e014a1d054f75bb849615445a8cf46963d05bb3df719eeb1",
+    "docs/222-acceptance-amendment-draft.md": "ec9e81c5d496613cc7c09c480834fa7d19854fb8d3973e647cb752eee8b97887",
+    "docs/222-provider-credit-operations.md": "a1931451b32d2a6ec05cac26a939b31d3fa53ee7ad490f721f1d6661aabbed3d",
+    "docs/222-roadmap.md": "b53a80286a46a0e2cccd201328fb1e7d2452091b7e9f1bce86b79c51ef87614c",
+    "package.json": "d38420e885046137910599cec63f4a4fb22bcee0ddf77e2ac878816d3f548135",
+    "packages/db/tooling/tests/providerCredits.test.ts": "eaaad1fbea8ba549dea1b166a7b8dc7ecc54e7deaa4b0c5e715c5ccc78d8c5e3",
+    "scripts/odds/provider-boundary-guard.mjs": "b79d3c43582d38a0efb1310b7143952f7a7f00cb084a0df37a66a98e033bf9b8",
+    "tests/provider-boundary.check.mjs": "2a341ab2364684f2487b2a86b0caa151b90cf8fe7846ab3c5706f9717c107953"
+  },
+  "privateRawReceiptSha256": {
+    "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/222-checkpoint3-evidence/dfs222-c3-core.log": "c5ad01d00733b195ae1324375abeb90ed24925ebdd5df6333946a2e55470ffcb",
+    "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/222-checkpoint3-evidence/dfs222-c3-local.log": "1f7e7d3bc5bce8005f36db91689e9a49673645292bba3077e5b81fc39ba23cbb",
+    "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/222-checkpoint3-evidence/dfs222-c3-feature-store.log": "40a77a3560d461583fdd10e98557bfc33e75d97e583a5ec05b7700d8485e075d",
+    "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/222-checkpoint3-evidence/dfs222-c3-pool2.log": "e36fe0cec7c8d724d06bb9cd8b870da1c708dcd815a636d2840767d3339add32",
+    "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/222-checkpoint3-evidence/dfs222-c3-pool2-report.json": "b511c491c17b712a44a2fdaaceecd413a41c54511f59752cfec018ba203c362d",
+    "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/222-checkpoint3-evidence/dfs222-c3-pool20.log": "cc3de4e3b749ea320cf6b4199f9caf8e7ee7dd113ecf0347802013f0dfda2fb2",
+    "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/222-checkpoint3-evidence/dfs222-c3-pool20-report.json": "ce06ba7b490eac4571df952d85e10a43d7cbf6ecd9ed15f3987afd1432ae4156",
+    "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/222-checkpoint3-evidence/dfs222-c3-pool20-final.log": "8ffd87d72f2b5620673b5922b79a8e5e87422fea89bff32f50653f685014213e",
+    "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/222-checkpoint3-evidence/dfs222-c3-pool20-final-report.json": "e7e18aa438630c36361a39f6dbade2160ac9e7bc37a886ccffdbc6d947043757",
+    "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/222-checkpoint3-evidence/dfs222-c3-app-final.log": "cd946a45b1ed941b95c2d8acbb5241f9eee52183c76e19bb7bd573f555d9d9ae",
+    "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/222-checkpoint3-evidence/dfs222-c3-final-focused.log": "e1cda23e5ff529d6da3a66c57018ff6db7dbdcf4eb82906d908b0e39b5a64586",
+    "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/222-checkpoint3-evidence/dfs222-c3-typecheck-final.log": "f65fd97d2a283a6d774c84d936e0bc3d5153bb69f81b0ebef1975371238ff03e",
+    "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/222-checkpoint3-evidence/dfs222-c3-lint-final.log": "3ac31c9ab5343e40d9b9289fff1b63867889c738dd16a87ea85fc99ad899e2cf",
+    "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/222-checkpoint3-evidence/dfs222-c3-gate-final.log": "c16c5643d42b383e9cb77a9642a385b2d204cb3b12ae985e909b2f0ab8a42c36",
+    "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/222-checkpoint3-evidence/dfs222-c3-build-final.log": "d195baa26bd008484541da1ade8cbbb06cdd4328d31b5d891f30fd2cee01db04",
+    "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/222-checkpoint3-evidence/dfs222-c3-publication.log": "eb883bcb4b68498f8b51dfa37bdfa2583182a5872f512b586a96dfa8315338fa",
+    "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/222-checkpoint3-evidence/dfs222-c3-boundary-guard.log": "d057c73f267b1a3565aa88e24af326afd2550ad558e97d88d37513efc7d79e64"
+  },
+  "privateSpikeConfigSha256": {
+    "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/222-checkpoint3-pool/compose.spike.yml": "3826108f0433c32147c80d58c4a4d5c72dc2f3f40f102a490b4531c50a58ffd8",
+    "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/222-checkpoint3-pool/pgbouncer.ini": "1792c58b72b21eb02fe4534ade4aaf6b37fff65d65081811166d12d4a645ac36",
+    "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/222-checkpoint3-pool/users.txt": "aeb92275502096d1177875d39c15d71ac863dc57d1fcd2814c74091732592470",
+    "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/222-checkpoint3-pool/vitest.pool2.mts": "1cf93c1cb33291e64f6411977e5385e812adcf46e43792dc79cc29548027c45a",
+    "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/planning/222-checkpoint3-pool/vitest.pool20.mts": "ed32688348dc069f78355f176b36c123fb5657534c3c357c978e78e19573cfcd"
+  }
+}

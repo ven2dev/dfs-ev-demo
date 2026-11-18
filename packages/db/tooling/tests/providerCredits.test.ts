@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { Client } from "pg";
 import { afterAll, beforeAll, beforeEach, describe, expect, inject, it } from "vitest";
-import { createProviderCreditStore, getSharedOddsBatch, type ProviderCreditReservationInput } from "@dfs-ev/db/runtime";
+import { consumeProviderCreditPermit, reserveProviderCreditSend, createProviderCreditStore, getSharedOddsBatch, type ProviderCreditReservationInput } from "@dfs-ev/db/runtime";
 import { withTestClient } from "./harness";
 import { parseTestDatabaseUrl } from "./target.mts";
 
@@ -467,4 +467,71 @@ describe("#222 provider-neutral credit authority on real cache/checkpoint tables
     expect((await withTestClient(c => c.query("SELECT count(*)::int n FROM provider_credit.attempts"))).rows[0].n).toBe(2);
     await invariant();
   });
+  it("real shared kernel reserves once, keeps claim cooldown after failed publication, and sends no second request", async () => {
+    await initialize();
+    await withTestClient(c => c.query("UPDATE public.event_market_odds_cache SET refresh_owner=NULL,refresh_lease_until=NULL,refresh_claimed_at=NULL"));
+    let providerCalls = 0, reserveCalls = 0;
+    const callback = () => withTestClient(async client => getSharedOddsBatch("event-0", keys, {
+      query: async (text, params) => {
+        if (text.includes("publish_shared")) throw new Error("injected publish failure");
+        return (await client.query(text, params)).rows;
+      },
+      makeOwnerId: () => "permit-owner", monotonicNow: () => performance.now(), wait: ms => new Promise(r => setTimeout(r, ms)),
+      fetch: async (owned, signal, claim) => withRole("runtime", async store => {
+        reserveCalls++;
+        const permit = await reserveProviderCreditSend(store, input("permit-send", {
+          ownerId: claim.ownerId, marketKeys: owned, expectedCost: owned.length,
+        }), { sportKey: "americanfootball_nfl", eventId: "event-0", marketKeys: owned, signal, deadline: claim.deadline },
+        { onShadowFailure: () => { throw new Error("enforce cannot shadow"); } });
+        consumeProviderCreditPermit(permit); providerCalls++;
+        return Object.fromEntries(owned.map(key => [key, { bookmakers: [] }]));
+      }),
+    }, { ttlMs: 90_000 }));
+    await callback(); await callback();
+    expect(reserveCalls).toBe(1); expect(providerCalls).toBe(1);
+    await withRole("runtime", async store => expect(await store.health("period-one")).toMatchObject({ unresolvedLiabilityTotal: 3, unresolvedLiabilityCount: 1 }));
+    expect((await withTestClient(c => c.query("SELECT count(*)::int n FROM provider_credit.attempts"))).rows[0].n).toBe(1);
+    await invariant();
+  });
+
+  it("a committed reservation whose reply passes the send deadline retains liability without a send", async () => {
+    await initialize();
+    await withRole("runtime", async store => {
+      let monotonic = 0;
+      const delayed = { reserve: async (candidate: ProviderCreditReservationInput) => {
+        const result = await store.reserve(candidate); monotonic = 101; return result;
+      } };
+      await expect(reserveProviderCreditSend(delayed, input(), {
+        sportKey: "americanfootball_nfl", eventId: "event-0", marketKeys: keys, deadline: 100,
+      }, { now: () => monotonic, onShadowFailure: () => {} })).rejects.toThrow("deadline");
+      expect(await store.health("period-one")).toMatchObject({ unresolvedLiabilityTotal: 3, unresolvedLiabilityCount: 1 });
+      expect((await store.reserve(input())).outcome).toBe("replay");
+    });
+    await invariant();
+  });
+
+  it("rechecks collector ownership after account contention without locking the checkpoint", async () => {
+    await initialize();
+    await withTestClient(async holder => {
+      await holder.query("BEGIN"); await holder.query("SELECT * FROM provider_credit.account FOR UPDATE");
+      let pending: Promise<unknown> | undefined;
+      try {
+        await withRole("runtime", async store => {
+          pending = store.reserve(input("collector-race", { kind: "collector", resourceId: "credit222-checkpoint", ownerId: "collector-owner" }));
+          let observed = false;
+          for (let i = 0; i < 100; i++) {
+            const r = await holder.query("SELECT count(*)::int n FROM pg_stat_activity WHERE usename='credit222_runtime' AND wait_event_type='Lock'");
+            if (r.rows[0].n > 0) { observed = true; break; }
+            await new Promise(resolve => setTimeout(resolve, 10));
+          }
+          expect(observed).toBe(true);
+          await holder.query("UPDATE public.odds_collection_checkpoints SET claim_owner='collector-successor' WHERE id='credit222-checkpoint'");
+          await holder.query("COMMIT");
+          expect(await pending).toMatchObject({ allowed: false, reason: "owner-expired" });
+        });
+      } finally { await holder.query("ROLLBACK"); await pending?.catch(() => undefined); }
+    });
+    await invariant();
+  });
+
 });

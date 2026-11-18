@@ -1,10 +1,10 @@
-# #222 provider credit operations — checkpoint 1
+# #222 provider credit operations
 
 No production operation is authorized. The proposal uses separate restricted runtime/operator grants and parameterized, audited functions; the application runner cannot initialize or resolve liability or write authority tables directly. Local tests alone create public disposable fixture identities. No hosted role or operator action is authorized.
 
 ## Health contract and proposed policy (owner approval before enforce)
 
-Always return typed numeric `unresolvedLiabilityTotal` (credits) and `unresolvedLiabilityCount` (attempts), including zero. They include in-flight and ambiguous attempts, so a positive value alone does not prove stranding. Also propose `oldestUnresolvedAgeSeconds`, `availableCredits`, `collectorFloor`, `mode`, `initialized` and stable reason codes. Ordinary in-flight work should not page an operator.
+A valid authority read returns typed numeric `unresolvedLiabilityTotal` (credits) and `unresolvedLiabilityCount` (attempts), including legitimate zero. An unavailable authority read returns null totals/counts with explicit unavailable status, preventing missing state from concealing stranded liability as zero. They include in-flight and ambiguous attempts, so a positive value alone does not prove stranding. Also propose `oldestUnresolvedAgeSeconds`, `availableCredits`, `collectorFloor`, `mode`, `initialized` and stable reason codes. Ordinary in-flight work should not page an operator.
 
 Proposed policy values, not approved defaults:
 
@@ -58,4 +58,4 @@ A new denied reservation retains one audit row with zero liability; a replay add
 
 ## Release limits
 
-This checkpoint supplies primitives and contracts, not a live health route or paid-fetch integration. #295 owns free-observer integration, automatic confirmed-reset rollover and the serving actual-cost breaker. The 90 ms split remains cache 10 / admission 53 / headroom 27, with 53 derived from PlanetScale #220. Hosted timing waits for #294. No schema migration freeze/apply or enforce activation is included.
+The authenticated `/api/health/odds-collector` response includes `providerCredits` with typed unresolved liability total/count/age and current authority state. Missing proposal tables or a failed authority read return unavailable/null fields; they do not pretend there is zero debt. Existing collector health remains compatible in log-only, while a critical authority state produces an unhealthy response. Numeric age/amount thresholds remain unapproved proposals. Paid wrappers now use the single-use reservation boundary in log-only; no public/environment enforce switch is enabled. #295 owns free-observer integration, automatic confirmed-reset rollover and the serving actual-cost breaker. The 90 ms split remains cache 10 / admission 53 / headroom 27, with 53 derived from PlanetScale #220. Hosted timing waits for #294. No schema migration freeze/apply or enforce activation is included.

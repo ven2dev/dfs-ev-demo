@@ -366,7 +366,9 @@ export const runOddsCollector = async (
         AbortSignal.timeout(config.requestTimeoutMs),
         "scheduled",
         { kind: "collector", checkpointId: checkpoint.id, ownerId: config.ownerId,
-          deadline: Math.min(claimStarted + config.leaseMs, performance.now() + config.requestTimeoutMs) }
+          deadline: Math.min(claimStarted + config.leaseMs, performance.now() + Math.min(config.requestTimeoutMs,
+            Date.parse(checkpoint.event_start_time) - beforeFetch.getTime(),
+            Date.parse(checkpoint.due_window_end) - beforeFetch.getTime())) }
       );
       attemptCost = fetched.quota.last;
       recordCost(attemptCost);
