@@ -6,3 +6,6 @@ export { getOrRefresh } from "./livePropRefresh.ts";
 export type { LivePropCacheDeps, LivePropCacheOptions } from "./livePropRefresh.ts";
 export { getSharedOddsBatch } from "./sharedOddsCache.ts";
 export type { SharedOddsResource, SharedOddsBatch, SharedOddsQuery, SharedOddsDependencies } from "./sharedOddsCache.ts";
+export { createProviderCreditStore } from "./providerCredits.ts";
+export type { ProviderCreditQuery, ProviderCreditReason, ProviderCreditReservationInput, ProviderCreditDecision,
+  ProviderCreditHealth, CreditResolutionEvidence } from "./providerCredits.ts";

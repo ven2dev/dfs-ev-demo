@@ -1,0 +1,87 @@
+{
+  "issue": 222,
+  "checkpoint": 1,
+  "status": "uncommitted review",
+  "baseCommit": "c15e6949c42f7288f09fcb3ad996ab5d19d51c1e",
+  "pattern": "account-scoped atomic reservation ledger with idempotent reconciliation and audited resolution",
+  "checks": {
+    "focusedUnitAndSqlPolicy": 35,
+    "coreDb": 83,
+    "coreMandatoryContracts": "verified: nodeRequiredCases=74, leaseRequiredCases=13, readinessRequiredCases=4, corpusRequiredCases=8",
+    "pool20": 23,
+    "pool2": 23,
+    "typecheck": "passed",
+    "lintAndImportBoundaries": "passed",
+    "earlierDbGuards": 26,
+    "earlierCiGate": 36
+  },
+  "pool": {
+    "mode": "transaction",
+    "image": "edoburu/pgbouncer@sha256:4a8371e79d6627e74f553d0aaa8e4c5ace20e30034fb296e569b71c89c99e108",
+    "serverSlotsChecked": [
+      20,
+      2
+    ],
+    "roleTimeouts": {
+      "statement": "5s",
+      "lock": "2s",
+      "idleInTransaction": "5s"
+    },
+    "diagnosticControlStatementsPerArm": 60,
+    "startupCorrection": "Shared direct-test statement_timeout startup parameter was rejected by PgBouncer; pool-only test adapter removes it and verifies role defaults. Production driver unchanged."
+  },
+  "workBudgets": {
+    "reserveStatementsPerEligibleLeader": 1,
+    "leadersInConcurrencyCase": 20,
+    "costEach": 12,
+    "reservedLiability": 240,
+    "newDeniedAttemptAuditRows": 1,
+    "followerReservationStatements": 0,
+    "replayAddedAuditRows": 0,
+    "resourceRowsLocked": 0
+  },
+  "coverage": [
+    "prior-period liability carries forward on manual initialization and releases once",
+    "collector canonical market set and cost mismatch denial",
+    "ownership rechecked after account wait",
+    "atomic audit failure rollback",
+    "restricted non-superuser definer and separate runtime/operator grants",
+    "current schema shadow mode without lease columns",
+    "denied audit cooldown on real shared-cache claim path"
+  ],
+  "limits": [
+    "No hosted timing or production durability claim",
+    "No provider calls or real credentials",
+    "Full application/build and feature-store suite deferred to checkpoint 3",
+    "Paid fetch capability and source guard remain checkpoint 2/3",
+    "Health numeric thresholds remain owner proposals",
+    "Operator evidence trust remains an operational requirement"
+  ],
+  "cleanup": {
+    "lane": 2,
+    "containersAbsent": true,
+    "networkAbsent": true
+  },
+  "sourceSha256": {
+    "docs/222-provider-credit-operations.md": "8d491a369911ce825832ca80e54a355515b22161892ddd9db691b0c3fd4eb787",
+    "docs/222-roadmap.md": "5fa32ca0d6cb187f02bcf939c0fbdca590a190e8246d41c82993ac29fbfc0b5c",
+    "packages/db/proposals/222_provider_credit_reservations.sql": "5d4d002ac121d61700ef9d0b930fa45dacfcb27c6671dd84fcd5a7119b8f19ac",
+    "packages/db/src/providerCredits.ts": "9be069236ccfa2b180647b4ae12f3eef68cbe7592faea53abe75225718e43502",
+    "packages/db/src/runtime.ts": "62cd6788b9b10262cb1cdcfd3558e1b84035b9646154a3b8b24fd1542500f07c",
+    "packages/db/tooling/tests/providerCredits.test.ts": "89d59675bb8a70fd57245538ee18dcd55e60b1c0a2543bebf69939487b61f600",
+    "packages/db/tooling/tests/unit/providerCreditSql.test.ts": "a212d71da4dd1e41ad39fd54a040d77b7250dfba092fc0032c2d83b67bb67f9f",
+    "packages/db/tooling/tests/unit/providerCredits.test.ts": "cd3509f10c8b2a529f029fc523fdbaa85ba1d31e0a9cc4294616fe27138a9360",
+    "scripts/db/db-test-lanes.mjs": "39a9ec1719a4c26d4670e5d65a73c1295b2aeee6dbee221a9a986875de99ede4"
+  },
+  "privateRawReceiptSha256": {
+    "/private/tmp/dfs222-c1-core-db-final.log": "53891ae8d73c681c04e9b5f95115c279dc66223347d505fe86b5e8f396d7db8e",
+    "/private/tmp/dfs222-c1-pool20-final.log": "c01283e498036888c2991581c42d01ca731229613a20241c7f9f9787e3411062",
+    "/private/tmp/dfs222-c1-pool20-final-report.json": "2640b8fd117529106bb49d0958a32d32dcc38b4d16d8c2f18983df4a7cacedac",
+    "/private/tmp/dfs222-c1-pool2-final.log": "9f4f337cb58e99d3f3a365770df3a39cea394e554948ac8faad16582af6d1483",
+    "/private/tmp/dfs222-c1-pool2-final-report.json": "a38388df7cf8e091855a55ccefe69c1cd974687f79dc5a2fc4879f072907f82d",
+    "/private/tmp/dfs222-c1-typecheck-final.log": "f65fd97d2a283a6d774c84d936e0bc3d5153bb69f81b0ebef1975371238ff03e",
+    "/private/tmp/dfs222-c1-lint-final.log": "5e626868b05264eb3abea7e15a4d372ed4179b2a227e64e5bf0b77533a93f431",
+    "/private/tmp/dfs222-c1-pool20.log": "661ebce1516b07da6d347110adaadf0faff687702930d5d4beab9b82919c9cb2",
+    "/private/tmp/dfs222-c1-focused-db.log": "f95db44c9f93866558824e18de6f473ffdc4779d4751359d95f7767e51fe9dc5"
+  }
+}
