@@ -117,16 +117,50 @@ source references for `ADMIN_UID` and `VERCEL` now point to `config.server.ts`.
 No runtime source, classification, delivery policy, copy ledger, dependency or
 work budget changes.
 
-## Remaining checkpoint and limits
+## Checkpoint 3: integration and compiler proof
 
-Checkpoint 3 rediscovers all open feature branches and owner-local work. Ask the
-owner whether the two local #220 harness branches (`planetscale-harness` and
-`hosted-harness`) are still active before including or excluding them, and record
-the answer. Merge main in disposable checkouts without rebasing or pushing;
-conflicts/unavailable sources are blockers. Record source/merge/checker SHAs,
-violations and concrete owner fixes. Repeat affected checks if source changes.
-The final handoff records replacement coverage, retained non-app limits and the
-production/Edge build proof. Its PR closes both #287 and #99.
+The [qualification receipt](evidence/typed-configuration-287/qualification.json)
+pins checker source `75b29a3` and main `c15e694`. Its
+[evidence notes](evidence/typed-configuration-287/README.md) describe the
+reproduction scope and retained limits. The current PR inventory has no open
+PRs. Active local #222 work is checked in a disposable checkout with main
+already an ancestor, plus a hashed working-source snapshot and explicit checker
+overlay. The refreshed snapshot passes all 60 combined CI-gate tests and has
+zero environment-access violations across 164 source files. Actual-definition
+alignment remains 20 server and seven client inputs.
+
+#222 independently adds `tests/provider-boundary.check.mjs` to `test:ci-gate`.
+Its merge with #287 needs the union of that path and the configuration
+enforcement/import probe paths. This additive resolution passes locally and is
+included in the owner handoff; neither owner's branch was changed by the sweep.
+Refresh affected checks if source or main advances before opening the PR.
+
+The owner explicitly excluded both #220 harness branches as **archived spike
+evidence, never-merge, intentionally not conformed**. Their results were
+accepted 14 Nov and teardown is complete. `hosted-harness` is contained in
+`planetscale-harness`; both worktrees/branches remain untouched. Their evidence
+preservation and any future tag publication are separate owner decisions.
+Other retained historical refs are enumerated separately from active work;
+being outside this sweep is not a claim of conformance or issue closure.
+
+Three isolated compiler probes use exact tracked sources and only temporary
+routes: fixture prerender without live secrets; a marker build with no server
+marker in 55 browser/static files and a public marker as positive control; and
+an expected compiler refusal when client code imports `config.server`.
+The marker build checks 11 executable Edge files and 255 source entries across
+six Edge maps. Node-only startup/configuration modules are absent from the Edge
+module graph, while the actual startup message and cache SQL remain in Node
+chunks as positive controls. The original guarded instrumentation can remain in
+source-map `sourcesContent`; its Node branch is absent from executable Edge
+JavaScript. The actual instrumentation guard and compiler configuration are
+byte-unchanged.
+
+The build environment has an isolated HOME and no private dotenv files.
+Installed Next's test-only font-response hook supplies synthetic CSS without
+font transfers; this proves compiler isolation, not font rendering. The initial
+mock-map setup failure is retained as history. It did not change application
+code, compiler configuration or acceptance targets. No runtime work budget or
+capacity claim changes. The final PR closes both #287 and #99.
 
 The approved estimate is 3.1–4.2 hours of active work, excluding review/CI waits
 and unrelated branch-conflict repair. Exceeding five hours requires a measured
