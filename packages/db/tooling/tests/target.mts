@@ -36,6 +36,8 @@ export function assertNoApplicationCredentials(environment: NodeJS.ProcessEnv) {
     "ODDS_API_KEY",
     "ODDS_HEALTH_SECRET",
     "R2_SECRET_ACCESS_KEY",
+    "SPIKE220_DATABASE_URL",
+    "SPIKE220_TOKEN_SHA256",
     "YOUTUBE_API_KEY",
   ]);
   const forbidden = Object.keys(environment).some(

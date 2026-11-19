@@ -1,6 +1,18 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { Linter } from "eslint";
-import { environmentReaders, environmentRuleIds } from "../../eslint.environment.mjs";
+import { environmentReaders, environmentRuleIds, harnessEnvironmentExceptions } from "../../eslint.environment.mjs";
+
+// A syntax exception alone could admit a duplicated allowed expression. Pin the
+// entire two archived wrappers so every changed/new read fails the existing gate.
+export function checkHarnessEnvironmentSources(files, exceptions = harnessEnvironmentExceptions) {
+  for (const { file, sha256 } of exceptions) {
+    assert(files.has(file), `missing archived harness wrapper: ${file}`);
+    assert.equal(createHash("sha256").update(files.get(file)).digest("hex"), sha256,
+      `archived harness wrapper changed: ${file}`);
+  }
+  return { checkedFiles: exceptions.length };
+}
 
 export const guardedEnvironmentSource = file => file.startsWith("apps/web/src/") &&
   /\.[cm]?[jt]sx?$/.test(file) && !/\.(?:test|spec)\./.test(file) && !environmentReaders.includes(file);

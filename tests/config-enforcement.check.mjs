@@ -4,8 +4,8 @@ import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 import { ESLint } from "eslint";
-import { environmentRuleIds } from "../eslint.environment.mjs";
-import { checkEnvironmentDisables } from "../scripts/security/config-enforcement.mjs";
+import { environmentRuleIds, environmentSyntax, harnessEnvironmentBranch, harnessEnvironmentExceptionsForBranch } from "../eslint.environment.mjs";
+import { checkEnvironmentDisables, checkHarnessEnvironmentSources } from "../scripts/security/config-enforcement.mjs";
 import { readInventorySources } from "../scripts/security/secrets-inventory.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
@@ -58,6 +58,64 @@ test("only exact readers and synthetic test/owner paths are exempt; a new runtim
   for (const source of ["./environment-probe.server.test", "@/lib/environment-probe.test.ts", "../../../scripts/environment-probe.mjs"])
     for (const code of [`import { value } from '${source}';`, `const value = import('${source}');`, `const value = require('${source}');`])
       await refuses("apps/web/src/lib/environment-probe.ts", code);
+
+  // #300 is never-merge. Its exact archived wrappers retain only three process
+  // expressions on this branch, with independent whole-file integrity checks.
+  const exceptions = harnessEnvironmentExceptionsForBranch(harnessEnvironmentBranch);
+  assert.equal(exceptions.length, 2);
+  assert.equal(exceptions.flatMap(entry => entry.processSelectors).length, 3);
+  const wrappers = new Map(exceptions.map(({ file }) => [file, readFileSync(resolve(root, file), "utf8")]));
+  assert.equal(checkHarnessEnvironmentSources(wrappers, exceptions).checkedFiles, 2);
+  for (const [file, source] of wrappers) {
+    assert.deepEqual(await lint(file, source), []);
+    for (const extra of ["process.env.PROBE_INPUT;", "const copy = process.env;", "process?.env?.PROBE_INPUT;",
+      "process.env['SPIKE220_ENABLED'];", "const { env } = process;", "globalThis.process.env.PROBE_INPUT;",
+      "import p from 'node:process'; p.env.PROBE_INPUT;", "import.meta.env.PROBE_INPUT;"]) {
+      const changed = source + "\n" + extra;
+      await refuses(file, changed);
+      assert.throws(() => checkHarnessEnvironmentSources(new Map(wrappers).set(file, changed), exceptions), /archived harness wrapper changed/);
+    }
+    for (const moved of ["apps/web/src/lib/environment-probe.ts", file.replace(".ts", ".js"),
+      "apps/web/src/app/api/qualification300/route.ts"]) await refuses(moved, source);
+    const ordinaryBranch = new ESLint({ cwd: root, overrideConfig: [{
+      files: [file], rules: { "no-restricted-syntax": ["error", ...environmentSyntax()] },
+    }] });
+    const [refused] = await ordinaryBranch.lintText(source, { filePath: resolve(root, file) });
+    assert(refused.messages.some(message => message.ruleId === "no-restricted-syntax"));
+  }
+  for (const branch of ["main", "feature/dfsEV-300-other", `${harnessEnvironmentBranch}-copy`, "", undefined])
+    assert.deepEqual(harnessEnvironmentExceptionsForBranch(branch), []);
+  const route = exceptions[0].file, proxy = exceptions[1].file;
+  for (const [file, changed] of [
+    [route, wrappers.get(route).replace("handler =", "other =")],
+    [route, wrappers.get(route).replace("env: process.env", "other: process.env")],
+    [route, wrappers.get(route).replace("env: process.env", "env: process['env']")],
+    [proxy, wrappers.get(proxy).replace("proxy =", "other =")],
+    [proxy, wrappers.get(proxy).replace('=== "preview"', '=== "production"')],
+    [proxy, wrappers.get(proxy).replace("SPIKE220_ENABLED", "PROBE_INPUT")],
+  ]) await refuses(file, changed);
+  // Duplicating the exact allowed expression is also forbidden, even if its
+  // selector matches: the whole-file hash prevents a same-context loophole.
+  const duplicate = wrappers.get(route).replace("env: process.env,", "env: process.env, env: process.env,");
+  assert.throws(() => checkHarnessEnvironmentSources(new Map(wrappers).set(route, duplicate), exceptions), /archived harness wrapper changed/);
+  assert.throws(() => checkHarnessEnvironmentSources(new Map(), exceptions), /missing archived harness wrapper/);
+  const catalog = JSON.parse(readFileSync(resolve(root, "docs/secrets-inventory.json"), "utf8"));
+  assert.equal(catalog.harnessEnvironmentException.branch, harnessEnvironmentBranch);
+  assert.equal(catalog.harnessEnvironmentException.serverOnly, true);
+  for (const name of ["SPIKE220_ENABLED", "SPIKE220_BINDING", "SPIKE220_DATABASE_URL", "SPIKE220_TOKEN_SHA256",
+    "SPIKE220_ISSUED_AT", "SPIKE220_EXPIRES_AT", "VERCEL_ENV", "VERCEL_REGION", "VERCEL_PROJECT_ID",
+    "VERCEL_GIT_COMMIT_REF", "VERCEL_GIT_COMMIT_SHA", "VERCEL_URL"]) {
+    const row = catalog.entries.find(entry => entry.name === name);
+    assert(row?.consumers.includes("apps/web/src/lib/qualification220-core.mjs"), `uncataloged harness input: ${name}`);
+  }
+  for (const name of ["SPIKE220_DATABASE_URL", "SPIKE220_TOKEN_SHA256"]) {
+    const row = catalog.entries.find(entry => entry.name === name);
+    const policy = { ...catalog.profiles[row.profile], ...row.overrides };
+    assert.equal(policy.classification, "secret");
+    assert(policy.environments.every(environment => environment.includes(harnessEnvironmentBranch)));
+    assert.equal(row.reader, undefined, "harness must not change app definitions");
+    assert.equal(row.dbTestGuardException, undefined, "harness credentials need DB refusal");
+  }
 });
 
 test("the exact Next runtime comparison passes only in exported register; nearby reads and moved guards refuse", async () => {
@@ -127,7 +185,9 @@ test("ruleless disables refuse even when ESLint suppresses every environment vio
 });
 
 test("the current production tree has no environment bypass or rule disable", async () => {
-  const result = await checkEnvironmentDisables(readInventorySources(root), eslint);
+  const sources = readInventorySources(root);
+  checkHarnessEnvironmentSources(sources);
+  const result = await checkEnvironmentDisables(sources, eslint);
   assert(result.checkedFiles > 0);
   const messages = (await eslint.lintFiles(["apps/web/src"])).flatMap(result =>
     result.messages.filter(message => environmentRuleIds.includes(message.ruleId)));

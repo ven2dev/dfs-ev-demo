@@ -97,6 +97,41 @@ boundary; a prefix does not claim that every possible member exists.
 
 ## Scope and discovery
 
+### Never-merge #300 harness exception
+
+The owner approved a compatibility exception only on
+`feature/dfsEV-300-ps5-ha-stage1`. It preserves the archived #220 wrapper bytes
+for the paired HA/single-node screen. The normal typed app definitions remain
+unchanged: adding experimental inputs there would change the measured wrapper
+and mix a disposable experiment into the application contract.
+
+The config-level exception permits exactly the `env: process.env` argument in
+`apps/web/src/app/api/qualification220/route.ts`, and the literal
+`VERCEL_ENV`/`SPIKE220_ENABLED` comparisons in `apps/web/src/proxy.ts`.
+All other reads and files keep the standard ownership rules. The gate also
+pins both complete wrapper hashes to prevent duplicate allowed expressions or
+other source changes from bypassing the syntax restriction. Other branches,
+unknown checkouts and detached HEAD receive no exception. Inline disables
+remain forbidden by the existing directive check.
+
+The catalog adds eleven exact harness/platform names (99 entries, 16 profiles)
+and extends the existing `VERCEL_ENV` references. These rows deliberately have
+no new app reader: the approved disposable wrapper is outside the normal 20
+server/seven client executable definitions. The two credential inputs,
+`SPIKE220_DATABASE_URL` and `SPIKE220_TOKEN_SHA256`, have a server-only,
+exact-branch protected Preview Secret policy. Actual values remain owner-held,
+outside agents, browser bundles and ordinary CI; no deployed copy is claimed
+verified. Their presence is refused by the disposable DB guard, preserving the
+catalog-secret refusal contract. Synthetic tests alone exercise these names.
+`SPIKE220_BINDING` and platform deployment identifiers are sensitive identifiers;
+the remaining run controls carry no credential authority. Owner-private bearer
+and bypass delivery, deployment approval, expiry and verified teardown retain
+the experiment's separate gates.
+
+This exception is part of the never-merge harness branch only. It authorizes no
+new live credential delivery, build publication, hosted access or Production
+setting change.
+
 **Inclusion rule:** record supplied configuration inputs: environment variables,
 CLI credential/target selectors, runbook credentials, platform-injected
 credentials and deliberately refused names. Exclude source-controlled policy

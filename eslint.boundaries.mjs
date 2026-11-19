@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { environmentImportPatterns, environmentReaders, environmentSyntax, environmentTestFiles } from "./eslint.environment.mjs";
+import { environmentImportPatterns, environmentReaders, environmentSyntax, environmentTestFiles, harnessEnvironmentExceptions } from "./eslint.environment.mjs";
 
 const domain = JSON.parse(readFileSync(new URL("./packages/domain/package.json", import.meta.url), "utf8"));
 const publicSubpaths = Object.keys(domain.exports).filter(key => key !== ".").map(key => key.slice(2));
@@ -156,12 +156,19 @@ const boundaries = [
     files: instrumentation ? ["apps/web/src/instrumentation.ts"] : ["apps/web/src/**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}"],
     // Exact readers own inputs. Colocated tests need synthetic env injection;
     // owner/build scripts outside src retain their separate catalog obligations.
-    ignores: [...environmentReaders, ...environmentTestFiles,
+    ignores: [...environmentReaders, ...environmentTestFiles, ...harnessEnvironmentExceptions.map(entry => entry.file),
       ...instrumentation ? [] : ["apps/web/src/instrumentation.ts"]],
     rules: {
       "no-restricted-imports": ["error", { patterns: [...webImportPatterns, ...environmentImportPatterns] }],
       // Flat-config arrays replace, so explicitly retain the workspace selectors.
       "no-restricted-syntax": ["error", ...webSyntax, ...environmentSyntax(instrumentation)],
+    },
+  })),
+  ...harnessEnvironmentExceptions.map(({ file, processSelectors }) => ({
+    files: [file],
+    rules: {
+      "no-restricted-imports": ["error", { patterns: [...webImportPatterns, ...environmentImportPatterns] }],
+      "no-restricted-syntax": ["error", ...webSyntax, ...environmentSyntax(false, processSelectors)],
     },
   })),
 ];
