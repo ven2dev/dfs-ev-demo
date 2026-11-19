@@ -8,3 +8,5 @@ export { getSharedOddsBatch } from "./sharedOddsCache.ts";
 export type { SharedOddsResource, SharedOddsBatch, SharedOddsQuery, SharedOddsDependencies } from "./sharedOddsCache.ts";
 export { readLatestProviderQuota, latestProviderQuotaSql } from "./providerQuota.ts";
 export type { ProviderQuotaReading, ProviderQuotaQuery } from "./providerQuota.ts";
+export { admitPaidOdds, paidAdmissionSql, paidAdmissionCapabilitySql, SUBJECT_KEY } from "./paidOddsAdmission.ts";
+export type { AdmissionQuery, SubjectDimension, PaidAdmission, AdmissionWarning } from "./paidOddsAdmission.ts";
