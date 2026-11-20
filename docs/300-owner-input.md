@@ -22,6 +22,8 @@ Archived `6f3ea1a` records `220-hosted-raw-20261112.tar.gz`, SHA-256 `ccc27bc1e3
 
 Create a mode-700 private directory using the owner's trusted local tools; save `inputs.json` mode 600. Use a local editor/password manager, not shell arguments or chat, for values. Paths in commands contain no values. The source bindings are fixed for the live session; deployment metadata may be added before `matrix`, then stays fixed. Refresh quote/quota observations only at session open, before `matrix` and before `incident`; no mid-matrix edit is required. Do not edit the ledger. A sibling `inputs.json.session-claim` intentionally survives closure/crash; removing it is not a supported resume.
 
+The six-hour lifetime deadline is **D=firstResourceCreatedAt+6h**. The recorded `windowStart` stays unchanged and first creation cannot precede it, preventing provisioning outside the approved window. The owner's November 20 amendment uses `windowStart: "2026-11-20T17:00:00Z"`, `firstResourceCreatedAt: "2026-11-20T18:17:00Z"` and `qualificationCutoffUtc: "2026-11-20T23:17:00Z"`. Thus expiry may reach `2026-11-21T00:17:00Z` (16:17 PST), with qualification/teardown cutoff no later than 15:17 PST. Later resource creation does not reset this shared first-resource clock. Follow the execution sheet's 14:15 matrix-start and conditional 14:30 restore decisions to preserve completion and cleanup time.
+
 Top-level structure:
 
 - `expectedSha`: final reviewed, committed 40-character Git SHA. The real CLI checks HEAD, exact branch and tracked cleanliness before any connection. No earlier controller SHA substitution.

@@ -211,7 +211,7 @@ function checkBudget(config, now) {
   const a = config.ownerApproval;
   assert(a?.syntheticOnly === true && a.resourcesVerified === true && a.matchedSettings === true);
   const start = Date.parse(a.windowStart), first = Date.parse(a.firstResourceCreatedAt);
-  const deadline = Math.min(start + 6 * 3600_000, first + 6 * 3600_000);
+  const deadline = first + 6 * 3600_000;
   assert(Number.isFinite(deadline) && first >= start && now >= start && now < deadline - 3600_000,
     'work cutoff reached; teardown only');
   const expires = Date.parse(a.expiresAt);

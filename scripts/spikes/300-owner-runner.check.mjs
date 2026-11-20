@@ -252,7 +252,7 @@ export async function runOwnerTests({ operator, privateJson, connectionOptions, 
   test('qualification extensions refuse missing, malformed, elapsed or over-teardown approvals before any SQL or transport', () => {
     const start = now - 4.5 * 3600_000;
     for (const cutoff of [undefined, null, 'invalid', new Date(start).toISOString(),
-      new Date(now).toISOString(), new Date(start + 5 * 3600_000 + 1).toISOString()]) {
+      new Date(now).toISOString(), new Date(start + 5000 + 5 * 3600_000 + 1).toISOString()]) {
       const d = disk(), sql = sqlHarness(); let sends = 0;
       d.config.ownerApproval.windowStart = new Date(start).toISOString();
       d.config.ownerApproval.firstResourceCreatedAt = new Date(start + 5000).toISOString();
@@ -264,6 +264,41 @@ export async function runOwnerTests({ operator, privateJson, connectionOptions, 
           makeClient: sql.makeClient, fetchImpl: async () => { sends++; } }));
         assert.equal(sql.counts().clients, 0); assert.equal(sends, 0);
       } finally { d.cleanup(); }
+    }
+  });
+  test('first-creation six-hour deadline accepts 16:17 expiry and 15:17 cutoff exactly, refuses either plus 1 ms and pre-START creation', () => {
+    const probeNow = Date.parse('2026-11-20T22:15:00Z');
+    const deadline = Date.parse('2026-11-21T00:17:00Z');
+    const cutoff = Date.parse('2026-11-20T23:17:00Z');
+    for (const kind of ['accepted', 'expiry-plus-ms', 'cutoff-plus-ms', 'before-start']) {
+      const d = disk(), sql = sqlHarness(); let sends = 0, op;
+      Object.assign(d.config.ownerApproval, {
+        windowStart: '2026-11-20T17:00:00Z', firstResourceCreatedAt: '2026-11-20T18:17:00Z',
+        qualificationCutoffUtc: '2026-11-20T23:17:00Z', expiresAt: '2026-11-21T00:17:00Z',
+        checkedAt: new Date(probeNow).toISOString(),
+      });
+      let observedNow = probeNow;
+      if (kind === 'expiry-plus-ms') d.config.ownerApproval.expiresAt = new Date(deadline + 1).toISOString();
+      if (kind === 'cutoff-plus-ms') d.config.ownerApproval.qualificationCutoffUtc = new Date(cutoff + 1).toISOString();
+      if (kind === 'before-start') {
+        // Keep the other time bounds valid, isolating the no-creation-before-START guard.
+        observedNow = Date.parse('2026-11-20T20:00:00Z');
+        Object.assign(d.config.ownerApproval, {
+          firstResourceCreatedAt: '2026-11-20T16:59:59.999Z',
+          expiresAt: '2026-11-20T22:59:59.999Z', qualificationCutoffUtc: '2026-11-20T21:59:59.999Z',
+          checkedAt: new Date(observedNow).toISOString(),
+        });
+      }
+      d.save();
+      const open = () => operator(d.input, d.out, { approved: true, now: () => observedNow,
+        makeClient: sql.makeClient, fetchImpl: async () => { sends++; } });
+      try {
+        if (kind === 'accepted') { op = open(); assert.equal(op.used, 0); }
+        else assert.throws(open, kind === 'expiry-plus-ms' ? /expiry exceeds resource deadline/
+          : kind === 'cutoff-plus-ms' ? /qualification cutoff exceeds teardown cutoff/ : /work cutoff reached/);
+        assert.equal(sql.counts().clients, 0); assert.equal(sends, 0);
+        assert.equal(d.config.ownerApproval.windowStart, '2026-11-20T17:00:00Z');
+      } finally { op?.close(); d.cleanup(); }
     }
   });
   test('an open session refuses changes to its approved cutoff, start or first creation time before SQL or transport', async () => {
