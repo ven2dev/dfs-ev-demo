@@ -2,7 +2,7 @@
 
 **OWNER ONLY. Never-merge; no PR.** Requires reviewed commit, separate push permission and hosted approval. Node 24.18.1. Friday 2026-11-20, START–START+4h Pacific (fill START). If not reviewed Thursday evening, propose Monday 2026-11-23.
 
-**Limits:** $3 total; 40,000 invocations; delete/verify absence by **D=min(START+6h, first resource+6h)**. Begin teardown by D−1h. Stop new qualification at START+4h. Resources: `vernon-ven2dev`; `dfs-ev-300-single` PS-5 single / `dfs-ev-300-ha` PS-5 HA; PG18, AWS us-east-1; protected Vercel iad1 Previews; isolated HA branch `dfs-ev-300-ha-restore`.
+**Limits:** $3 total; 40,000 invocations; delete/verify absence by **D=min(START+6h, first resource+6h)**. Begin teardown by D−1h. Stop new qualification at START+4h unless a separate owner-approved `qualificationCutoffUtc` is recorded before session open; that cutoff cannot exceed D−1h. The start, first creation and cutoff stay pinned throughout the session so an extension cannot silently move the resource deadline. Resources: `vernon-ven2dev`; `dfs-ev-300-single` PS-5 single / `dfs-ev-300-ha` PS-5 HA; PG18, AWS us-east-1; protected Vercel iad1 Previews; isolated HA branch `dfs-ev-300-ha-restore`.
 
 Prepare [private input](300-owner-input.md) outside Git: directory 700, file 600. Confirm live all-in quote, CPU/memory/transfer headroom, and **used + background + 40,000 <= allowance − 100,000**. Check quote/quota observations (no older than 15 minutes) at session open, before `matrix` and before `incident` only. No mid-matrix edits are required; deadline/expiry/window checks remain per request. Values stay in the private editor/password manager, never command arguments/chat.
 

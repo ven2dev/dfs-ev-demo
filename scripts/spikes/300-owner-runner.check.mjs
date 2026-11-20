@@ -202,8 +202,15 @@ export async function runOwnerTests({ operator, privateJson, connectionOptions, 
       assert.equal(sends, 0); assert.equal(staleSql.queries.length, priorQueries);
     } finally { opened.close(); stale.cleanup(); }
   });
-  test('50-minute matrix needs no approval edits; incident refresh, parity, recovery and availability share one ledger', async () => {
+  test('approved 50-minute matrix crosses the original cutoff without edits; recovery and availability share one ledger', async () => {
     const d = disk(), sql = sqlHarness(), pool = poolHarness(), sent = [];
+    // Open shortly before the original START+4h cutoff. The whole matrix
+    // crosses it while remaining inside the explicitly approved START+5h.
+    const start = now - 3.9 * 3600_000;
+    d.config.ownerApproval.windowStart = new Date(start).toISOString();
+    d.config.ownerApproval.firstResourceCreatedAt = new Date(start + 5000).toISOString();
+    d.config.ownerApproval.expiresAt = new Date(start + 6 * 3600_000).toISOString();
+    d.config.ownerApproval.qualificationCutoffUtc = new Date(start + 5 * 3600_000).toISOString(); d.save();
     let elapsed = 0;
     const send = transport(d.config, sent);
     const op = operator(d.input, d.out, { approved: true,
@@ -213,6 +220,7 @@ export async function runOwnerTests({ operator, privateJson, connectionOptions, 
       for (const command of ['setup', 'delivery', 'matrix', 'source', 'incident', 'requested', 'ready', 'verify', 'restore-delivery', 'recovery', 'availability']) {
         if (command === 'incident') {
           assert(elapsed >= 49 * 60000);
+          assert(now + elapsed > start + 4 * 3600_000, 'matrix crossed the original qualification cutoff');
           assert.equal(d.config.ownerApproval.checkedAt, new Date(now).toISOString(), 'matrix did not require credential-file edits');
           d.config.ownerApproval.checkedAt = new Date(now + elapsed).toISOString(); d.save();
         }
@@ -241,6 +249,36 @@ export async function runOwnerTests({ operator, privateJson, connectionOptions, 
     } finally { op.close(); d.cleanup(); }
     assert.equal(Object.keys(verifyMeasuredSources()).length, 11); assert.equal(actualNetwork, 0);
   });
+  test('qualification extensions refuse missing, malformed, elapsed or over-teardown approvals before any SQL or transport', () => {
+    const start = now - 4.5 * 3600_000;
+    for (const cutoff of [undefined, null, 'invalid', new Date(start).toISOString(),
+      new Date(now).toISOString(), new Date(start + 5 * 3600_000 + 1).toISOString()]) {
+      const d = disk(), sql = sqlHarness(); let sends = 0;
+      d.config.ownerApproval.windowStart = new Date(start).toISOString();
+      d.config.ownerApproval.firstResourceCreatedAt = new Date(start + 5000).toISOString();
+      d.config.ownerApproval.expiresAt = new Date(start + 6 * 3600_000).toISOString();
+      if (cutoff !== undefined) d.config.ownerApproval.qualificationCutoffUtc = cutoff;
+      d.save();
+      try {
+        assert.throws(() => operator(d.input, d.out, { approved: true, now: () => now,
+          makeClient: sql.makeClient, fetchImpl: async () => { sends++; } }));
+        assert.equal(sql.counts().clients, 0); assert.equal(sends, 0);
+      } finally { d.cleanup(); }
+    }
+  });
+  test('an open session refuses changes to its approved cutoff, start or first creation time before SQL or transport', async () => {
+    for (const key of ['qualificationCutoffUtc', 'windowStart', 'firstResourceCreatedAt']) {
+      const d = disk(), sql = sqlHarness(); let sends = 0;
+      d.config.ownerApproval.qualificationCutoffUtc = new Date(now + 4.5 * 3600_000).toISOString(); d.save();
+      const op = operator(d.input, d.out, { approved: true, now: () => now,
+        makeClient: sql.makeClient, fetchImpl: async () => { sends++; } });
+      try {
+        d.config.ownerApproval[key] = new Date(Date.parse(d.config.ownerApproval[key]) + 1000).toISOString(); d.save();
+        await assert.rejects(op.command('setup'));
+        assert.equal(sql.counts().clients, 0); assert.equal(sends, 0);
+      } finally { op.close(); d.cleanup(); }
+    }
+  });
   test('timeout gate miss sends no matrix traffic; owner stop and redacted SQL error cannot resume', async () => {
     for (const kind of ['gate', 'stop', 'sql']) {
       const d = disk(), sent = [], sql = sqlHarness({ failure: kind === 'sql' });
@@ -255,17 +293,19 @@ export async function runOwnerTests({ operator, privateJson, connectionOptions, 
     }
   });
   test('deadline, expiry and window cutoff still refuse subsequent matrix sends while approval is allowed to age', async () => {
-    for (const kind of ['expiry', 'deadline', 'window']) {
+    for (const kind of ['expiry', 'deadline', 'window', 'amended-window']) {
       const d = disk(), sql = sqlHarness(), sent = [];
       let elapsed = 0;
       if (kind === 'expiry') d.config.ownerApproval.expiresAt = new Date(now + 10 * 60000).toISOString();
       if (kind !== 'expiry') d.config.ownerApproval.expiresAt = new Date(now + 5.9 * 3600000).toISOString();
+      if (kind === 'amended-window' || kind === 'deadline')
+        d.config.ownerApproval.qualificationCutoffUtc = new Date(now + 4.5 * 3600000).toISOString();
       d.save();
       const send = transport(d.config, sent);
       const op = operator(d.input, d.out, { approved: true, now: () => now + elapsed,
         makeClient: sql.makeClient, makePool: poolHarness().makePool, fetchImpl: (url, options) => {
           const result = send(url, options);
-          elapsed = kind === 'expiry' ? 11 * 60000 : kind === 'deadline' ? 5.1 * 3600000 : 4.1 * 3600000;
+          elapsed = kind === 'expiry' ? 11 * 60000 : kind === 'deadline' ? 5.1 * 3600000 : kind === 'amended-window' ? 4.5 * 3600000 : 4.1 * 3600000;
           return result;
         } });
       try {

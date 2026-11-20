@@ -216,7 +216,11 @@ function checkBudget(config, now) {
     'work cutoff reached; teardown only');
   const expires = Date.parse(a.expiresAt);
   assert(Number.isFinite(expires) && expires > now && expires <= deadline, 'expiry exceeds resource deadline');
-  assert(now < start + 4 * 3600_000, 'execution window finished');
+  // An approved qualification extension cannot consume the teardown hour.
+  const cutoff = a.qualificationCutoffUtc === undefined ? start + 4 * 3600_000 : Date.parse(a.qualificationCutoffUtc);
+  assert(Number.isFinite(cutoff) && cutoff > start && cutoff <= deadline - 3600_000,
+    'qualification cutoff exceeds teardown cutoff');
+  assert(now < cutoff, 'execution window finished');
   assert(a.totalProjectedUsd <= 3 && a.totalProjectedUsd >= 0 && a.cpuMemoryTransferHeadroom === true);
   assert(Number.isSafeInteger(a.invocationAllowance) && Number.isSafeInteger(a.invocationsUsed) &&
     Number.isSafeInteger(a.backgroundInvocations) && a.invocationsUsed >= 0 && a.backgroundInvocations >= 0 &&
@@ -246,6 +250,8 @@ export function operator(configPath, outDir, { fetchImpl = globalThis.fetch, mak
   try { writeFileSync(claim, hash(config.expectedSha)); fsyncSync(claim); } finally { closeSync(claim); }
   const session = createOwnerSession({ approved, ledgerPath: resolve(outDir, 'invocations.jsonl') });
   const stopSignal = new AbortController();
+  const scheduleKeys = ['windowStart', 'firstResourceCreatedAt', 'qualificationCutoffUtc'];
+  const schedule = hash(scheduleKeys.map(key => config.ownerApproval[key]));
   const sources = hash(Object.fromEntries(armNames.map(name => [name, {
     binding: config.arms[name].binding, adminUrl: config.arms[name].adminUrl, runnerUrl: config.arms[name].runnerUrl,
     credentials: config.arms[name].credentials,
@@ -255,6 +261,7 @@ export function operator(configPath, outDir, { fetchImpl = globalThis.fetch, mak
   const fresh = (budget = true) => {
     const next = privateJson(configPath); validateSources(next);
     assert.equal(next.expectedSha, config.expectedSha);
+    assert.equal(hash(scheduleKeys.map(key => next.ownerApproval?.[key])), schedule, 'approved schedule changed');
     assert.equal(hash(Object.fromEntries(armNames.map(name => [name, {
       binding: next.arms[name].binding, adminUrl: next.arms[name].adminUrl, runnerUrl: next.arms[name].runnerUrl,
       credentials: next.arms[name].credentials,
