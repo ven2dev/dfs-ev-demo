@@ -2,6 +2,7 @@ import "server-only";
 
 import { createPrivateKey } from "node:crypto";
 import type { App, ServiceAccount } from "firebase-admin/app";
+import { parseSubjectKeyring, parseSubjectPolicies } from "./oddsSubject";
 import { publicConfig } from "./config.client";
 
 type ErrorCode = "missing" | "invalid" | "environment-policy" | "firebase-project-mismatch" | "initialization-failed";
@@ -114,6 +115,8 @@ export const serverInputDefinitions = {
   VERCEL: inputDefinition("ordinary configuration", ["environment"], optionalText),
   VERCEL_ENV: inputDefinition("ordinary configuration", ["environment"], enumeration(["production", "preview", "development"])),
   ODDS_DATA_SOURCE: inputDefinition("ordinary configuration", ["odds"], enumeration(["live", "fixture"])),
+  ODDS_SUBJECT_HMAC_KEYS: inputDefinition("secret", ["paid-odds"], raw => optionalText(raw) ? parseSubjectKeyring(JSON.parse(raw!)) : undefined),
+  ODDS_SUBJECT_POLICIES: inputDefinition("ordinary configuration", ["paid-odds"], raw => optionalText(raw) ? parseSubjectPolicies(JSON.parse(raw!)) : undefined),
   ODDS_API_KEY: inputDefinition("secret", ["live-odds"], token),
   DATABASE_URL: inputDefinition("secret", ["database", "database-presence"], databaseUrl),
   FIREBASE_SERVICE_ACCOUNT_KEY_BASE64: inputDefinition("secret", ["firebase-admin"], serviceAccount),
@@ -193,6 +196,11 @@ export const createServerConfig = (
 
   return Object.freeze({
     environment, odds, liveOdds, firebase,
+    paidOdds: () => capability("paid-odds", () => {
+      environment();
+      const keyring = input("ODDS_SUBJECT_HMAC_KEYS"), policies = input("ODDS_SUBJECT_POLICIES");
+      return keyring && policies ? Object.freeze({ keyring, policies }) : null;
+    }),
     database: () => required("DATABASE_URL"),
     databaseConfigured: () => { environment(); return input("DATABASE_URL") !== undefined; },
     adminUid: () => required("ADMIN_UID"),

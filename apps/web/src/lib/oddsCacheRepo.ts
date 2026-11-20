@@ -1,4 +1,5 @@
 import "server-only";
+import { shouldDenyPaidRefresh, type PaidRefreshRequest } from "./paidOddsBoundary";
 import { InteractiveQuotaUnavailable } from "./providerQuota";
 
 import { sliceOddsByMarket, mergeOddsSlices, type CachedMarketPayload } from "./oddsProjection";
@@ -57,14 +58,19 @@ const inFlightFetches = new Map<string, Promise<FreshEventOdds>>();
 const dedupedFetchEventOdds = (
   sportKey: string,
   eventId: string,
-  marketKeys: string[]
+  marketKeys: string[],
+  paidRequest?: PaidRefreshRequest
 ): Promise<FreshEventOdds> => {
   const dedupeKey = `${sportKey}::${eventId}::${[...marketKeys].sort().join(",")}`;
   const inFlight = inFlightFetches.get(dedupeKey);
   if (inFlight) return inFlight;
 
   const observationId = randomUUID();
-  const fetchPromise = fetchEventOdds(sportKey, eventId, marketKeys, undefined, "discovery")
+  const fetchPromise = (async () => {
+    if (await shouldDenyPaidRefresh(paidRequest)) throw new InteractiveQuotaUnavailable("subject-rate-limit");
+    return paidRequest ? fetchEventOdds(sportKey, eventId, marketKeys, undefined, "discovery", undefined, paidRequest) :
+      fetchEventOdds(sportKey, eventId, marketKeys, undefined, "discovery");
+  })()
     .then(async (fetched) => {
       const observationPersisted = await persistRawOddsObservation(
         sportKey,
@@ -109,6 +115,7 @@ export type GetOrFetchMarketOddsOptions = {
   // for a market refreshed within the cooldown, no matter how many times
   // this is set.
   forceRefresh?: boolean;
+  paidRequest?: PaidRefreshRequest;
 };
 
 export const getLegacyMarketOdds = async (
@@ -161,7 +168,7 @@ export const getLegacyMarketOdds = async (
   const freshlyFetchedSlices = new Map<string, CachedMarketPayload>();
   if (missingMarketKeys.length > 0) {
     let fetched: FreshEventOdds;
-    try { fetched = await dedupedFetchEventOdds(sportKey, eventId, missingMarketKeys); }
+    try { fetched = await dedupedFetchEventOdds(sportKey, eventId, missingMarketKeys, options.paidRequest); }
     catch (error) {
       if (!(error instanceof InteractiveQuotaUnavailable)) throw error;
       const stale: CachedMarketPayload[] = [];

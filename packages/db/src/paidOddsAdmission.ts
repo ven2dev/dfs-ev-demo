@@ -69,4 +69,6 @@ export const paidAdmissionCapabilitySql = `SELECT
   to_regclass('public.odds_subject_limits') IS NOT NULL
   AND to_regclass('public.odds_subject_buckets') IS NOT NULL
   AND CASE WHEN to_regprocedure('public.admit_paid_odds(jsonb,boolean,integer,integer)') IS NULL THEN false
-    ELSE has_function_privilege(current_user,'public.admit_paid_odds(jsonb,boolean,integer,integer)','EXECUTE') END AS ready`;
+    ELSE has_function_privilege(current_user,'public.admit_paid_odds(jsonb,boolean,integer,integer)','EXECUTE') END
+  AND CASE WHEN to_regprocedure('public.release_shared_odds_limiter_denial(text,text[],text)') IS NULL THEN false
+    ELSE has_function_privilege(current_user,'public.release_shared_odds_limiter_denial(text,text[],text)','EXECUTE') END AS ready`;

@@ -141,13 +141,34 @@ other users sharing a network. Expire at the database retry-after using a
 monotonic deadline and a fixed entry bound. Check only at prospective leadership;
 fresh hits do no limiter work. A cached denial skips claim/admission and returns
 existing stale/unavailable data. It never substitutes an allow for the DB gate.
-CI target: repeats within retry-after on that instance add zero SQL. C2 must
-prove the target with existing freshness/fallback behavior, not hide cache reads
-in a different counter. Log-only never inserts or applies this cache. The 0.5h
+CI target: repeats within retry-after add zero claim/admission/release SQL.
+The existing freshness SELECT still runs, is counted explicitly as existing
+work, and returns fresh data if another subject published it. No local payload
+snapshot replaces the freshness read. Owner clarified this budget during C2.
+Log-only never inserts or applies this cache. The 0.5h
 buffer is now assigned to C2; total remains 6h. Report before any overrun.
 
 ## Delivery state
 
-C1 is underway; C2 deny cache and route threading are not implemented here.
+C1 committed as b3d717cb974c3454fa2fce05141f30c06a2194e4; attribution check and
+clean worktree verified before C2, and publication guard passed on that commit.
+C2 now implements route threading, one-floor admission/fallback, enforced-only
+bounded deny cache, fenced release and reason-only instance health counters.
+C2 is pending owner commit review. C3 top-consumers/retention/threshold policy and
+C4 final build/feature-store/speed verification remain.
 Owner approval precedes every commit; fresh consent precedes push and PR.
 #299 blocks enforcement under #224. No ordered migration or hosted action.
+
+## C2 review carry-forward: enforce requires shared cache
+
+Before enforcing subject limits, #221's shared-cache capability must be ready
+on every serving instance. Legacy discovery's in-flight promise shares the
+creator's denial with eligible joiners; legacy live needs the same safeguard.
+C3 acceptance/runbook work includes a test that an enforce request on a legacy
+path is downgraded to log-only. #299 and #224 approval remain separate blockers.
+Production remains hard-coded log-only. This limitation is recorded now, not
+claimed fixed on the legacy paths.
+
+Rate-limit subject verification is signature/expiry-only with cached keys, not
+requireUid's per-request revocation lookup. Cached-key verification does not
+promise zero cold/key-refresh network access. Account authorization is unchanged.

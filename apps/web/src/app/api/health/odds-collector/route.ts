@@ -1,3 +1,4 @@
+import { paidOddsHealth } from "@/lib/paidOddsBoundary";
 import { readQuotaHealth, type QuotaHealth } from "@/lib/providerQuota";
 import { NextRequest, NextResponse } from "next/server";
 import { isAuthorizedCronHeader } from "@/lib/cronAuth";
@@ -24,6 +25,7 @@ const response = (
     reasons?: string[];
     warnings?: string[];
     quota?: QuotaHealth;
+    limiter?: ReturnType<typeof paidOddsHealth>;
   },
   status: number
 ) =>
@@ -61,7 +63,7 @@ export const GET = async (request: NextRequest) => {
       pinCreationGraceMs: PIN_CREATION_GRACE_MS,
     });
     const quota = await readQuotaHealth();
-    return response({ ...result, quota }, result.status === "healthy" ? 200 : 503);
+    return response({ ...result, quota, limiter: paidOddsHealth() }, result.status === "healthy" ? 200 : 503);
   } catch (error) {
     console.error(
       "[api/health/odds-collector] health query failed:",

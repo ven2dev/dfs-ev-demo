@@ -1,0 +1,87 @@
+{
+  "checkpoint": "C2",
+  "issue": 223,
+  "parentCommit": "b3d717cb974c3454fa2fce05141f30c06a2194e4",
+  "branch": "feature/dfsEV-223-paid-leader-rate-limits",
+  "checks": {
+    "browserPassed": 949,
+    "nodePassed": 1005,
+    "nodeSkipped": 1,
+    "skipReason": "existing opt-in credentialed R2 contract; no credentials used",
+    "coreDbPassed": 83,
+    "coreDbFiles": 11,
+    "nodeRequiredCasesVerified": 74,
+    "newBoundaryCacheConfigurationTests": 21,
+    "ciGatePassed": 63,
+    "lint": "passed with 12 import-boundary checks",
+    "typecheck": "passed",
+    "focusedAuthTests": 27,
+    "dbPackageTypecheck": "passed",
+    "coreDbReviewNote": "83 tests passed before this auth/import/docs-only follow-up; SQL and DB runtime unchanged by review fix"
+  },
+  "workBudget": {
+    "installedWarmLeader": "one composed admission, no legacy floor call",
+    "notInstalledOrNullSubject": "legacy #222 floor only",
+    "cachedDenial": "one existing freshness SELECT; zero added claim/admission/release SQL",
+    "freshHit": "one existing freshness SELECT; no subject resolution or cache check",
+    "metadata": "startup/coalesced 5s retry separate from warm admission work"
+  },
+  "behavior": [
+    "only subject-rate-limit outcomes enter cache; log-only would-deny and quota-floor never enter it",
+    "bounded 2048-subject cache with monotonic expiry and failing dimensions only",
+    "no local payload snapshot; another subject publication is observed fresh",
+    "fenced pre-send raw release; ordinary quota/publish-failure cooldown unchanged",
+    "null subject logged/counted on authenticated instance health",
+    "discovery bearer lookup failure remains anonymous; no URL tokens",
+    "live stays network-only/log-only until #299",
+    "release runbook requires concurrent partial index build outside transaction",
+    "rate-limit identity uses verifyIdToken(token, false), coalesced once per request; account authorization unchanged",
+    "Firebase Admin lazy-loaded only for user verification, not provider/collector imports or network-only live attribution",
+    "shared-cache readiness required before enforcement; legacy log-only downgrade criterion/test recorded for C3"
+  ],
+  "c1Publication": {
+    "commit": "b3d717cb974c3454fa2fce05141f30c06a2194e4",
+    "verdict": "pass",
+    "unapprovedFindingPaths": 0,
+    "cleanAfterCommit": true,
+    "attributionGrepOutput": ""
+  },
+  "limits": [
+    "C2 not committed; publication guard for its candidate waits for commit approval",
+    "no build or feature-store DB run yet; those remain C4",
+    "no hosted timing/Firebase latency claim",
+    "no real secret provisioning or provider calls",
+    "no new supplied enforce flag; production boundary fixed log-only"
+  ],
+  "sha256": {
+    "apps/web/src/lib/paidOddsBoundary.ts": "268f6051045d5b69bb38c80cd5b91c21c569b64807b8434e9610a438dd0684fe",
+    "packages/db/src/sharedOddsCache.ts": "d36e9eb32418c55fb5322e5e50116d5df8455f161743d5eac1a4ab3bba9d5a68",
+    "packages/db/src/livePropRefresh.ts": "29c5ba17dd6162c7e4a2de15980ab39c9a0431ec6a8f286002f8484fcfcecaae",
+    "packages/db/proposals/223_paid_leader_gcra.sql": "3adc7db4c127969595402958bc30506c3fb91cf5cea16f737411ac3db185988a",
+    "apps/web/src/lib/oddsApi.ts": "ed42f04aaee5d5b03ef36e3dcd311110247c4108f4cf1e55ae15889e0c6d1bdb"
+  },
+  "rawLogHashes": {
+    "app-final.log": "57c790a33e7186503debe03778f33734214732b7ee558712a728a611bb8610b8",
+    "new-tests.log": "21c908e2b2b8a3d716585cdcb77bb67fd066a2780fc531b94d9500d93da560d4",
+    "ci-gate.log": "13a0826b26987ab6a5ae133ca4977ad03f147eb08b03226fbf7e1d7756d76779",
+    "lint.log": "47ddabd01d3d94fb9108dbfa830b45fefe5485c0fb6f3fc9bca8ca0cb332d5ab",
+    "types.log": "f65fd97d2a283a6d774c84d936e0bc3d5153bb69f81b0ebef1975371238ff03e",
+    "initial-node-check.log": "f7e521260928587247ee081e5caabde609edc1c025d8282ec9a5054c6be6d0fa",
+    "core-db.log": "3f90d853cbe74fc9050f7275fd60886b5ffde6ad92f282726e6dad3faf6bc897",
+    "review-app.log": "71074aca1882a0a50badf5890e1b6e0dfb467b9d6128b2e4a7ee45687310bd05",
+    "review-gate.log": "92096d62ee613ccb14e108afefe1f512e5115b4ad1f331ce336b37824461bb21",
+    "review-lint.log": "0cba01450682475345a7d0383d75ed56a02e1a3607f968809997a4d634a0b969",
+    "review-types.log": "f65fd97d2a283a6d774c84d936e0bc3d5153bb69f81b0ebef1975371238ff03e",
+    "review-dbtypes.log": "6fe62d25c6df5f41564c7b479813bc699f54145ba3df95498c5c0fb89fb31098",
+    "review-auth.log": "717f02b14acf0da51ada3f331ba935b454b681fec3d40cc10e82abd1a89c1989"
+  },
+  "cleanup": {
+    "lane": "lane-2",
+    "tier": "standard",
+    "containerAndNetworkRemoved": true,
+    "existingDefaultLanePreserved": true
+  },
+  "commit": null,
+  "push": false,
+  "pr": false
+}

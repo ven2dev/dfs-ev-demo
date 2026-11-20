@@ -5,9 +5,10 @@ import { serverConfig } from "./config.server";
 import { TRACKABLE_PLAYER_PROP_MARKET_KEYS } from "./playerPropMarkets";
 
 export class InteractiveQuotaUnavailable extends Error {
-  readonly reason = "quota-floor" as const;
-  constructor() {
+  readonly reason: "quota-floor" | "subject-rate-limit";
+  constructor(reason: "quota-floor" | "subject-rate-limit" = "quota-floor") {
     super("Odds refresh is paused; cached odds may still be available.");
+    this.reason = reason;
   }
 }
 export type PaidOddsContext =

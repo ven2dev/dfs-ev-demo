@@ -183,3 +183,19 @@ END $$;
 REVOKE ALL ON FUNCTION public.admit_paid_odds(jsonb,boolean,integer,integer) FROM PUBLIC;
 -- A separately approved migration/release grants EXECUTE only to the existing
 -- web role. The web role receives no direct table writes or owner membership.
+
+-- Pre-send limiter refusal only: ordinary release keeps the attempt cooldown.
+CREATE FUNCTION public.release_shared_odds_limiter_denial(p_event text,p_keys text[],p_owner text)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+BEGIN
+  IF p_event IS NULL OR length(p_event) NOT BETWEEN 1 AND 128 OR p_owner IS NULL
+    OR length(p_owner) NOT BETWEEN 1 AND 128 OR p_keys IS NULL
+    OR cardinality(p_keys) NOT BETWEEN 1 AND 12 THEN
+    RAISE EXCEPTION 'invalid refused claim release' USING ERRCODE='22023';
+  END IF;
+  UPDATE public.event_market_odds_cache c SET refresh_owner=NULL,
+    refresh_lease_until=NULL,refresh_claimed_at=NULL
+    WHERE c.event_id=p_event AND c.market_key=ANY(p_keys) AND c.refresh_owner=p_owner
+      AND c.refresh_lease_until>clock_timestamp();
+END $$;
+REVOKE ALL ON FUNCTION public.release_shared_odds_limiter_denial(text,text[],text) FROM PUBLIC;

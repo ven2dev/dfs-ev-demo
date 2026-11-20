@@ -5,6 +5,7 @@ export type SharedOddsResource<T> = {
   payload: T | null;
   fetchedAt: string | null;
   fetchUnavailable?: boolean;
+  fetchUnavailableReason?: "quota-floor" | "subject-rate-limit";
 };
 export type SharedOddsBatch<T> = Record<string, SharedOddsResource<T>>;
 export type SharedOddsQuery = (text: string, params: unknown[]) => Promise<Record<string, unknown>[]>;
@@ -16,6 +17,8 @@ export type SharedOddsDependencies<T> = {
   wait: (ms: number) => Promise<void>;
   signal?: AbortSignal;
   isFetchUnavailable?: (error: unknown) => boolean;
+  shouldDenyRefresh?: () => Promise<boolean>;
+  refusalReason?: (error: unknown) => "quota-floor" | "subject-rate-limit" | undefined;
   onCacheWriteError?: (error: unknown) => void;
 };
 
@@ -39,6 +42,8 @@ export const getSharedOddsBatch = async <T>(
   }
   let owned: string[] = [];
   let resources: SharedOddsBatch<T> = {};
+  let readResources: SharedOddsBatch<T> = {};
+  let limiterRefused = false;
   let claimStarted = 0;
   let claimOwner = "";
   const leaseMs = options.leaseMs ?? 30_000;
@@ -56,6 +61,12 @@ export const getSharedOddsBatch = async <T>(
              WHERE event_id = $1 AND market_key = ANY($2) ORDER BY market_key`,
             [eventId, keys, options.ttlMs]
           );
+          readResources = Object.fromEntries(keys.map(key => {
+            const row = rows.find(r => r.market_key === key);
+            const real = row && new Date(row.fetched_at as string).getTime() > 0;
+            return [key, { state: row?.fresh === true ? "fresh" : real ? "stale" : "unavailable",
+              payload: real ? row.payload as T : null, fetchedAt: real ? new Date(row.fetched_at as string).toISOString() : null }];
+          }));
           if (rows.length === keys.length && rows.every(row => row.fresh === true)) {
             throw new CompletedBatch(Object.fromEntries(rows.map(row => [row.market_key, {
               state: "fresh", payload: row.payload as T,
@@ -66,6 +77,10 @@ export const getSharedOddsBatch = async <T>(
         },
         tryAcquireRefresh: async (_key, owner) => {
           deps.signal?.throwIfAborted();
+          if (await deps.shouldDenyRefresh?.()) {
+            throw new CompletedBatch(Object.fromEntries(Object.entries(readResources).map(([key, resource]) =>
+              [key, resource.state === "fresh" ? resource : { ...resource, fetchUnavailable: true, fetchUnavailableReason: "subject-rate-limit" }])));
+          }
           claimStarted = deps.monotonicNow();
           claimOwner = owner;
           const [claim] = await deps.query(
@@ -91,10 +106,12 @@ export const getSharedOddsBatch = async <T>(
           try { payloads = await deps.fetch(owned, signal, { ownerId: claimOwner, deadline: claimStarted + leaseMs }); }
           catch (error) {
             if (!deps.isFetchUnavailable?.(error)) throw error;
+            const reason = deps.refusalReason?.(error);
+            limiterRefused = reason === "subject-rate-limit";
             // The existing claim result already carries prior payloads. Refusal
             // adds no fallback SELECT and never publishes/re-ages them as fresh.
             throw new CompletedBatch({ ...resources, ...Object.fromEntries(owned.map(key => [key, {
-              ...resources[key], fetchUnavailable: true, state: resources[key]?.payload ? "stale" as const : "unavailable" as const,
+              ...resources[key], fetchUnavailable: true, ...(reason ? { fetchUnavailableReason: reason } : {}), state: resources[key]?.payload ? "stale" as const : "unavailable" as const,
               payload: resources[key]?.payload ?? null, fetchedAt: resources[key]?.fetchedAt ?? null,
             }])) });
           }
@@ -117,7 +134,8 @@ export const getSharedOddsBatch = async <T>(
             [eventId, owned, owner, JSON.stringify(Object.fromEntries(owned.map(key => [key, value[key].payload])))]);
         },
         release: async (_key, owner) => {
-          await deps.query("SELECT public.release_shared_odds_batch($1,$2,$3)", [eventId, owned, owner]);
+          await deps.query(limiterRefused ? "SELECT public.release_shared_odds_limiter_denial($1,$2,$3)" :
+            "SELECT public.release_shared_odds_batch($1,$2,$3)", [eventId, owned, owner]);
         },
         makeOwnerId: deps.makeOwnerId, now: deps.monotonicNow, wait: deps.wait,
         onCacheWriteError: deps.onCacheWriteError,

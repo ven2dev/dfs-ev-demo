@@ -27,7 +27,7 @@ const spawnWorker=()=>new Promise((resolveReady,reject)=>{
  const pending=new Map();let ready=false;
  child.stdout.on('data',b=>process.stdout.write(b));child.stderr.on('data',b=>process.stderr.write(b));
  child.on('message',m=>{if(m.ready){ready=true;resolveReady({child,pid:m.pid,send:(message)=>new Promise((resolve,reject)=>{const n=++id;pending.set(n,{resolve,reject});child.send({...message,id:n});})});}
- else{const p=pending.get(m.id);pending.delete(m.id);m.error?p?.reject(Object.assign(new Error(m.error.message),m.error)):p?.resolve(m);}});
+ else{const p=pending.get(m.id);pending.delete(m.id);if(m.error)p?.reject(Object.assign(new Error(m.error.message),m.error));else p?.resolve(m);}});
  child.on('error',reject);child.on('exit',code=>{if(!ready)reject(new Error('worker startup '+code));for(const p of pending.values())p.reject(new Error('worker exited '+code));});
 });
 const send=(n,variant,dims,enforce=true)=>workers[n%2].send({variant,dims,enforce});

@@ -1,5 +1,6 @@
 import "server-only";
-import { checkInteractiveQuotaFloor, type PaidOddsContext } from "./providerQuota";
+import { checkPaidOddsAdmission, type PaidRefreshRequest } from "./paidOddsBoundary";
+import { type PaidOddsContext } from "./providerQuota";
 import { projectPlayerPropLines } from "./oddsProjection";
 import { randomUUID } from "node:crypto";
 import { getCurrentNflSlateWindow, isEventInNflSlateWindow } from "@dfs-ev/domain/nfl-week";
@@ -154,7 +155,8 @@ export const fetchEventOdds = async (
   marketKeys: string[],
   signal?: AbortSignal,
   source: OddsApiRequestSource = "direct",
-  ownership?: PaidOddsContext
+  ownership?: PaidOddsContext,
+  paidRequest?: PaidRefreshRequest
 ): Promise<OddsApiFetch<EventOddsResponse>> => {
   serverConfig.liveOdds();
   if (marketKeys.length === 0) {
@@ -170,7 +172,7 @@ export const fetchEventOdds = async (
       throw new Error("Collector markets do not match the claimed checkpoint");
     }
   } else {
-    await checkInteractiveQuotaFloor();
+    await checkPaidOddsAdmission(paidRequest);
   }
   const assertSendLifetime = () => {
     signal?.throwIfAborted();
@@ -322,11 +324,13 @@ export const fetchPlayerPropMarketOdds = async (
   marketKey: string,
   playerName: string,
   signal?: AbortSignal,
-  source: OddsApiRequestSource = "direct"
+  source: OddsApiRequestSource = "direct",
+  paidRequest?: PaidRefreshRequest
 ): Promise<PlayerPropMarketOddsFetch> => {
   let fetched: OddsApiFetch<EventOddsResponse>;
   try {
-    fetched = await fetchEventOdds(sportKey, eventId, [marketKey], signal, source);
+    fetched = paidRequest ? await fetchEventOdds(sportKey, eventId, [marketKey], signal, source, undefined, paidRequest) :
+      await fetchEventOdds(sportKey, eventId, [marketKey], signal, source);
   } catch (error) {
     if (!(error instanceof OddsApiHttpError)) throw error;
     return {

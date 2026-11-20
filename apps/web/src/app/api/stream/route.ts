@@ -1,3 +1,4 @@
+import { createPaidRefreshRequest } from "@/lib/paidOddsBoundary";
 import { InteractiveQuotaUnavailable } from "@/lib/providerQuota";
 import { NextRequest, NextResponse } from "next/server";
 import { consensusDevigAtLine } from "@dfs-ev/domain/consensus-devig";
@@ -256,6 +257,7 @@ export async function GET(request: NextRequest) {
                     awayTeam: awayTeamName,
                     venueLat,
                     venueLon,
+                    paidRequest: createPaidRefreshRequest(request, true),
                   }
                 );
           if (!inputs) throw new Error("Fixture live inputs are unavailable");

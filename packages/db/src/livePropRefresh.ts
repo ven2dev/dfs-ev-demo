@@ -8,6 +8,7 @@ export type LivePropCacheDeps<T> = LivePropCacheStore<T> & {
   makeOwnerId: () => string;
   now: () => number;
   wait: (ms: number) => Promise<void>;
+  beforeClaim?: () => Promise<{ payload: T } | null>;
   onCacheWriteError?: (error: unknown) => void;
 };
 
@@ -58,6 +59,9 @@ export const getOrRefresh = async <T>(
   const cached = await deps.read(key);
   if (isFresh(cached, freshAfterMs)) return cached.payload;
 
+  const shortcut = await deps.beforeClaim?.();
+  if (shortcut) return shortcut.payload;
+
   const ownerId = deps.makeOwnerId();
   let acquired = await deps.tryAcquireRefresh(key, ownerId, freshAfterMs, leaseMs);
 
@@ -70,6 +74,8 @@ export const getOrRefresh = async <T>(
     const refreshed = await deps.read(key);
     if (isFresh(refreshed, freshAfterMs)) return refreshed.payload;
 
+    const shortcut = await deps.beforeClaim?.();
+    if (shortcut) return shortcut.payload;
     acquired = await deps.tryAcquireRefresh(key, ownerId, freshAfterMs, leaseMs);
   }
 

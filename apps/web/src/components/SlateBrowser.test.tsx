@@ -3,6 +3,8 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { useAppStore } from "@/store";
 import { SlateBrowser } from "./SlateBrowser";
 
+const auth = vi.hoisted(() => ({ headers: vi.fn(async (): Promise<HeadersInit> => ({})) }));
+vi.mock("@/lib/authHeaders", () => ({ getAuthHeaders: auth.headers }));
 const initialState = useAppStore.getState();
 
 afterEach(() => {
@@ -53,6 +55,21 @@ const sampleEvents = [
 ];
 
 describe("SlateBrowser", () => {
+  it.each([false, true])("discovery attaches bearer or stays anonymous on token lookup failure=%s", async failure => {
+    global.fetch = vi.fn();mockFetchOnce({ success: true, dataSource: "live", events: sampleEvents });
+    render(<SlateBrowser />);
+    fireEvent.change(await screen.findByLabelText("Select a game"), { target: { value: "evt-1" } });
+    fireEvent.click(await screen.findByLabelText("Passing Yards"));
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    if (failure) auth.headers.mockRejectedValueOnce(new Error("private SDK details"));
+    else auth.headers.mockResolvedValueOnce({ Authorization: "Bearer synthetic-token" });
+    mockFetchOnce({ success: true, dataSource: "live", eventId: "evt-1", players: [] });
+    fireEvent.click(screen.getByRole("button", { name: "Show props" }));
+    await waitFor(() => expect(fetchMock()).toHaveBeenCalledTimes(2));
+    expect(fetchMock().mock.calls[1][1].headers).toEqual(failure ? {} : { Authorization: "Bearer synthetic-token" });
+    expect(fetchMock().mock.calls[1][0]).not.toContain("synthetic-token");
+    if (failure) expect(warn.mock.calls).toEqual([["[odds-subject] token-unavailable"]]);
+  });
   it("titles the section with the server-provided NFL week, not a static label", async () => {
     // shouldAdvanceTime: pins Date.now() while still letting RTL's own
     // internal setTimeout-based polling (findByText, waitFor) actually

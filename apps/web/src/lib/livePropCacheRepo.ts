@@ -1,4 +1,5 @@
 import "server-only";
+import { shouldDenyPaidRefresh, type PaidRefreshRequest } from "./paidOddsBoundary";
 import { InteractiveQuotaUnavailable } from "./providerQuota";
 
 import { createLivePropCacheStore, getOrRefresh, type LivePropCacheEntry, type LivePropCacheKey } from "@dfs-ev/db/runtime";
@@ -30,6 +31,7 @@ export type LivePropFetchContext = {
   awayTeam: string;
   venueLat: number;
   venueLon: number;
+  paidRequest?: PaidRefreshRequest;
 };
 
 // Keep Neon initialization lazy: importing the repository does not open a client.
@@ -43,10 +45,22 @@ const createLivePropInputs = (fetchOdds: ViewOddsFetcher) => async (
   context: LivePropFetchContext
 ): Promise<LivePropInputs> => {
   let prior: LivePropCacheEntry<LivePropInputs> | null = null;
+  const stalePrior = (): LivePropInputs | null => prior?.payload.oddsByBookmaker.length ? { ...prior.payload, oddsObservation: {
+    origin: "cache", status: "stale", observationId: prior.payload.oddsObservation?.observationId ?? null,
+    persisted: prior.payload.oddsObservation?.persisted ?? false,
+    capturedAt: prior.payload.oddsObservation?.capturedAt ?? new Date(prior.fetchedAtMs).toISOString(),
+    quota: { remaining: null, used: null, last: null },
+  } } : null;
   return getOrRefresh<LivePropInputs>(
     key,
     {
       ...cacheStore,
+      ...(context.paidRequest ? { beforeClaim: async () => {
+        if (!await shouldDenyPaidRefresh(context.paidRequest)) return null;
+        const payload = stalePrior();
+        if (payload) return { payload };
+        throw new InteractiveQuotaUnavailable("subject-rate-limit");
+      } } : {}),
       read: async cacheKey => { prior = await cacheStore.read(cacheKey); return prior; },
       write: async (cacheKey, owner, payload) => {
         if (payload.oddsObservation?.status === "stale") {
@@ -158,13 +172,8 @@ const createLivePropInputs = (fetchOdds: ViewOddsFetcher) => async (
           };
         } catch (error) {
           siblingController.abort(error);
-          if (error instanceof InteractiveQuotaUnavailable && prior?.payload.oddsByBookmaker.length) {
-            return { ...prior.payload, oddsObservation: {
-              origin: "cache", status: "stale", observationId: prior.payload.oddsObservation?.observationId ?? null,
-              persisted: prior.payload.oddsObservation?.persisted ?? false,
-              capturedAt: prior.payload.oddsObservation?.capturedAt ?? new Date(prior.fetchedAtMs).toISOString(),
-              quota: { remaining: null, used: null, last: null },
-            } };
+          if (error instanceof InteractiveQuotaUnavailable) {
+            const stale = stalePrior(); if (stale) return stale;
           }
           throw error;
         } finally {
@@ -181,7 +190,8 @@ const createLivePropInputs = (fetchOdds: ViewOddsFetcher) => async (
   );
 };
 
-const legacyLiveInputs = createLivePropInputs((key, _context, signal) =>
+const legacyLiveInputs = createLivePropInputs((key, context, signal) => context.paidRequest ?
+  fetchPlayerPropMarketOdds(key.sportKey, key.eventId, key.marketKey, key.playerName, signal, "live", context.paidRequest) :
   fetchPlayerPropMarketOdds(key.sportKey, key.eventId, key.marketKey, key.playerName, signal, "live"));
 const sharedLiveInputs = createLivePropInputs((key, context, signal) =>
   fetchSharedPlayerPropOdds(key.sportKey, key.eventId, key.marketKey, key.playerName, signal, context));

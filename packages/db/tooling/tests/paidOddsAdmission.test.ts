@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { beforeAll, beforeEach, afterAll, describe, expect, it } from "vitest";
-import { admitPaidOdds, paidAdmissionCapabilitySql, type SubjectDimension } from "@dfs-ev/db/runtime";
+import { getSharedOddsBatch, admitPaidOdds, paidAdmissionCapabilitySql, type SubjectDimension } from "@dfs-ev/db/runtime";
 import { withTestClient } from "./harness";
 const key = (kind: string, name: string, version = "v1") => version + ":" + kind + ":" + createHash("sha256").update(name).digest("hex");
 const dimension = (kind: string, name: string, burst = 1): SubjectDimension => {
@@ -22,6 +22,7 @@ beforeEach(async () => {
   await quota(10000);
 });
 afterAll(() => withTestClient(c => c.query(`DROP FUNCTION public.admit_paid_odds(jsonb,boolean,integer,integer);
+ DROP FUNCTION public.release_shared_odds_limiter_denial(text,text[],text);
  DROP TABLE public.odds_subject_buckets,public.odds_subject_limits;
  DROP INDEX public.odds_admission_latest_quota;`)));
 const fault = (table: string) => withTestClient(c => c.query(`CREATE FUNCTION public.reject_admission_write() RETURNS trigger LANGUAGE plpgsql AS $$
@@ -119,6 +120,43 @@ describe("#223 proposed database-clock GCRA", () => {
       expect((await c.query("SELECT count(*)::int n FROM public.odds_subject_limits")).rows[0].n).toBe(0);
     });
   });
+  it("real kernel releases rate-denied owner, cached repeats only read, and another subject publishes fresh", async () => {
+    await withTestClient(async c => {
+      await c.query(await readFile(new URL("../../proposals/221_shared_odds_cache.sql", import.meta.url), "utf8"));
+      try {
+        await admit(anon("blocked"));
+        let blocked = false, providerCalls = 0;const sql: string[] = [];
+        class Refusal extends Error { readonly reason = "subject-rate-limit" as const; }
+        const batch = (subject: string) => getSharedOddsBatch("handoff", ["player_pass_yds"], {
+          query: async (text, params) => { sql.push(text);return (await c.query(text, params)).rows; },
+          shouldDenyRefresh: async () => subject === "blocked" && blocked,
+          fetch: async keys => {
+            const result = await admitPaidOdds(async (text, params) => { sql.push(text);return (await c.query(text, params)).rows; }, anon(subject), { enforce: true, reserve: 100, batch: 9 });
+            if (result.outcome === "subject-rate-limit") { blocked = true;throw new Refusal(); }
+            providerCalls++;return Object.fromEntries(keys.map(k => [k, { bookmakers: [] }]));
+          },
+          isFetchUnavailable: e => e instanceof Refusal, refusalReason: e => e instanceof Refusal ? e.reason : undefined,
+          makeOwnerId: () => crypto.randomUUID(), monotonicNow: () => performance.now(), wait: async () => {},
+        }, { ttlMs: 90000 });
+        expect((await batch("blocked")).player_pass_yds.state).toBe("unavailable");
+        expect(sql).toHaveLength(4);expect(sql.at(-1)).toContain("release_shared_odds_limiter_denial");
+        expect((await c.query("SELECT refresh_claimed_at,fetched_at='epoch'::timestamptz unchanged FROM public.event_market_odds_cache")).rows[0]).toEqual({ refresh_claimed_at: null, unchanged: true });
+        sql.length = 0;expect((await batch("blocked")).player_pass_yds.state).toBe("unavailable");
+        expect(sql).toHaveLength(1);expect(sql[0]).toContain("SELECT market_key");
+        expect((await batch("eligible")).player_pass_yds.state).toBe("upstream");expect(providerCalls).toBe(1);
+        sql.length = 0;expect((await batch("blocked")).player_pass_yds.state).toBe("fresh");expect(sql).toHaveLength(1);
+        await c.query("SELECT * FROM public.claim_shared_odds_batch('late',ARRAY['player_pass_yds'],'new-owner',90000,30000)");
+        await c.query("SELECT public.release_shared_odds_limiter_denial('late',ARRAY['player_pass_yds'],'old-owner')");
+        expect((await c.query("SELECT refresh_owner FROM public.event_market_odds_cache WHERE event_id='late'")).rows[0].refresh_owner).toBe("new-owner");
+      } finally {
+        await c.query(`DROP FUNCTION public.claim_shared_odds_batch(text,text[],text,integer,integer);
+          DROP FUNCTION public.renew_shared_odds_batch(text,text[],text,integer);
+          DROP FUNCTION public.publish_shared_odds_batch(text,text[],text,jsonb);
+          DROP FUNCTION public.release_shared_odds_batch(text,text[],text);
+          ALTER TABLE public.event_market_odds_cache DROP COLUMN refresh_owner,DROP COLUMN refresh_lease_until,DROP COLUMN refresh_claimed_at;`);
+      }
+    });
+  });
   it("PUBLIC has no execute/table writes; explicit execute grant works without direct table privileges", async () => {
     await withTestClient(async c => {
       await c.query("CREATE ROLE odds223_test_web NOLOGIN");
@@ -127,13 +165,13 @@ describe("#223 proposed database-clock GCRA", () => {
         expect((await c.query(paidAdmissionCapabilitySql)).rows).toEqual([{ ready: false }]);
         await expect(c.query("SELECT * FROM public.odds_subject_limits")).rejects.toMatchObject({ code: "42501" });
         await c.query("ROLLBACK");
-        await c.query("GRANT EXECUTE ON FUNCTION public.admit_paid_odds(jsonb,boolean,integer,integer) TO odds223_test_web");
+        await c.query("GRANT EXECUTE ON FUNCTION public.admit_paid_odds(jsonb,boolean,integer,integer), public.release_shared_odds_limiter_denial(text,text[],text) TO odds223_test_web");
         await c.query("BEGIN");await c.query("SET LOCAL ROLE odds223_test_web");
         expect((await c.query(paidAdmissionCapabilitySql)).rows).toEqual([{ ready: true }]);
         const r = await admitPaidOdds(async (t, p) => (await c.query(t, p)).rows, anon(), { enforce: true, reserve: 100, batch: 9 });
         expect(r).toMatchObject({ outcome: "allow", warning: null });await c.query("ROLLBACK");
       } finally {
-        await c.query("ROLLBACK");await c.query("REVOKE EXECUTE ON FUNCTION public.admit_paid_odds(jsonb,boolean,integer,integer) FROM odds223_test_web");
+        await c.query("ROLLBACK");await c.query("REVOKE EXECUTE ON FUNCTION public.admit_paid_odds(jsonb,boolean,integer,integer), public.release_shared_odds_limiter_denial(text,text[],text) FROM odds223_test_web");
         await c.query("DROP ROLE odds223_test_web");
       }
     });

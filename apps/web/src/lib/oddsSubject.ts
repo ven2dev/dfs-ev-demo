@@ -40,6 +40,16 @@ export const canonicalSubjectNetwork = (address: string | null): string | null =
 const validPolicy = (p: SubjectPolicy) => Number.isSafeInteger(p.intervalMs) && p.intervalMs > 0 &&
   Number.isSafeInteger(p.burst) && p.burst > 0 && p.burst <= 1000 && p.intervalMs * p.burst <= 86_400_000;
 
+export const parseSubjectPolicies = (value: unknown): SubjectPolicies => {
+  if (!value || typeof value !== "object" || Array.isArray(value) ||
+      Object.keys(value).sort().join(",") !== "anonymousNetwork,signedNetwork,user") throw new Error("Invalid subject policies");
+  const p = value as SubjectPolicies;
+  if (!Object.values(p).every(v => v && typeof v === "object" && Object.keys(v).sort().join(",") === "burst,intervalMs" && validPolicy(v)) ||
+      p.signedNetwork.intervalMs > p.user.intervalMs || p.signedNetwork.burst < p.user.burst) throw new Error("Invalid subject policies");
+  return Object.freeze({ anonymousNetwork: Object.freeze({ ...p.anonymousNetwork }),
+    signedNetwork: Object.freeze({ ...p.signedNetwork }), user: Object.freeze({ ...p.user }) });
+};
+
 // Factory has no supplied-input reader. C2 supplies the validated server
 // capability and lazy Firebase verifier. Nothing calls this on hits/followers.
 export const createOddsSubjectResolver = (deps: {
