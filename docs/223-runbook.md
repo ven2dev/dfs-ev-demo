@@ -216,3 +216,12 @@ windows, then uses ORDER BY ... LIMIT 20 for each ranked list. CI checks one
 base scan, bounded top-N sorts, <=1024 shared blocks and zero temp IO on 100,000
 buckets / 10,000 actual-length HMAC subjects. No work_mem increase or shortened
 identity fixture is used to make the budget pass.
+
+
+## C4 validation status (2026-11-20)
+
+Local timing and all required suites/build now pass; see 223-results.md and
+checkpoint-4.json. This evidence does not activate schema, keys, retention,
+health policy or enforcement. Production remains log-only, live identity awaits
+#299 and enforcement activation awaits #224 plus its owner gates. The 90 ms
+full-path deadline remains unchanged; only the local admission screen is proven.

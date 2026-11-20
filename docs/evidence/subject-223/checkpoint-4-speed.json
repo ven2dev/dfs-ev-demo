@@ -1,0 +1,418 @@
+{
+  "sourceSha256": {
+    "script": "afcde8bf8f50d064ea59942aae464174615a1273c6d6dc692423aa7953929137",
+    "proposal": "00c40f29c5d00bc08b5c189d8a05eea248650a243d758fb09196c482890a8232",
+    "admissionRuntime": "eb208f6b90ee25d027a0297bfd614fcb159f51a614704e35f2c584ef4a9423d4"
+  },
+  "fixture": "223-production-first-use-five-backends",
+  "mode": "--timing",
+  "createdAt": "2026-11-20T19:53:44.186Z",
+  "samples": [
+    {
+      "round": 1,
+      "backendPid": 281,
+      "phase": "floor-only-baseline",
+      "elapsedMs": 0.330208999999968
+    },
+    {
+      "round": 1,
+      "backendPid": 280,
+      "phase": "cold-allow",
+      "tableIoDelta": {
+        "catalog": {
+          "hits": 1378,
+          "reads": 0
+        },
+        "user": {
+          "hits": 31,
+          "reads": 0
+        }
+      },
+      "elapsedMs": 12.852708000000007,
+      "outcome": "allow"
+    },
+    {
+      "round": 1,
+      "backendPid": 280,
+      "phase": "first-denial",
+      "tableIoDelta": {
+        "catalog": {
+          "hits": 115,
+          "reads": 0
+        },
+        "user": {
+          "hits": 11,
+          "reads": 0
+        }
+      },
+      "elapsedMs": 1.6138749999998936,
+      "outcome": "subject-rate-limit"
+    },
+    {
+      "round": 1,
+      "backendPid": 280,
+      "phase": "warm-denial",
+      "tableIoDelta": {
+        "catalog": {
+          "hits": 0,
+          "reads": 0
+        },
+        "user": {
+          "hits": 10,
+          "reads": 0
+        }
+      },
+      "elapsedMs": 0.7442499999999654,
+      "outcome": "subject-rate-limit"
+    },
+    {
+      "round": 1,
+      "backendPid": 280,
+      "phase": "warm-allow",
+      "tableIoDelta": {
+        "catalog": {
+          "hits": 0,
+          "reads": 0
+        },
+        "user": {
+          "hits": 24,
+          "reads": 0
+        }
+      },
+      "elapsedMs": 0.7723750000000109,
+      "outcome": "allow"
+    },
+    {
+      "round": 2,
+      "backendPid": 282,
+      "phase": "cold-allow",
+      "tableIoDelta": {
+        "catalog": {
+          "hits": 1374,
+          "reads": 0
+        },
+        "user": {
+          "hits": 30,
+          "reads": 0
+        }
+      },
+      "elapsedMs": 10.070958000000019,
+      "outcome": "allow"
+    },
+    {
+      "round": 2,
+      "backendPid": 282,
+      "phase": "first-denial",
+      "tableIoDelta": {
+        "catalog": {
+          "hits": 115,
+          "reads": 0
+        },
+        "user": {
+          "hits": 10,
+          "reads": 0
+        }
+      },
+      "elapsedMs": 1.0893329999998969,
+      "outcome": "subject-rate-limit"
+    },
+    {
+      "round": 2,
+      "backendPid": 282,
+      "phase": "warm-denial",
+      "tableIoDelta": {
+        "catalog": {
+          "hits": 0,
+          "reads": 0
+        },
+        "user": {
+          "hits": 10,
+          "reads": 0
+        }
+      },
+      "elapsedMs": 0.7235419999999522,
+      "outcome": "subject-rate-limit"
+    },
+    {
+      "round": 2,
+      "backendPid": 282,
+      "phase": "warm-allow",
+      "tableIoDelta": {
+        "catalog": {
+          "hits": 0,
+          "reads": 0
+        },
+        "user": {
+          "hits": 23,
+          "reads": 0
+        }
+      },
+      "elapsedMs": 0.7816250000000764,
+      "outcome": "allow"
+    },
+    {
+      "round": 2,
+      "backendPid": 283,
+      "phase": "floor-only-baseline",
+      "elapsedMs": 0.3142080000000078
+    },
+    {
+      "round": 3,
+      "backendPid": 285,
+      "phase": "floor-only-baseline",
+      "elapsedMs": 0.41095800000005056
+    },
+    {
+      "round": 3,
+      "backendPid": 284,
+      "phase": "cold-allow",
+      "tableIoDelta": {
+        "catalog": {
+          "hits": 1374,
+          "reads": 0
+        },
+        "user": {
+          "hits": 30,
+          "reads": 0
+        }
+      },
+      "elapsedMs": 5.214582999999948,
+      "outcome": "allow"
+    },
+    {
+      "round": 3,
+      "backendPid": 284,
+      "phase": "first-denial",
+      "tableIoDelta": {
+        "catalog": {
+          "hits": 115,
+          "reads": 0
+        },
+        "user": {
+          "hits": 10,
+          "reads": 0
+        }
+      },
+      "elapsedMs": 1.0507920000000013,
+      "outcome": "subject-rate-limit"
+    },
+    {
+      "round": 3,
+      "backendPid": 284,
+      "phase": "warm-denial",
+      "tableIoDelta": {
+        "catalog": {
+          "hits": 0,
+          "reads": 0
+        },
+        "user": {
+          "hits": 10,
+          "reads": 0
+        }
+      },
+      "elapsedMs": 0.7017920000000686,
+      "outcome": "subject-rate-limit"
+    },
+    {
+      "round": 3,
+      "backendPid": 284,
+      "phase": "warm-allow",
+      "tableIoDelta": {
+        "catalog": {
+          "hits": 0,
+          "reads": 0
+        },
+        "user": {
+          "hits": 23,
+          "reads": 0
+        }
+      },
+      "elapsedMs": 0.8536669999999731,
+      "outcome": "allow"
+    },
+    {
+      "round": 4,
+      "backendPid": 286,
+      "phase": "cold-allow",
+      "tableIoDelta": {
+        "catalog": {
+          "hits": 1374,
+          "reads": 0
+        },
+        "user": {
+          "hits": 30,
+          "reads": 0
+        }
+      },
+      "elapsedMs": 5.568917000000056,
+      "outcome": "allow"
+    },
+    {
+      "round": 4,
+      "backendPid": 286,
+      "phase": "first-denial",
+      "tableIoDelta": {
+        "catalog": {
+          "hits": 115,
+          "reads": 0
+        },
+        "user": {
+          "hits": 10,
+          "reads": 0
+        }
+      },
+      "elapsedMs": 1.2534580000000233,
+      "outcome": "subject-rate-limit"
+    },
+    {
+      "round": 4,
+      "backendPid": 286,
+      "phase": "warm-denial",
+      "tableIoDelta": {
+        "catalog": {
+          "hits": 0,
+          "reads": 0
+        },
+        "user": {
+          "hits": 10,
+          "reads": 0
+        }
+      },
+      "elapsedMs": 0.8098750000000337,
+      "outcome": "subject-rate-limit"
+    },
+    {
+      "round": 4,
+      "backendPid": 286,
+      "phase": "warm-allow",
+      "tableIoDelta": {
+        "catalog": {
+          "hits": 0,
+          "reads": 0
+        },
+        "user": {
+          "hits": 23,
+          "reads": 0
+        }
+      },
+      "elapsedMs": 0.8468329999999469,
+      "outcome": "allow"
+    },
+    {
+      "round": 4,
+      "backendPid": 287,
+      "phase": "floor-only-baseline",
+      "elapsedMs": 0.3769160000000511
+    },
+    {
+      "round": 5,
+      "backendPid": 289,
+      "phase": "floor-only-baseline",
+      "elapsedMs": 0.40004099999998743
+    },
+    {
+      "round": 5,
+      "backendPid": 288,
+      "phase": "cold-allow",
+      "tableIoDelta": {
+        "catalog": {
+          "hits": 1374,
+          "reads": 0
+        },
+        "user": {
+          "hits": 30,
+          "reads": 0
+        }
+      },
+      "elapsedMs": 5.492041000000086,
+      "outcome": "allow"
+    },
+    {
+      "round": 5,
+      "backendPid": 288,
+      "phase": "first-denial",
+      "tableIoDelta": {
+        "catalog": {
+          "hits": 115,
+          "reads": 0
+        },
+        "user": {
+          "hits": 10,
+          "reads": 0
+        }
+      },
+      "elapsedMs": 1.3257079999999632,
+      "outcome": "subject-rate-limit"
+    },
+    {
+      "round": 5,
+      "backendPid": 288,
+      "phase": "warm-denial",
+      "tableIoDelta": {
+        "catalog": {
+          "hits": 0,
+          "reads": 0
+        },
+        "user": {
+          "hits": 10,
+          "reads": 0
+        }
+      },
+      "elapsedMs": 0.765625,
+      "outcome": "subject-rate-limit"
+    },
+    {
+      "round": 5,
+      "backendPid": 288,
+      "phase": "warm-allow",
+      "tableIoDelta": {
+        "catalog": {
+          "hits": 0,
+          "reads": 0
+        },
+        "user": {
+          "hits": 23,
+          "reads": 0
+        }
+      },
+      "elapsedMs": 0.926040999999941,
+      "outcome": "allow"
+    }
+  ],
+  "summary": {
+    "cold-allow": {
+      "n": 5,
+      "p95Ms": 12.852708000000007,
+      "maxMs": 12.852708000000007
+    },
+    "first-denial": {
+      "n": 5,
+      "p95Ms": 1.6138749999998936,
+      "maxMs": 1.6138749999998936
+    },
+    "warm-denial": {
+      "n": 5,
+      "p95Ms": 0.8098750000000337,
+      "maxMs": 0.8098750000000337
+    },
+    "warm-allow": {
+      "n": 5,
+      "p95Ms": 0.926040999999941,
+      "maxMs": 0.926040999999941
+    },
+    "floor-only-baseline": {
+      "n": 5,
+      "p95Ms": 0.41095800000005056,
+      "maxMs": 0.41095800000005056
+    }
+  },
+  "localAdmissionSliceMs": 53,
+  "screenWith30PercentHeadroomMs": 37.1,
+  "passed": true,
+  "limitations": [
+    "Local pg TCP comparator only; no hosted/Neon HTTP speed claim.",
+    "Catalog/user pg_statio deltas include statistics-flush/observer instrumentation and cumulative-statistics publication effects; they are evidence, not an exact partition of EXPLAIN buffer totals.",
+    "First-use compile/catalog work is not a warmed CI buffer ceiling.",
+    "No provider calls or application credentials."
+  ]
+}

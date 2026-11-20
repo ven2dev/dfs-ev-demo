@@ -1,6 +1,6 @@
 # #223 approved implementation roadmap
 
-2026-11-19 local update. Q0, C1 and C2 are complete; C3 is uncommitted; owner-approved non-timing requalification is complete, with cold speed timing deferred to an approved C4 window.
+2026-11-20 local update. C1–C3 are committed. C4 verification is complete and uncommitted for owner full-branch review; see 223-results.md and checkpoint-4 evidence.
 Owner approved this roadmap and branch creation. Branch:
 feature/dfsEV-223-paid-leader-rate-limits, new worktree from origin/main f31a250.
 Compact Q0 evidence: docs/evidence/subject-223/q0.json; raw receipts and separate
@@ -251,3 +251,28 @@ window, 0.75h final app/CI/lint/types/build and applicable DB regressions, and
 0.25h evidence/publication preparation and final review. The original 6h cap
 was exhausted; this is a separate allocation request beyond the <=1h C3
 requalification approval. No C4 work, commit, issue post, push or PR is implied.
+
+
+## C3 commit and C4 verification (2026-11-20)
+
+Owner approvals were recorded in codex-briefs/223-intake-review.md. C3 committed
+as 71fce9e5b49a6809a061424a8ad1756f52e4f592, including the previously untracked
+checkpoint-3-requalified.json. Attribution grep was empty, the post-commit tree
+was clean and the exact-commit publication guard passed with zero unapproved
+findings. C4 used its separately approved <=1.25h allocation.
+
+Owner then cleared lane-2 for timing with Relay held. Five fresh backends and
+an interleaved floor-only baseline passed: cold allow p95 12.853 ms, first
+denial 1.614 ms, warm denial 0.810 ms, warm allow 0.926 ms, baseline 0.411 ms.
+All phases pass the 37.1 ms local admission screen; this is not hosted/full-path
+qualification. Full app 949 browser + 1018 Node tests pass, with one existing
+opt-in credentialed R2 skip. CI gate 63, lint/import checks, both typechecks and
+production build pass. Core DB 89/11 files and feature-store DB 301 tests pass
+on lane-2 standard. Report remains 821 shared blocks / zero temp; warm admission
+28–74 / zero temp. No runtime source changes were needed during C4.
+
+Owned lane-2 resources are removed and timing is finished. C4's results report,
+untouched speed receipt and separate hash/check wrapper remain uncommitted for
+the owner's full-branch review and explicit commit approval. Enforcement,
+ordered migration, hosted apply and policy activation remain separate. No push,
+PR, issue edits, hosted work, provider calls or credentials were used.

@@ -1,0 +1,201 @@
+{
+  "issue": 223,
+  "checkpoint": "C4",
+  "status": "checks passed; awaiting owner full-branch review and commit approval",
+  "testedCommit": "71fce9e5b49a6809a061424a8ad1756f52e4f592",
+  "createdAt": "2026-11-20T19:58:19.017546+00:00",
+  "scope": {
+    "lane": "lane-2",
+    "tier": "standard",
+    "node": "24.21.0",
+    "timingClearance": "Owner confirmed Relay has no active timing and holds its matrix until teardown",
+    "maxActiveHours": 1.25,
+    "wallSecondsSinceC3CommitUpperBound": 380.017546
+  },
+  "checks": {
+    "browser": {
+      "passed": 949,
+      "files": 69
+    },
+    "node": {
+      "passed": 1018,
+      "skipped": 1,
+      "filesPassed": 77,
+      "skipReason": "Pre-existing opt-in credentialed R2 contract; credentials not supplied"
+    },
+    "ciGatePassed": 63,
+    "importBoundaryPassed": 12,
+    "webTypecheck": "passed",
+    "dbPackageTypecheck": "passed",
+    "productionBuild": "passed, including authenticated subject-report route",
+    "coreDb": {
+      "passed": 89,
+      "files": 11,
+      "requiredNodeCases": 74
+    },
+    "featureStoreDb": {
+      "passed": 301,
+      "skipped": 0,
+      "failed": 0
+    },
+    "gitDiffCheck": "passed"
+  },
+  "speedReceipt": {
+    "path": "docs/evidence/subject-223/checkpoint-4-speed.json",
+    "sha256": "73e287bfd9046b7464ec67d15bb4f83520e2a37b6c5adf3d1add4cb6bd7a29d0",
+    "unaltered": true,
+    "fixture": "223-production-first-use-five-backends",
+    "mode": "--timing",
+    "samples": 25,
+    "localScreenMs": 37.1,
+    "admissionSliceMs": 53,
+    "passed": true,
+    "summary": {
+      "cold-allow": {
+        "n": 5,
+        "p95Ms": 12.852708000000007,
+        "maxMs": 12.852708000000007
+      },
+      "first-denial": {
+        "n": 5,
+        "p95Ms": 1.6138749999998936,
+        "maxMs": 1.6138749999998936
+      },
+      "warm-denial": {
+        "n": 5,
+        "p95Ms": 0.8098750000000337,
+        "maxMs": 0.8098750000000337
+      },
+      "warm-allow": {
+        "n": 5,
+        "p95Ms": 0.926040999999941,
+        "maxMs": 0.926040999999941
+      },
+      "floor-only-baseline": {
+        "n": 5,
+        "p95Ms": 0.41095800000005056,
+        "maxMs": 0.41095800000005056
+      }
+    },
+    "sourceSha256": {
+      "script": "afcde8bf8f50d064ea59942aae464174615a1273c6d6dc692423aa7953929137",
+      "proposal": "00c40f29c5d00bc08b5c189d8a05eea248650a243d758fb09196c482890a8232",
+      "admissionRuntime": "eb208f6b90ee25d027a0297bfd614fcb159f51a614704e35f2c584ef4a9423d4"
+    },
+    "limitations": [
+      "Local pg TCP comparator only; no hosted/Neon HTTP speed claim.",
+      "Catalog/user pg_statio deltas include statistics-flush/observer instrumentation and cumulative-statistics publication effects; they are evidence, not an exact partition of EXPLAIN buffer totals.",
+      "First-use compile/catalog work is not a warmed CI buffer ceiling.",
+      "No provider calls or application credentials."
+    ]
+  },
+  "workBudgets": {
+    "report": {
+      "rows": 100000,
+      "shared": 821,
+      "tempRead": 0,
+      "tempWritten": 0
+    },
+    "warmAdmission": [
+      {
+        "label": "allow:0",
+        "shared": 54,
+        "tempRead": 0,
+        "tempWritten": 0
+      },
+      {
+        "label": "first-and-repeat-denial:0",
+        "shared": 54,
+        "tempRead": 0,
+        "tempWritten": 0
+      },
+      {
+        "label": "first-and-repeat-denial:1",
+        "shared": 28,
+        "tempRead": 0,
+        "tempWritten": 0
+      },
+      {
+        "label": "first-and-repeat-denial:2",
+        "shared": 28,
+        "tempRead": 0,
+        "tempWritten": 0
+      },
+      {
+        "label": "overlap:0",
+        "shared": 74,
+        "tempRead": 0,
+        "tempWritten": 0
+      },
+      {
+        "label": "overlap:1",
+        "shared": 38,
+        "tempRead": 0,
+        "tempWritten": 0
+      },
+      {
+        "label": "overlap:2",
+        "shared": 38,
+        "tempRead": 0,
+        "tempWritten": 0
+      },
+      {
+        "label": "rotation-existing-debt",
+        "shared": 48,
+        "tempRead": 0,
+        "tempWritten": 0
+      }
+    ]
+  },
+  "c3Publication": {
+    "schema": "published-evidence-guard-v1",
+    "checkpoint": "71fce9e5b49a6809a061424a8ad1756f52e4f592",
+    "verdict": "pass",
+    "scope": "complete-tested-Git-tree",
+    "trackedPaths": 1023,
+    "compressedPaths": 30,
+    "archiveLeafMembers": 341,
+    "decodedJsonStrings": 305,
+    "decodedBase64Sources": 154,
+    "approvedFindingPaths": 8,
+    "unapprovedFindingPaths": 0
+  },
+  "c3AttributionGrepOutput": "",
+  "c3WorktreeCleanBeforeC4": true,
+  "rollout": {
+    "enforcement": "hard-coded log-only",
+    "sharedCacheRequiredBeforeEnforce": true,
+    "liveTransport": "network-only until #299",
+    "healthThresholds": "inactive proposals, owner policy approval needed",
+    "retention": "inactive proposal, no schedule",
+    "orderedMigrationOrHostedApply": false
+  },
+  "cleanup": {
+    "lane2ContainerAndNetworkRemoved": true,
+    "templateAndCloneCleanupSucceeded": true,
+    "otherLaneResourcesUntouched": true,
+    "timingFinished": true
+  },
+  "rawLogSha256": {
+    "dfs223-c4-feature-db.log": "12be4d7bb782477c2b1d4a6e25ac84b5b8aa94a12504779a035d26a55df1e345",
+    "dfs223-c4-speed.log": "25d15bfd9cc5dedf379b0ba4f3abb0a1e6c191ce2028994a622ef9436c85fc39",
+    "dfs223-c4-lint.log": "e95feecabeca309d752d4f4bb6ec8be853b5754d75b9b993e071689a21f68222",
+    "dfs223-c4-core-db.log": "eae3acc06ba2fa0613a03165b4512bf9b421628bcc143ce1c17d176ae4f98738",
+    "dfs223-c4-db-up.log": "c083357cabc73b82ee2a23b05bcca87549ca813d622d67128292653e16cc608d",
+    "dfs223-c4-build.log": "2997abb04f220e3ad9564f68bfb725b9187891fc264ff470d933c0d36b9dc5fa",
+    "dfs223-c4-dbtypes.log": "6fe62d25c6df5f41564c7b479813bc699f54145ba3df95498c5c0fb89fb31098",
+    "dfs223-c4-app.log": "8f1e4e121c5059e3c096cc0faca4ab7fd8946f69c4b9d9a59707136374f129f6",
+    "c3-publication.log": "00365fb018d29915d66eced7d2c35acb02f3c570954c77b82dff80227b8351ba",
+    "dfs223-c4-types.log": "f65fd97d2a283a6d774c84d936e0bc3d5153bb69f81b0ebef1975371238ff03e",
+    "dfs223-c4-db-down.log": "764848a28d3ce12e70dd4787dc715cb94c7339588a630a36b2b32d75c82fc4c1",
+    "dfs223-c4-gate.log": "14b3754b3e3baa38e3df6d53db5033a6bcf009a950c05398c1ac190541a39742"
+  },
+  "c4RuntimeChanges": false,
+  "c4Commit": null,
+  "push": false,
+  "pr": false,
+  "issueEdits": false,
+  "hostedWork": false,
+  "providerCalls": 0,
+  "applicationCredentialsUsed": false
+}
