@@ -148,3 +148,71 @@ Legacy paths remain log-only even if a future operator asks for enforce. C3
 must add the acceptance criterion and a regression proving that downgrade; do
 not assume legacy paths satisfy immediate eligible-subject handoff. Drain old
 legacy instances before activating enforcement. No such activation is made here.
+
+## C3 authenticated report, health and retention
+
+GET /api/health/odds-subjects uses the existing ODDS_HEALTH_SECRET bearer
+contract and no-store responses. Unauthorized requests do no database work.
+Ready requests do one aggregate statement for both fixed 1h/24h windows and
+three deterministic top-20 lists (admitted-to-send, denied, would-deny).
+Only versioned HMAC keys are exposed. Namespace identifies anonymous network,
+signed network or user. Counts are per subject dimension, not distinct HTTP
+requests: one signed-in request contributes a user and a network admission.
+Traffic totals follow the same dimension semantics. Window cutoff rounding can
+overcount by less than 60 seconds; rotation can split reports for up to 24h.
+Missing capability/query failures report unavailable, never invented zeroes.
+A health/report call is off the paid path, and never resolves identities.
+
+The report function's restricted owner needs SELECT on the buckets; only
+EXECUTE on report_odds_subjects() is granted to the web role. Startup checks
+that exact grant alongside admission/release, so a partial release stays off.
+Do not grant direct bucket/subject writes to the application role.
+
+Policy proposals (inactive pending owner approval before enforce): warn at
+100 admissions or denials/would-denials per subject/hour, critical at 500.
+These are initial review values, not traffic-derived recommendations. The
+endpoint reports policy-pending and thresholdsActive=false. The evaluator
+supports explicit approved thresholds; no configuration or activation is added.
+Instance-local recent-error/reason counts remain visible separately; they are
+not fleet-wide totals, survive neither recycle nor scale-to-zero, and failures
+may undercount DB buckets. Current mode remains log-only in production.
+
+Retention remains an inactive proposal: 7 days of buckets, at most 1,000 per
+delete, followed by at most 1,000 unreferenced subject rows whose TAT has been
+expired for at least 24 hours (the maximum supported limiter horizon). The
+maintenance helper uses two separate statements, SKIP LOCKED and no paid-path
+invocation. Future debt, recently expired rotation state and referenced rows
+are preserved. A separately authorized maintenance role/schedule is needed;
+no route, cron, hosted grant or maintenance activation is created here. Release
+must set a bounded statement timeout and run one batch at a time, observing
+rows remaining rather than draining history inside a user request.
+
+C3 acceptance addition: an enforce request is downgraded to log-only when the
+shared-cache capability is legacy or unavailable. This applies to discovery
+and live alike. The boundary sends enforce=false to SQL and never populates or
+consults an enforced-denial cache in that mode. Tests cover both legacy paths
+and a rejected capability check. Shared-ready test fixtures retain actual
+refusals; this does not activate enforcement in the application.
+
+## Owner-approved C3 measurement correction (2026-11-20)
+
+Warm each admission branch on throwaway subjects before CI measurement. At
+10,000 subject rows, allow, first denial, repeat denial, rotation and overlap
+each have a <=80 shared-block / zero-temp ceiling. Production PK lock/update
+and partial-quota-index plan checks reject sequential-scan regressions. Debt
+is captured by the sorted lock read, then evaluated from that bounded locked
+snapshot; this avoids a second read of the same PK rows per dimension. Input
+validation, atomic all-or-none updates and sorted lock order are unchanged.
+
+The <=512 first-use CI ceiling is explicitly replaced by owner decision. Cold
+PL/pgSQL branch compilation/catalog loads are recorded separately using
+pg_statio catalog/user deltas; instrumentation makes those approximate, not
+an exact partition of EXPLAIN counts. Timing is opt-in against the admission
+slice and needs its own clear timing window. No cold latency claim follows
+from a shared-hit count. The local pg comparator cannot qualify hosted Neon.
+
+The report materializes one conditional aggregate over the 24h range for both
+windows, then uses ORDER BY ... LIMIT 20 for each ranked list. CI checks one
+base scan, bounded top-N sorts, <=1024 shared blocks and zero temp IO on 100,000
+buckets / 10,000 actual-length HMAC subjects. No work_mem increase or shortened
+identity fixture is used to make the budget pass.

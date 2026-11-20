@@ -5,6 +5,7 @@ import { createOddsSubjectResolver, type SubjectReason } from "./oddsSubject";
 import { checkInteractiveQuotaFloor, InteractiveQuotaUnavailable } from "./providerQuota";
 import { getSql } from "./db";
 import { serverConfig } from "./config.server";
+import { initializeOddsCache } from "./oddsCacheStartup";
 import { parseBearerToken } from "./parseBearerToken";
 import type { NextRequest } from "next/server";
 import { TRACKABLE_PLAYER_PROP_MARKET_KEYS } from "./playerPropMarkets";
@@ -32,6 +33,7 @@ export const createPaidOddsBoundary = (deps: {
   fallbackFloor: () => Promise<void>;
   reserve: () => number;
   enforce: boolean;
+  sharedCacheReady: () => Promise<boolean>;
   warn: (reason: Reason) => void;
   now?: () => number;
   maxDeniedSubjects?: number;
@@ -54,8 +56,12 @@ export const createPaidOddsBoundary = (deps: {
       return null;
     }
   };
+  const canEnforce = async () => {
+    if (!deps.enforce) return false;
+    try { return await deps.sharedCacheReady(); } catch { return false; }
+  };
   const beforeClaim = async (request?: PaidRefreshRequest) => {
-    if (!deps.enforce || !request || denied.size === 0) return false;
+    if (!request || denied.size === 0 || !await canEnforce()) return false;
     const dimensions = await resolve(request);
     return dimensions ? hit(dimensions) : false;
   };
@@ -69,11 +75,12 @@ export const createPaidOddsBoundary = (deps: {
       }
       return deps.fallbackFloor();
     }
+    const enforce = await canEnforce();
     const started = now();
     const result = await admitPaidOdds(deps.query, dimensions,
-      { enforce: deps.enforce, reserve: deps.reserve(), batch: TRACKABLE_PLAYER_PROP_MARKET_KEYS.length });
+      { enforce, reserve: deps.reserve(), batch: TRACKABLE_PLAYER_PROP_MARKET_KEYS.length });
     if (result.warning) deps.warn(result.warning);
-    if (result.outcome === "subject-rate-limit" && deps.enforce) {
+    if (result.outcome === "subject-rate-limit" && enforce) {
       const until = started + result.retryAfterMs;
       for (const key of result.deniedSubjects) if (SUBJECT_KEY.test(key) && until > now()) {
         denied.delete(key);
@@ -96,10 +103,12 @@ const startup = createPaidOddsStartup({
   warn: record,
 });
 // Enforce is intentionally unavailable in production until #299 and #224's
-// owner activation. Factories expose enforce only for qualification/tests.
+// owner activation. Even a future enforce request downgrades to shadow unless
+// #221 capability selected the shared path; legacy coalescing cannot isolate a
+// creator's denial from eligible joiners. Factories expose enforce for tests.
 const boundary = createPaidOddsBoundary({ initialize: startup.initialize,
   query: (text, params) => getSql().query(text, params), fallbackFloor: () => checkInteractiveQuotaFloor(),
-  reserve: () => serverConfig.collectorHealth().quotaReserve, enforce: false, warn: record });
+  reserve: () => serverConfig.collectorHealth().quotaReserve, enforce: false, sharedCacheReady: async () => await initializeOddsCache() === "shared", warn: record });
 export const initializePaidOdds = startup.initialize;
 export const checkPaidOddsAdmission = boundary.check;
 export const shouldDenyPaidRefresh = boundary.beforeClaim;

@@ -1,6 +1,6 @@
 # #223 approved implementation roadmap
 
-2026-11-18 local date. Q0 is complete; implementation is not started.
+2026-11-19 local update. Q0, C1 and C2 are complete; C3 is uncommitted; owner-approved non-timing requalification is complete, with cold speed timing deferred to an approved C4 window.
 Owner approved this roadmap and branch creation. Branch:
 feature/dfsEV-223-paid-leader-rate-limits, new worktree from origin/main f31a250.
 Compact Q0 evidence: docs/evidence/subject-223/q0.json; raw receipts and separate
@@ -91,9 +91,9 @@ proposals awaiting policy approval before enforce.
 | Limiter denial | No TAT advance, no send/payload write; <=1 release statement per owned raw/outer layer |
 | Error | <=1 attempted admission, one fixed warning, no additional fallback SQL |
 | Quota index probe | <=16 shared blocks, 0 temp; measured 3 |
-| Admission first plan | <=512 shared accesses, 0 temp; measured max 354 including catalog/first-plan work |
-| Warm ordinary/overlap probe | <=80 shared accesses, 0 temp; measured max 46 |
-| Report at 100k buckets | 1 aggregate query, <=1,024 shared accesses, 0 temp; measured 628 |
+| Cold first use (owner correction 2026-11-20) | Evidence only: catalog/user IO split plus opt-in speed; former <=512 CI ceiling replaced |
+| Warm production branches | <=80 shared accesses, 0 temp at 10,000 subjects; allow/denial/rotation/overlap measured <=74; PK/quota index plan checks |
+| Report at 100k buckets | 1 conditional aggregate/base scan, top-N lists, <=1,024 shared accesses, 0 temp; production measured 821 |
 | Follower timeout | <=182 reads and <=182 failed claims at 250ms/45s; measured 177 each plus 4 held-owner renewals; admission stays 0 |
 | Retention | <=1,000 rows per maintenance delete, outside paid path |
 
@@ -154,8 +154,10 @@ C1 committed as b3d717cb974c3454fa2fce05141f30c06a2194e4; attribution check and
 clean worktree verified before C2, and publication guard passed on that commit.
 C2 now implements route threading, one-floor admission/fallback, enforced-only
 bounded deny cache, fenced release and reason-only instance health counters.
-C2 is pending owner commit review. C3 top-consumers/retention/threshold policy and
-C4 final build/feature-store/speed verification remain.
+C2 committed as 022269a3b14f0241a198a4e2f3b4e1d9f7683938 with no attribution lines,
+a clean worktree immediately afterward, and a passing exact-commit publication
+guard (zero unapproved findings). C3 is uncommitted; see qualification gap below.
+C4 final build/feature-store/speed verification remains.
 Owner approval precedes every commit; fresh consent precedes push and PR.
 #299 blocks enforcement under #224. No ordered migration or hosted action.
 
@@ -172,3 +174,80 @@ claimed fixed on the legacy paths.
 Rate-limit subject verification is signature/expiry-only with cached keys, not
 requireUid's per-request revocation lookup. Cached-key verification does not
 promise zero cold/key-refresh network access. Account authorization is unchanged.
+
+
+## C3 historical qualification gap — superseded by owner correction below
+
+Implemented in the requested order: authenticated fixed top-20 report; bounded
+inactive retention helper; inactive threshold proposals plus current/recent
+instance health; CI statement/buffer assertions; shared-cache enforcement gate
+and draft acceptance/runbook text. No issue edits, migration, activation or push.
+The report uses the existing health bearer, one aggregate statement and full
+versioned HMAC subjects. It reports dimension admissions, not unique sends.
+Retention has no automatic schedule. Production enforcement remains off.
+
+The 100,000-row / 10,000-subject report fixture uses actual-length synthetic HMAC
+keys and production counters. Final per-window query: 1,234 shared blocks versus
+1,024 approved; temp reads/writes zero. An earlier combined-window shape used
+821 blocks but spilled 566 read / 567 written temp blocks, so it is not a passing
+alternative. Do not increase work_mem or shrink keys/fixtures to claim a pass.
+
+Production admission's final diagnostic sequence was ordinary [1376,137,22]
+and overlap [52,28,28] shared blocks, all with zero temp IO. First-use ceiling
+512 and repeated-call ceiling 80 both fail (including the first denial branch).
+Q0 scratch measured 354/46; those figures do not prove the more fully validated
+production function's first-use paths. The precise catalog/planning versus
+query-work contribution is not yet isolated. Validation remains intact.
+
+All 23 behavior/retention/privilege cases in the focused DB suite passed; its
+two budget cases fail. An existing handoff fixture left published payloads in
+the disposable DB between reruns; C3 now deletes only its handoff/late fixture
+rows at setup/cleanup and scopes its assertion. App tests pass: 949 browser,
+1018 Node, one pre-existing credentialed R2 skip; 63 CI gate checks, lint and
+both typechecks pass. No hosted timing or provider calls were performed.
+
+Owner review required before further qualification: recommend a bounded 0.5–1h
+requalification of the production SQL, real-length HMAC report fixture, first
+allow/first denial and warm branches. Prefer query improvements; any revised
+ceiling needs explicit owner approval and fresh evidence. This additional work
+was not in the six-hour allocation, whose buffer was assigned to C2. The six-
+hour estimate is no longer a reliable completion estimate; do not proceed to
+C4 or commit C3 on the basis of the scratch measurements.
+
+
+## Owner correction and C3 requalification (2026-11-20)
+
+Owner approved <=1h for the two review items. The first-use <=512 CI ceiling
+is replaced by warmed per-branch <=80 / zero-temp checks plus production plan
+assertions. Historical failed receipts remain untouched. No other ceiling is
+raised. Cold speed timing is an opt-in check against the 53 ms admission slice;
+the currently authorized lane window is non-timing, so it has not run.
+
+The production report now materializes one conditional aggregate over 24h for
+both windows. Each top-20 list uses a bounded ORDER BY/LIMIT, replacing full
+window sorts. At 100,000 buckets / 10,000 real-length HMAC subjects: 821 shared
+blocks, zero temp IO; plan proves one source scan with one loop and three
+bounded top-N sort nodes (each serves both windows).
+
+The new 10,000-subject plan check found a real issue hidden by the tiny warm
+fixture: JSON IN was estimated as 100 keys and selected a subject-table seq
+scan. Admission now captures TAT in the already-required sorted PK lock read
+and computes each dimension's debt from that locked snapshot. No validation
+or fencing is removed, and all-or-none behavior is unchanged. Warm allow,
+first/repeat denial, rotation and overlap use 28–74 shared blocks at that scale,
+zero temp IO. Extracted production lock/update and quota statements use the
+subject PK/partial quota index without seq scans. Plans and behavior tests are
+CI work checks; wall-clock assertions remain out of CI.
+
+Cold-work evidence on five fresh backends records PL/pgSQL first allow and
+first denial separately from warm branches, including pg_statio deltas on
+pg_catalog versus public user tables. The observation/flush overhead is stated;
+these deltas are not claimed to be an exact partition of EXPLAIN hits. The
+opt-in script is ready, but --timing has not run in this non-timing window.
+
+Revised C4 estimate for owner review BEFORE starting C4: **1.25 active hours**,
+including 0.25h cold first-use opt-in speed/receipt review in an approved quiet
+window, 0.75h final app/CI/lint/types/build and applicable DB regressions, and
+0.25h evidence/publication preparation and final review. The original 6h cap
+was exhausted; this is a separate allocation request beyond the <=1h C3
+requalification approval. No C4 work, commit, issue post, push or PR is implied.

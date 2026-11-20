@@ -12,14 +12,14 @@ vi.mock("./config.server", () => ({ serverConfig: {
     anonymousNetwork: { intervalMs: 1000, burst: 1 }, signedNetwork: { intervalMs: 1000, burst: 100 }, user: { intervalMs: 1000, burst: 2 } } }),
 } }));
 import { createPaidOddsBoundary, checkPaidOddsAdmission, createPaidRefreshRequest, paidOddsHealth } from "./paidOddsBoundary";
-import type { PaidAdmission } from "@dfs-ev/db/runtime";
+import type { PaidAdmission, AdmissionQuery } from "@dfs-ev/db/runtime";
 import type { NextRequest } from "next/server";
 const key = (kind: string, ch = "a") => `v1:${kind}:` + ch.repeat(64);
 const dims = [{ keys: [key("anonymous-network")], report: key("anonymous-network"), intervalMs: 1000, burst: 1, traffic: "anonymous" as const }];
 const row = (outcome: PaidAdmission["outcome"] = "allow") => ({ outcome, retry_after_ms: outcome === "subject-rate-limit" ? "1000" : "0", denied_subjects: outcome === "subject-rate-limit" ? dims[0].keys : [], warning: null, quota_remaining: 500, would_deny: false });
 const setup = (enforce = true) => {
   let now = 0;const query = vi.fn().mockResolvedValue([row()]), floor = vi.fn(), warn = vi.fn(), initialize = vi.fn().mockResolvedValue("ready");
-  const boundary = createPaidOddsBoundary({ query, fallbackFloor: floor, warn, initialize, reserve: () => 100, enforce, now: () => now, maxDeniedSubjects: 2 });
+  const boundary = createPaidOddsBoundary({ query, fallbackFloor: floor, warn, initialize, reserve: () => 100, enforce, now: () => now, sharedCacheReady: async () => true, maxDeniedSubjects: 2 });
   return { boundary, query, floor, warn, initialize, time: (n: number) => { now = n; }, request: { resolveSubject: vi.fn(async () => dims) } };
 };
 afterEach(() => vi.restoreAllMocks());
@@ -107,5 +107,18 @@ describe("#223 paid boundary and advisory deny cache", () => {
     await checkPaidOddsAdmission(request);
     expect(paidOddsHealth().reasonCounts["identity-unavailable"]).toBe(before + 1);
     expect(paidOddsHealth().recentError).toBe("identity-unavailable");expect(JSON.stringify(paidOddsHealth())).not.toContain("headers");
+  });
+});
+
+describe("#223 enforcement requires the shared cache", () => {
+  it.each(["legacy-discovery", "legacy-live", "failed-capability"])("%s is log-only even if enforce is requested", async path => {
+    const query = vi.fn<AdmissionQuery>().mockResolvedValue([{ ...row(), would_deny: true, retry_after_ms: "1000", denied_subjects: dims[0].keys }]);
+    const ready = vi.fn(async () => { if (path === "failed-capability") throw new Error("private");return false; });
+    const boundary = createPaidOddsBoundary({ initialize: async () => "ready", query, fallbackFloor: vi.fn(),
+      reserve: () => 100, enforce: true, sharedCacheReady: ready, warn: vi.fn() });
+    const request = { resolveSubject: async () => dims };
+    await boundary.check(request);
+    expect(query.mock.calls[0][1][1]).toBe(false);expect(boundary.deniedSize()).toBe(0);
+    expect(await boundary.beforeClaim(request)).toBe(false);
   });
 });

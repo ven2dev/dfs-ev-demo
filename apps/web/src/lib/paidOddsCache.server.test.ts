@@ -8,7 +8,7 @@ const make = (outcome = "subject-rate-limit") => {
   const statements: string[] = [];let fresh = false;
   const fetchedAt = new Date(Date.now() - 600_000).toISOString();
   const request = { resolveSubject: vi.fn(async () => [{ keys: [key], report: key, intervalMs: 1000, burst: 1, traffic: "anonymous" as const }]) };
-  const boundary = createPaidOddsBoundary({ enforce: true, reserve: () => 100, initialize: async () => "ready", warn: vi.fn(),
+  const boundary = createPaidOddsBoundary({ enforce: true, sharedCacheReady: async () => true, reserve: () => 100, initialize: async () => "ready", warn: vi.fn(),
     fallbackFloor: vi.fn(), query: async sql => { statements.push(sql);return [{ outcome, retry_after_ms: outcome === "subject-rate-limit" ? "10000" : "0", denied_subjects: outcome === "subject-rate-limit" ? [key] : [], warning: null, quota_remaining: 500, would_deny: false }]; } });
   const beforeClaim = vi.fn(() => boundary.beforeClaim(request));
   const query = async (sql: string) => {

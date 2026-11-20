@@ -32,7 +32,7 @@ DECLARE
   d jsonb; k text; keys text[]; namespace text; namespaces text[] := '{}';
   versions text[]; first_versions text[]; reporting_version text;
   t timestamptz; debt timestamptz; candidate timestamptz;
-  next_tats jsonb := '{}'; denied boolean := false;
+  next_tats jsonb := '{}'; locked_tats jsonb; denied boolean := false;
   retry_ms bigint := 0; denied_keys text[] := '{}';
   limiter_error boolean := false; floor_refused boolean := false; floor_checked boolean := false;
   rem integer; warn text; minute_at timestamptz;
@@ -99,11 +99,16 @@ BEGIN
     FOREACH k IN ARRAY keys LOOP
       INSERT INTO public.odds_subject_limits(subject) VALUES(k) ON CONFLICT DO NOTHING;
     END LOOP;
-    PERFORM 1 FROM public.odds_subject_limits WHERE subject = ANY(keys) ORDER BY subject FOR UPDATE;
+    -- Capture debt in the already-required sorted lock read. Re-reading the
+    -- same PK rows per dimension adds work as subject state grows.
+    SELECT jsonb_object_agg(locked.subject,locked.tat) INTO locked_tats FROM (
+      SELECT subject,tat FROM public.odds_subject_limits
+      WHERE subject = ANY(keys) ORDER BY subject FOR UPDATE
+    ) locked;
     t := clock_timestamp(); minute_at := date_trunc('minute', t);
     FOR d IN SELECT value FROM jsonb_array_elements(p_dimensions) LOOP
-      SELECT max(tat) INTO debt FROM public.odds_subject_limits
-        WHERE subject IN (SELECT jsonb_array_elements_text(d->'keys'));
+      SELECT max((locked_tats->>value)::timestamptz) INTO debt
+        FROM jsonb_array_elements_text(d->'keys');
       candidate := debt - ((d->>'burst')::int - 1) * (d->>'intervalMs')::int * interval '1 millisecond';
       IF t < candidate THEN
         denied := true;
@@ -199,3 +204,50 @@ BEGIN
       AND c.refresh_lease_until>clock_timestamp();
 END $$;
 REVOKE ALL ON FUNCTION public.release_shared_odds_limiter_denial(text,text[],text) FROM PUBLIC;
+
+-- Authenticated operator report only, never the paid path. Fixed windows and
+-- top-20 lists bound response size; no caller-selected SQL/window/subject.
+CREATE FUNCTION public.report_odds_subjects()
+RETURNS TABLE(label text,totals jsonb,top_admitted jsonb,top_denied jsonb,top_would_deny jsonb)
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+BEGIN
+RETURN QUERY
+WITH totals AS MATERIALIZED (
+ SELECT b.subject,count(*) FILTER(WHERE minute>=date_trunc('minute',statement_timestamp()-interval '1 hour')) recent_rows,
+ sum(admitted)::bigint admitted_24,
+ coalesce(sum(admitted) FILTER(WHERE minute>=date_trunc('minute',statement_timestamp()-interval '1 hour')),0)::bigint admitted_1,
+ sum(denied)::bigint denied_24,
+ coalesce(sum(denied) FILTER(WHERE minute>=date_trunc('minute',statement_timestamp()-interval '1 hour')),0)::bigint denied_1,
+ sum(would_deny)::bigint would_deny_24,
+ coalesce(sum(would_deny) FILTER(WHERE minute>=date_trunc('minute',statement_timestamp()-interval '1 hour')),0)::bigint would_deny_1,
+ sum(floor_denied)::bigint floor_denied_24,
+ coalesce(sum(floor_denied) FILTER(WHERE minute>=date_trunc('minute',statement_timestamp()-interval '1 hour')),0)::bigint floor_denied_1,
+ sum(anonymous)::bigint anonymous_24,
+ coalesce(sum(anonymous) FILTER(WHERE minute>=date_trunc('minute',statement_timestamp()-interval '1 hour')),0)::bigint anonymous_1,
+ sum(signed_in)::bigint signed_in_24,
+ coalesce(sum(signed_in) FILTER(WHERE minute>=date_trunc('minute',statement_timestamp()-interval '1 hour')),0)::bigint signed_in_1
+ FROM public.odds_subject_buckets b
+ WHERE b.minute>=date_trunc('minute',statement_timestamp()-interval '24 hours')
+ AND b.minute<=date_trunc('minute',statement_timestamp()) GROUP BY b.subject
+)
+SELECT w.label,report.* FROM (VALUES ('1h'),('24h')) w(label)
+CROSS JOIN LATERAL (
+ WITH selected AS MATERIALIZED (
+ SELECT subject,CASE WHEN w.label='1h' THEN admitted_1 ELSE admitted_24 END admitted,
+ CASE WHEN w.label='1h' THEN denied_1 ELSE denied_24 END denied,
+ CASE WHEN w.label='1h' THEN would_deny_1 ELSE would_deny_24 END would_deny,
+ CASE WHEN w.label='1h' THEN floor_denied_1 ELSE floor_denied_24 END floor_denied,
+ CASE WHEN w.label='1h' THEN anonymous_1 ELSE anonymous_24 END anonymous,
+ CASE WHEN w.label='1h' THEN signed_in_1 ELSE signed_in_24 END signed_in
+ FROM totals WHERE w.label='24h' OR recent_rows>0
+ )
+ SELECT (SELECT jsonb_build_object('admitted',coalesce(sum(admitted),0),'denied',coalesce(sum(denied),0),'wouldDeny',coalesce(sum(would_deny),0),'floorDenied',coalesce(sum(floor_denied),0),'anonymous',coalesce(sum(anonymous),0),'signedIn',coalesce(sum(signed_in),0)) FROM selected),
+ (SELECT coalesce(jsonb_agg(jsonb_build_object('subject',subject,'admitted',admitted,'denied',denied,'wouldDeny',would_deny,'floorDenied',floor_denied,'anonymous',anonymous,'signedIn',signed_in) ORDER BY admitted DESC,subject),'[]'::jsonb)
+  FROM (SELECT * FROM selected ORDER BY admitted DESC,subject LIMIT 20) bounded),
+ (SELECT coalesce(jsonb_agg(jsonb_build_object('subject',subject,'admitted',admitted,'denied',denied,'wouldDeny',would_deny,'floorDenied',floor_denied,'anonymous',anonymous,'signedIn',signed_in) ORDER BY denied DESC,subject),'[]'::jsonb)
+  FROM (SELECT * FROM selected ORDER BY denied DESC,subject LIMIT 20) bounded),
+ (SELECT coalesce(jsonb_agg(jsonb_build_object('subject',subject,'admitted',admitted,'denied',denied,'wouldDeny',would_deny,'floorDenied',floor_denied,'anonymous',anonymous,'signedIn',signed_in) ORDER BY would_deny DESC,subject),'[]'::jsonb)
+  FROM (SELECT * FROM selected ORDER BY would_deny DESC,subject LIMIT 20) bounded)
+) report ORDER BY w.label;
+END $$;
+REVOKE ALL ON FUNCTION public.report_odds_subjects() FROM PUBLIC;

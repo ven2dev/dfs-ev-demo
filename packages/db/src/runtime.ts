@@ -10,3 +10,7 @@ export { readLatestProviderQuota, latestProviderQuotaSql } from "./providerQuota
 export type { ProviderQuotaReading, ProviderQuotaQuery } from "./providerQuota.ts";
 export { admitPaidOdds, paidAdmissionSql, paidAdmissionCapabilitySql, SUBJECT_KEY } from "./paidOddsAdmission.ts";
 export type { AdmissionQuery, SubjectDimension, PaidAdmission, AdmissionWarning } from "./paidOddsAdmission.ts";
+
+export { readOddsSubjectReport, oddsSubjectReportSql } from "./oddsSubjectReport.ts";
+export type { SubjectCounts, SubjectReportEntry, SubjectWindow } from "./oddsSubjectReport.ts";
+export { pruneOddsSubjectHistory, pruneOddsSubjectBucketsSql, pruneOddsSubjectLimitsSql } from "./oddsSubjectRetention.ts";
