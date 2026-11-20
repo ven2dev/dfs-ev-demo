@@ -1,0 +1,48 @@
+# #300 private input and implementation basis
+
+Review draft for the never-merge #300 branch. No hosted action is authorized by this document. The short command sequence is in [the execution sheet](300-owner-execution.md).
+
+## Design basis
+
+**Pattern:** a thin operator CLI around the approved paired controller, with one live session and a durable append-only invocation ledger. Reuse `220-hosted/setup.mjs` for fixture/grants, `load.mjs` for transport/sample assertions and the controller's exact schedule. The wrapper supplies only private loading, operator SQL, the accepted gate and recovery orchestration. All 11 measured source hashes remain pinned.
+
+**Alternatives:** hand-editing the ledger risks undercount and corruption during recovery; writing glue during a paid window leaves it unreviewed; changing the measured route/driver alters provenance. A resumable workflow engine would add a crash-recovery protocol beyond this one-shot scope, so the session cannot resume after interruption.
+
+**Targets:** 18,503 samples per arm / 37,006 combined, original sample identities/order; complete 20-leader full-path trial p95 <=63 ms against 90 ms; legacy 140/200 ms results reported separately. All function requests <=40,000. Exact #220 full-pool timeout gate before each arm: distinct held backends all 5s/2s/5s. Incident-to-service <=4h, $3 total and six-hour global resource limit. No timing target is changed by the wrapper.
+
+**Requirement reasons:** mode-700 directories/mode-600 files and fixed errors prevent disclosure; new exclusive output/claim prevents overwrite and accidental rerun; reservation+fsync before dispatch counts ambiguous failures; once-only commands preserve failures; source/deployment pins prevent wrong-target measurements; quiescent setup/gates outside timing preserve the experiment; expiry/headroom checks stop work before cleanup capacity is exhausted. A failed gate never falls back to another method.
+
+**Assumptions:** owner-controlled disposable resources only, verified TLS, same PG/settings apart from topology, immutable protected Git Previews on Node 24 / iad1, explicit fresh owner approval, and synthetic data. Quote, quota, pool retirement and provider absence are owner observations, not independently verified by the script. No provider API authority is loaded. Keep the terminal alive through the drill; there is no restart/resume protocol.
+
+## Reuse provenance
+
+Archived `6f3ea1a` records `220-hosted-raw-20261112.tar.gz`, SHA-256 `ccc27bc1e3ef6d1ce4ca18bfd690d03baf799662f3990cd78e4294c6deefce3f`, 1,757,968 bytes, outside Git. Its inventory includes `restore-source.mjs`, `restore-verify.mjs` and `restore-verify-runner.mjs`. Targeted searches did not locate that archive/helpers. No retained credential file was opened. This runner therefore reuses the committed SQL/setup/load/controller and implements reviewed missing wiring; it does not claim byte-identical reuse of absent helpers. Restore checks follow the archived receipt's tables/functions/roles/defaults/permissions/ownership/extensions, plus the schema and sequences required by this proposal. The timeout gate is exactly archived plan package 2 step 3, without additional cancellation or timeout probes.
+
+## Input contract (private, outside Git)
+
+Create a mode-700 private directory using the owner's trusted local tools; save `inputs.json` mode 600. Use a local editor/password manager, not shell arguments or chat, for values. Paths in commands contain no values. The source bindings are fixed for the live session; deployment metadata may be added before `matrix`, then stays fixed. Refresh quote/quota observations only at session open, before `matrix` and before `incident`; no mid-matrix edit is required. Do not edit the ledger. A sibling `inputs.json.session-claim` intentionally survives closure/crash; removing it is not a supported resume.
+
+Top-level structure:
+
+- `expectedSha`: final reviewed, committed 40-character Git SHA. The real CLI checks HEAD, exact branch and tracked cleanliness before any connection. No earlier controller SHA substitution.
+- `arms`: keys `single-node` and `ha`, each with the fields below.
+- `ownerApproval`: exact booleans `syntheticOnly`, `resourcesVerified`, `matchedSettings`, `cpuMemoryTransferHeadroom`; ISO UTC `windowStart`, `firstResourceCreatedAt`, `expiresAt`, `checkedAt`; numeric `totalProjectedUsd`, integer `invocationAllowance`, `invocationsUsed`, `backgroundInvocations`. Expiry is later than now and no later than D. Checked-at is no older than 15 minutes at session open, before `matrix` and before `incident` only; the owner refreshes it after actually reviewing quote/quota/time. It may age during the paired matrix without a refusal. Deadline, expiry and window-cutoff checks still apply per request; the 40,000 ledger cap is unchanged. Approved execution stops at START+4h or D−1h, whichever comes first; cleanup remains available.
+- `restore`: added after restore Ready, shaped like an arm. Same HA database/role/settings, new branch ID/endpoint/run UUID, fresh password and bearer, new immutable deployment. Its deployment may be added after `verify`; all SQL binding/credential fields stay fixed thereafter.
+- `providerRecoveryMetadata`: ISO UTC fields `requestedPointUtc`, `selectedPointUtc`, `acceptedAtUtc`, `readyAtUtc`, where observed. Unavailable values remain omitted/null. Do not guess them from local milestones.
+- `ownerCleanup`: set `deploymentsDeleted` and `backendQuiescence` true only after checking them; required before availability traffic. Save exact control-plane absence evidence separately. These booleans do not stand in for provider evidence.
+
+Each arm:
+
+- `binding`: the unchanged harness structure. `arm: "iad1"`, `projectId: "prj_GLXDEeScMKPAeDAUoYIoiNknwKJd"`, `nodeMajor: 24`, `gitBranch: "feature/dfsEV-300-ps5-ha-stage1"`, `reviewedSha` equal to `expectedSha`, distinct `runId` UUID. `gates` contains `automationBypass`, `branchScopedSensitive`, `previewProtection`, each true only after owner verification.
+- `binding.database`: `provider: "planetscale"`, `verified`, `disposable`, `syntheticOnly` true; `organization: "vernon-ven2dev"`; `clusterName: "dfs-ev-300-single"` or `"dfs-ev-300-ha"`; actual `branchId`, pooled `host`; `port: 6432`, `name: "postgres"`; role `spike220_runner_300000000001` / `spike220_runner_300000000002`; `region: "us-east-1"`, `sku: "PS-5"`, `topology: "single-node"` / `"ha"`, `postgresMajor: 18`. Confirm matching minor, architecture, storage and pool settings in owner evidence.
+- `adminUrl`: actual private `postgresql://postgres.<branchId>:<encoded-password>@<host>:5432/postgres?sslmode=verify-full` (6432 accepted if the provider supplies that administrative endpoint). Only dedicated S/H/R hosts named in verified bindings are accepted.
+- `runnerUrl`: actual private `postgresql://<role>.<branchId>:<encoded-password>@<host>:6432/postgres?sslmode=verify-full`. The runner creates this restricted role during source setup using that password; after restore the owner resets it privately to the newly supplied password. No password is logged or written in receipts.
+- `credentials`: `bearer` is a password-manager-generated 64-character lowercase hex string; `bypass` is the owner-held Vercel automation bypass credential, at least 16 characters. Distinct source SQL bindings/deployments/run IDs are required. Keep runtime credentials server-only; the branch-scoped inventory/exception remains unchanged.
+- `poolRetired`: `method: "reset"` or `"lifetime-wait"`, actual ISO UTC `atUtc`, integer `configuredSize` equal to the actual provider pool capacity, and private `evidence` describing the accepted reset/wait observation. Script supports 1–100 held connections and stops if full distinct coverage cannot be proven; it never shrinks the pool check. Only its evidence hash enters the receipt.
+- `deployment`: exact immutable Git Preview metadata: `source: "git"`, actual `id` (`dpl_…`), `projectId`, `target: "preview"`, `readyState: "READY"`, `sha`, `gitBranch`, `protectionVerified: true`, exact `https://<deployment>.vercel.app` URL. `functionMetadata`: `source: "deployment-function-metadata"`, same `deploymentId`, `path: "/api/qualification220"`, `regions: ["iad1"]`. Metadata is observed by the owner, not invented by the runner.
+
+`delivery` writes `<expectedSha>-delivery/single-node.json` and `ha.json` beside the private input; `restore-delivery` writes `restore.json`. These are live credential delivery files, separate from evidence, never terminal output. Each contains exactly the six approved `SPIKE220_*` settings. Load them through the owner's normal Vercel Secret workflow, scoped to this branch/Preview; verify metadata/protection before traffic. Delete delivery files and input live credentials during teardown. Receipts/ledger are private mode-600 files under the new output directory; any later public projection needs separate review.
+
+## Interpretation and limits
+
+`requested`/`ready` commands record local observation milestones, not vendor acceptance/Ready timestamps; enter provider metadata separately. The recovery clock starts at `incident`, before access/navigation, and ends only after the inherited service response checks. Physical database/relation bytes and PG version are recorded; WAL amount is explicitly unavailable, not inferred. Parity excludes physical sizes/timestamps and compares logical content/metadata. Unavailable restore-point metadata blocks an RPO claim. HTTP 404/410 after deletion supplements, and never replaces, exact-ID provider inventory absence. An unconfirmed deletion stays open even after `close`.

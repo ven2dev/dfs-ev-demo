@@ -258,6 +258,54 @@ export async function runPaired(options) {
   } finally { ledger?.close(); }
 }
 
+/** One live owner session: no append/reopen API and no matrix retry. Extras are
+ * reserved here, before their supplied transport, including failed dispatches.
+ * The thin runner owns credential loading and recovery response validation.
+ */
+export function createOwnerSession({ approved, ledgerPath }) {
+  assert.equal(approved, true, 'fresh owner-run approval required');
+  const ledger = new Ledger(ledgerPath);
+  let matrixStarted = false, clean = false, failed = false;
+  const extras = new Set();
+  return {
+    get used() { return ledger.used; },
+    async matrix(options) {
+      assert(!matrixStarted && !failed, 'matrix cannot restart');
+      matrixStarted = true;
+      try {
+        const result = await execute(context({ ...options, approved }, ledger), pairedManifest());
+        clean = result.status === 'complete';
+        return result;
+      } catch {
+        failed = true;
+        ledger.record({ kind: 'session-failure', phase: 'matrix' });
+        throw new Error('matrix failed; no retry/resume');
+      }
+    },
+    async request(purpose, key, dispatch) {
+      assert(!failed && ['recovery', 'availability'].includes(purpose), 'extra request refused');
+      assert(purpose !== 'recovery' || clean, 'recovery requires a complete clean matrix');
+      assert(/^(single-node|ha|restore)$/.test(key), 'unknown request target');
+      const id = `${purpose}:${key}`;
+      assert(!extras.has(id), 'extra request cannot retry');
+      extras.add(id);
+      try {
+        ledger.reserve(1, { purpose, target: key });
+        const result = await dispatch();
+        ledger.record({ kind: 'extra-result', purpose, target: key, passed: true });
+        return result;
+      } catch {
+        failed = true;
+        ledger.record({ kind: 'extra-result', purpose, target: key, passed: false });
+        throw new Error('extra request failed; no retry/resume');
+      }
+    },
+    // Caller supplies only reviewed value-free milestones, never SDK errors.
+    record: event => ledger.record(event),
+    close() { ledger.record({ kind: 'session-close', total: ledger.used }); ledger.close(); },
+  };
+}
+
 // All durable probes live in this one approved script. No production network is
 // enabled by this mode; missing injection fails rather than falling back to fetch.
 async function selfTest() {
