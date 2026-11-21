@@ -1,4 +1,5 @@
 import "server-only";
+import { shouldDenyPaidRefresh, type PaidRefreshRequest } from "./paidOddsBoundary";
 import { InteractiveQuotaUnavailable } from "./providerQuota";
 import { randomUUID } from "node:crypto";
 import { getSharedOddsBatch } from "@dfs-ev/db/runtime";
@@ -10,7 +11,7 @@ import { getPlayerPropMarket } from "./playerPropMarkets";
 import { persistRawOddsObservation } from "./oddsObservation";
 import type { GetOrFetchMarketOddsOptions, MarketOddsOrigin, MarketOddsResult } from "./oddsCacheRepo";
 
-type EventContext = { startTime: string; homeTeam: string; awayTeam: string };
+type EventContext = { startTime: string; homeTeam: string; awayTeam: string; paidRequest?: PaidRefreshRequest };
 
 type SharedPayload = CachedMarketPayload & {
   event?: Omit<EventOddsResponse, "bookmakers">;
@@ -19,7 +20,7 @@ type SharedPayload = CachedMarketPayload & {
 
 const readSharedOdds = async (
   sportKey: string, eventId: string, marketKeys: string[], ttlMs: number,
-  source: "discovery" | "live", signal?: AbortSignal, context?: EventContext
+  source: "discovery" | "live", signal?: AbortSignal, context?: EventContext, paidRequest?: PaidRefreshRequest
 ) => {
   requireOddsSport(sportKey);
   requireOddsEventId(eventId);
@@ -27,6 +28,8 @@ const readSharedOdds = async (
   if (keys.some(key => !getPlayerPropMarket(key))) throw new Error("Unknown player-prop market key");
   return getSharedOddsBatch<SharedPayload>(eventId, keys, {
     signal,
+    ...(paidRequest ? { shouldDenyRefresh: () => shouldDenyPaidRefresh(paidRequest) } : {}),
+    refusalReason: error => error instanceof InteractiveQuotaUnavailable ? error.reason : undefined,
     query: (text, params) => getSql().query(text, params),
     makeOwnerId: randomUUID, monotonicNow: () => performance.now(),
     wait: ms => new Promise(resolve => setTimeout(resolve, ms)),
@@ -35,7 +38,8 @@ const readSharedOdds = async (
     fetch: async (owned, ownerSignal, claim) => {
       const combinedSignal = signal ? AbortSignal.any([signal, ownerSignal]) : ownerSignal;
       combinedSignal.throwIfAborted();
-      const raw = await fetchEventOdds(sportKey, eventId, owned, combinedSignal, source, { kind: "raw", ...claim });
+      const raw = paidRequest ? await fetchEventOdds(sportKey, eventId, owned, combinedSignal, source, { kind: "raw", ...claim }, paidRequest) :
+        await fetchEventOdds(sportKey, eventId, owned, combinedSignal, source, { kind: "raw", ...claim });
       const fetched = context ? { ...raw, data: {
         ...raw.data,
         commence_time: raw.data.commence_time ?? context.startTime,
@@ -70,7 +74,7 @@ const originFor = (resource: Awaited<ReturnType<typeof readSharedOdds>>[string])
 export const getSharedMarketOdds = async (
   sportKey: string, eventId: string, keys: string[], options: GetOrFetchMarketOddsOptions = {}
 ): Promise<MarketOddsResult> => {
-  const resources = await readSharedOdds(sportKey, eventId, keys, options.forceRefresh ? 20_000 : 300_000, "discovery");
+  const resources = await readSharedOdds(sportKey, eventId, keys, options.forceRefresh ? 20_000 : 300_000, "discovery", undefined, undefined, options.paidRequest);
   return {
     odds: mergeOddsSlices(eventId, Object.values(resources).flatMap(resource => resource.payload ? [resource.payload] : [])),
     origins: Object.fromEntries(Object.entries(resources).map(([key, resource]) => [key, originFor(resource)])),
@@ -80,10 +84,10 @@ export const getSharedMarketOdds = async (
 export const fetchSharedPlayerPropOdds = async (
   sportKey: string, eventId: string, key: string, player: string, signal?: AbortSignal, context?: EventContext
 ): Promise<PlayerPropMarketOddsFetch> => {
-  const resources = await readSharedOdds(sportKey, eventId, [key], 90_000, "live", signal, context);
+  const resources = await readSharedOdds(sportKey, eventId, [key], 90_000, "live", signal, context, context?.paidRequest);
   const resource = resources[key];
   if (!resource?.payload) {
-    if (resource?.fetchUnavailable) throw new InteractiveQuotaUnavailable();
+    if (resource?.fetchUnavailable) throw new InteractiveQuotaUnavailable(resource.fetchUnavailableReason);
     throw new Error("Shared odds observation unavailable during refresh cooldown");
   }
   const origin = originFor(resource);

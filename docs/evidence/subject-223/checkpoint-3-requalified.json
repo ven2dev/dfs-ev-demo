@@ -1,0 +1,283 @@
+{
+  "issue": 223,
+  "checkpoint": "C3 requalification",
+  "createdAt": "2026-11-20T17:51:16.260194+00:00",
+  "parentCommit": "022269a3b14f0241a198a4e2f3b4e1d9f7683938",
+  "verdict": "non-timing checks passed; opt-in speed pending",
+  "ownerDecision": {
+    "date": "2026-11-20",
+    "scope": "up to 1h requalification; no C4 start",
+    "coldFirstUse512CiCeiling": "replaced explicitly by warmed per-branch <=80 plus plan checks",
+    "reportCeiling": 1024
+  },
+  "checks": {
+    "focusedDbPassed": 26,
+    "completeCoreDbPassed": 89,
+    "coreDbFiles": 11,
+    "focusedAppAndRuntimeTestsPassed": 31,
+    "ciGatePassed": 63,
+    "lint": "passed",
+    "webTypecheck": "passed",
+    "dbPackageTypecheck": "passed",
+    "gitDiffCheck": "passed",
+    "priorC3FullApp": {
+      "browserPassed": 949,
+      "nodePassed": 1018,
+      "skipped": 1,
+      "note": "Earlier C3 run preserved; not repeated for SQL-only requalification. Web runtime unchanged, test mock typing tidied and focused tests rerun."
+    }
+  },
+  "report": {
+    "rows": 100000,
+    "shared": 821,
+    "tempRead": 0,
+    "tempWritten": 0,
+    "sourceScans": 1,
+    "sourceLoops": 1,
+    "topNSortNodes": 3,
+    "ceiling": 1024,
+    "fixtureSubjects": 10000
+  },
+  "warmAdmission": {
+    "fixtureSubjectRows": 10000,
+    "ceilingShared": 80,
+    "ceilingTempRead": 0,
+    "ceilingTempWritten": 0,
+    "samples": [
+      {
+        "label": "allow:0",
+        "shared": 54,
+        "tempRead": 0,
+        "tempWritten": 0
+      },
+      {
+        "label": "first-and-repeat-denial:0",
+        "shared": 54,
+        "tempRead": 0,
+        "tempWritten": 0
+      },
+      {
+        "label": "first-and-repeat-denial:1",
+        "shared": 28,
+        "tempRead": 0,
+        "tempWritten": 0
+      },
+      {
+        "label": "first-and-repeat-denial:2",
+        "shared": 28,
+        "tempRead": 0,
+        "tempWritten": 0
+      },
+      {
+        "label": "overlap:0",
+        "shared": 74,
+        "tempRead": 0,
+        "tempWritten": 0
+      },
+      {
+        "label": "overlap:1",
+        "shared": 38,
+        "tempRead": 0,
+        "tempWritten": 0
+      },
+      {
+        "label": "overlap:2",
+        "shared": 38,
+        "tempRead": 0,
+        "tempWritten": 0
+      },
+      {
+        "label": "rotation-existing-debt",
+        "shared": 48,
+        "tempRead": 0,
+        "tempWritten": 0
+      }
+    ]
+  },
+  "planChecks": {
+    "productionStatementsExtractedFromFunction": true,
+    "subjectLockAndUpdate": "odds_subject_limits_pkey, no seq scan",
+    "quota": "odds_admission_latest_quota, no seq scan",
+    "fix": "Reuse TAT from the sorted locked-row read, avoiding JSON IN sequential scan and redundant per-dimension PK reads."
+  },
+  "coldIo": {
+    "freshBackends": 5,
+    "phaseSamples": 20,
+    "summary": {
+      "cold-allow": {
+        "catalog": {
+          "hits": {
+            "min": 1374,
+            "max": 1378
+          },
+          "reads": {
+            "min": 0,
+            "max": 0
+          }
+        },
+        "user": {
+          "hits": {
+            "min": 30,
+            "max": 31
+          },
+          "reads": {
+            "min": 0,
+            "max": 0
+          }
+        }
+      },
+      "first-denial": {
+        "catalog": {
+          "hits": {
+            "min": 115,
+            "max": 115
+          },
+          "reads": {
+            "min": 0,
+            "max": 0
+          }
+        },
+        "user": {
+          "hits": {
+            "min": 10,
+            "max": 11
+          },
+          "reads": {
+            "min": 0,
+            "max": 0
+          }
+        }
+      },
+      "warm-denial": {
+        "catalog": {
+          "hits": {
+            "min": 0,
+            "max": 0
+          },
+          "reads": {
+            "min": 0,
+            "max": 0
+          }
+        },
+        "user": {
+          "hits": {
+            "min": 10,
+            "max": 10
+          },
+          "reads": {
+            "min": 0,
+            "max": 0
+          }
+        }
+      },
+      "warm-allow": {
+        "catalog": {
+          "hits": {
+            "min": 0,
+            "max": 0
+          },
+          "reads": {
+            "min": 0,
+            "max": 0
+          }
+        },
+        "user": {
+          "hits": {
+            "min": 23,
+            "max": 24
+          },
+          "reads": {
+            "min": 0,
+            "max": 0
+          }
+        }
+      }
+    },
+    "sourceSha256": {
+      "script": "afcde8bf8f50d064ea59942aae464174615a1273c6d6dc692423aa7953929137",
+      "proposal": "00c40f29c5d00bc08b5c189d8a05eea248650a243d758fb09196c482890a8232",
+      "admissionRuntime": "eb208f6b90ee25d027a0297bfd614fcb159f51a614704e35f2c584ef4a9423d4"
+    },
+    "limitations": [
+      "Local pg TCP comparator only; no hosted/Neon HTTP speed claim.",
+      "Catalog/user pg_statio deltas include statistics-flush/observer instrumentation and cumulative-statistics publication effects; they are evidence, not an exact partition of EXPLAIN buffer totals.",
+      "First-use compile/catalog work is not a warmed CI buffer ceiling.",
+      "No provider calls or application credentials."
+    ]
+  },
+  "speed": {
+    "run": false,
+    "reason": "Owner cleared lane-2 for non-timing work only",
+    "optInScript": "packages/db/proposals/223-qualification/production-requalification.mjs",
+    "localAdmissionSliceMs": 53,
+    "screenWith30PercentHeadroomMs": 37.1,
+    "mode": "--timing, separate approval/window required; floor-only baseline interleaved on a different backend"
+  },
+  "c4Estimate": {
+    "activeHours": 1.25,
+    "allocation": {
+      "coldSpeedAndReceiptReview": 0.25,
+      "finalSuitesBuildAndDb": 0.75,
+      "evidenceAndFinalReview": 0.25
+    },
+    "status": "reported before starting; needs separate allocation beyond exhausted 6h cap and C3 requalification"
+  },
+  "sourceSha256": {
+    "apps/web/src/app/api/health/odds-subjects/route.ts": "d07191f2467fad1d0d59e20075f865e1082d6f345f3c0f9936690ec18bb3e2e2",
+    "apps/web/src/lib/oddsSubjectHealth.server.test.ts": "a858a6373361092759df8e7a032d3c723ac5133929d1186058d1a0a161ce6897",
+    "apps/web/src/lib/oddsSubjectHealth.ts": "03f2c28553b849d3f248b2aba39059dbcdddbd425c466e299cfeb2c2cef6c93d",
+    "apps/web/src/lib/oddsSubjectReport.ts": "9b8522b61b201699c84ebe175f33e232148306034e203354648684b7e5a37d1d",
+    "apps/web/src/lib/oddsSubjectReportRoute.server.test.ts": "e05426476c55a9d89d9d0cdb08d79096d59e9d76c98322f6e6009e01c3e5e56a",
+    "apps/web/src/lib/paidOddsBoundary.server.test.ts": "343c03dbeadacb56cecb3fa5c28aa826c9808dec269986dea3c991241f554514",
+    "apps/web/src/lib/paidOddsBoundary.ts": "81918ec64e6daaf0539159ef4517433eb2c598f61a856983417a2156cefc29a0",
+    "apps/web/src/lib/paidOddsCache.server.test.ts": "1a3e5b33ce2a86fc27b4de7e4ef1f8fd3e54a3b3060546c824c9f881ae27e863",
+    "docs/223-acceptance-addendum-draft.md": "ffbc2bc3753ec2f26e7ccd27e51a748e37ef18e6412be07017deeac1b7cf9835",
+    "docs/223-roadmap.md": "4183da9b45b625259b1abee3bcc3f812362545548d70ea29cbf7a247808b92b8",
+    "docs/223-runbook.md": "3f208763bd65a8bcca91bf4bc552a59aa6351864d66fd838adab891e74fa604e",
+    "docs/evidence/subject-223/checkpoint-3-stopped.json": "cf1a4a289103027065fbf695c2f1b1306853c5ed3db7e568ec4eb6de9a7f924f",
+    "packages/db/proposals/223-qualification/README.md": "45214ff9e0f75fc45e3af9aa40acff867521a0e6456788c391d9ce900eb0392a",
+    "packages/db/proposals/223-qualification/production-requalification.mjs": "afcde8bf8f50d064ea59942aae464174615a1273c6d6dc692423aa7953929137",
+    "packages/db/proposals/223_paid_leader_gcra.sql": "00c40f29c5d00bc08b5c189d8a05eea248650a243d758fb09196c482890a8232",
+    "packages/db/src/oddsSubjectReport.ts": "4f597d6715e4af57a52b341dac56c1c429319da5d69ee389ac807b7a3cb87bd9",
+    "packages/db/src/oddsSubjectRetention.ts": "fc71d63dd2f2482c82bedbb9821756b2218b3ec2a67dad3256411101b5e57e2d",
+    "packages/db/src/paidOddsAdmission.ts": "eb208f6b90ee25d027a0297bfd614fcb159f51a614704e35f2c584ef4a9423d4",
+    "packages/db/src/runtime.ts": "f16fa6b83c4f90146d4752cb1fb00dd5f464da030c2efea308853582d6c08d56",
+    "packages/db/tooling/tests/paidOddsAdmission.test.ts": "35e2f610881dbd55f138e44837c48abb75f7ff33d5d617eee29ecf497602842c",
+    "packages/db/tooling/tests/unit/oddsSubjectReport.test.ts": "57e273124e184f3c59bfdb108d435830e484140c771035774bb883bc9c941bd1"
+  },
+  "rawLogSha256": {
+    "dfs223-c3r-final-work-up.log": "c083357cabc73b82ee2a23b05bcca87549ca813d622d67128292653e16cc608d",
+    "dfs223-c3r-db-indexed.log": "59b818c56e88f4707baa8c1995ff8c577f894870653871dd43e623af39bd4c6e",
+    "dfs223-c3r-gate-verified.log": "4f1e97759dde37644764800a6ba777d45cd20e1935f727d256bff2c067b8d96b",
+    "dfs223-c3r-script-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "dfs223-c3r-lint.log": "cae35fac7b223443136a28f4c0b9b96d77fdbce51b447df7b06dfa12a018fa7a",
+    "dfs223-c3r-db-reuse.log": "eb1834eb5b1276f9cc9359d106bb72e4011cd44732021dc1b35416ce1c6063ba",
+    "dfs223-c3r-dbtypes.log": "6fe62d25c6df5f41564c7b479813bc699f54145ba3df95498c5c0fb89fb31098",
+    "dfs223-c3r-cold-work.log": "a192978a97d8ea4e6616c5d7d943cd07876c50b9864f9e0e8c78da1f3496434b",
+    "dfs223-c3r-db-down.log": "764848a28d3ce12e70dd4787dc715cb94c7339588a630a36b2b32d75c82fc4c1",
+    "dfs223-c3r-lint-final.log": "5e4f8a8dc63c4845fbab6305e4b79d0177523ede95c2432ca9e785d7b0bf3211",
+    "dfs223-c3r-types.log": "f65fd97d2a283a6d774c84d936e0bc3d5153bb69f81b0ebef1975371238ff03e",
+    "cold-work.json": "39ea7983ba61bc79cce2f2b2858026ba415779edcb729235a6c547325cf89b47",
+    "dfs223-c3r-db-up.log": "c083357cabc73b82ee2a23b05bcca87549ca813d622d67128292653e16cc608d",
+    "production-plans.json": "6f8fc3980067907c472dd855d9f8c612db63be0c327068e34ff07b9fc17e008b",
+    "dfs223-c3r-lint-verified.log": "406c60bcf55af6a97721c313f65b4c19d4dd5b29ed3b87afbf8d29631ea07189",
+    "dfs223-c3r-focused-unit.log": "37467d5336a8b5caf44773dc41808860772abd222d8b024a40a70843c052f5fa",
+    "dfs223-c3r-final-work-down.log": "764848a28d3ce12e70dd4787dc715cb94c7339588a630a36b2b32d75c82fc4c1",
+    "dfs223-c3r-gate.log": "6f631b93656968c5c03cc7f754346aa0dce95f7bab0ab0440ed880cd0bf40fe0",
+    "dfs223-c3r-cold-work-final.log": "a192978a97d8ea4e6616c5d7d943cd07876c50b9864f9e0e8c78da1f3496434b",
+    "dfs223-c3r-dbtypes-final.log": "6fe62d25c6df5f41564c7b479813bc699f54145ba3df95498c5c0fb89fb31098",
+    "dfs223-c3r-db-core.log": "5d247d18d2e366720b72d8758b69e682628d614d72c6ff856654c4305798ad68",
+    "dfs223-c3r-db-focused.log": "cb2034a62b6423abc37edb1ae0195ab1d7304b8d1a2cc933b913a19f4bd2a5a2"
+  },
+  "cleanup": {
+    "lane": "lane-2",
+    "tier": "standard",
+    "onlyOwnedResources": true,
+    "templateAndCloneCleanupSucceeded": true,
+    "laneDownSucceeded": true
+  },
+  "commit": null,
+  "push": false,
+  "issueEdits": false,
+  "hostedOrProviderWork": false
+}

@@ -1,0 +1,63 @@
+{
+  "checkpoint": "C1",
+  "issue": 223,
+  "branch": "feature/dfsEV-223-paid-leader-rate-limits",
+  "baseCommit": "f31a250a004d904e8f6459e92015dff6b0408d34",
+  "checks": {
+    "focusedUnitPassed": 30,
+    "focusedDbPassed": 19,
+    "coreDbPassed": 82,
+    "coreDbFiles": 11,
+    "nodeRequiredCasesVerified": 74,
+    "ciGatePassed": 62,
+    "reportAndLaneGuardsPassed": 9,
+    "lint": "passed including 12 import-boundary checks",
+    "webTypecheck": "passed",
+    "dbTypecheck": "passed"
+  },
+  "coverage": [
+    "atomic multi-dimension GCRA and reverse-order concurrency",
+    "trigger-injected counter/limiter failure with all-or-none rollback",
+    "known quota refusal retained",
+    "HMAC/privacy canonicalization and invalid-token downgrade",
+    "retrying startup capability and execute-only role grants",
+    "partial latest-quota index stays within 16 shared blocks behind 10000 newer headerless rows",
+    "failed limiter-denial counter still consults quota floor before advisory allow"
+  ],
+  "limits": [
+    "C1 factories not wired to routes/startup; existing paid behavior unchanged",
+    "C2 deny cache/release threading and C3 authenticated health/view pending",
+    "full app/feature-store suites deferred to C4",
+    "publication guard ran against existing HEAD only; candidate guard follows commit approval"
+  ],
+  "corrections": [
+    "core gate initially rejected duplicate parameterized test names; distinct names fixed and rerun verified",
+    "privacy validator implicit-any annotation fixed; both typechecks pass",
+    "new headerless fixture initially violated request/response chronology; corrected synthetic timestamps and reran all checks"
+  ],
+  "sha256": {
+    "apps/web/src/lib/oddsSubject.ts": "df6287d014641e1d8fe6958aef50b43171357f1954185709659cae0d723d04ed",
+    "apps/web/src/lib/paidOddsStartup.ts": "66f2d455001c283ba9cfd8f7402eb092f815c077e7cb0a151856f99e12d1ff42",
+    "packages/db/src/paidOddsAdmission.ts": "666a2b2c5928657a7b4c9777968828596da2108ae419430dbc6d47b789aa4090",
+    "packages/db/proposals/223_paid_leader_gcra.sql": "35f99c53956a12f633b580239f2ad413d46b0cdfbc70893a84cf905f909369db",
+    "packages/db/tooling/tests/paidOddsAdmission.test.ts": "5c5838bcc0e7000110a4cd7b30c5d2b9593d8a2f8f8d8fe7290a53b000e5ca4c"
+  },
+  "rawLogHashes": {
+    "focused-unit.json": "06752075ca490e4d067260d48bc38a3c3bf6a9011b7f1269915b6859adc22e0e",
+    "focused-db.json": "2ba84ee61df69de9ecbbe6f5e3e67209c7f37bff367e180cd8a1de12645ce433",
+    "core-db.log": "8f76032518f0bb47feecadb9b1de53d458227db45dd5df14e428d989309cfb4b",
+    "ci-gate.log": "c3f8005314e1a8497fa019fc7e17a45358d95d3f992cbabbdddcc21493233541",
+    "lint.log": "bb2231926a71da4f698423884d918044b150d6ec21c758962db0dc668f234a57",
+    "typecheck.log": "f65fd97d2a283a6d774c84d936e0bc3d5153bb69f81b0ebef1975371238ff03e",
+    "focused-db-final.json": "ccbd1e911b51f3186f21d4df3997db9c0fae0fa1d3dbcc94f51860607c493c6c"
+  },
+  "cleanup": {
+    "lane": "lane-2",
+    "tier": "standard",
+    "containerAndNetworkRemoved": true,
+    "preexistingDefaultLanePreserved": true
+  },
+  "commit": null,
+  "push": false,
+  "pr": false
+}

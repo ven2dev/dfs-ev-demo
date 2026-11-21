@@ -1,3 +1,4 @@
+import { createPaidRefreshRequest } from "@/lib/paidOddsBoundary";
 import { NextRequest, NextResponse } from "next/server";
 import { DEFAULT_SPORT_KEY, isSafeOddsEventId, isSupportedOddsSport } from "@/lib/oddsRequestInputs";
 import { getOrFetchMarketOdds } from "@/lib/oddsCacheRepo";
@@ -67,7 +68,7 @@ export const GET = async (
 
     const dataSource = serverConfig.odds().source;
     const result = dataSource === "fixture" ? null :
-      await getOrFetchMarketOdds(sportKey, eventId, requestedMarketKeys, { forceRefresh });
+      await getOrFetchMarketOdds(sportKey, eventId, requestedMarketKeys, { forceRefresh, paidRequest: createPaidRefreshRequest(request) });
     const odds = dataSource === "fixture"
       ? getFixtureEventOdds(eventId, requestedMarketKeys as PlayerPropMarketKey[])
       : result!.odds;

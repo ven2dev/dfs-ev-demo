@@ -43,7 +43,7 @@ const enclosingFunction = node => {
 /** Architecture guard for trusted source. It is not a malicious-code sandbox. */
 export const checkProviderBoundary = sources => {
   const failures = [];
-  let paidFetches = 0, freeFetches = 0, floorChecks = 0;
+  let paidFetches = 0, freeFetches = 0, floorChecks = 0, floorFallbacks = 0;
   for (const { path, source } of sources) {
     const file = ts.createSourceFile(path, source, ts.ScriptTarget.Latest, true);
     const fail = message => failures.push(`${path}: ${message}`);
@@ -64,7 +64,7 @@ export const checkProviderBoundary = sources => {
         fail("computed provider fetch bypasses the transport check");
       }
       if (path === transport && ts.isAwaitExpression(node) && ts.isCallExpression(node.expression) &&
-          node.expression.expression.getText(file) === "checkInteractiveQuotaFloor") {
+          node.expression.expression.getText(file) === "checkPaidOddsAdmission") {
         if (enclosingFunction(node)?.name?.getText(file) === "fetchEventOdds") floorChecks++;
       }
       if (path === transport && ts.isCallExpression(node) &&
@@ -75,11 +75,15 @@ export const checkProviderBoundary = sources => {
         else if (name === "fetchEventOdds") paidFetches++;
         else fail("provider fetch outside the guarded entry point or free events");
       }
+      if (path === "apps/web/src/lib/paidOddsBoundary.ts" && ts.isPropertyAssignment(node) &&
+          node.name.getText(file) === "fallbackFloor" && ts.isArrowFunction(node.initializer) &&
+          ts.isCallExpression(node.initializer.body) && node.initializer.body.expression.getText(file) === "checkInteractiveQuotaFloor") floorFallbacks++;
       ts.forEachChild(node, visit);
     };
     visit(file);
   }
   if (paidFetches !== 1 || freeFetches !== 1) failures.push("Expected exactly one paid fetch and one explicitly free events fetch");
-  if (floorChecks !== 1) failures.push("Expected one awaited quota floor check in fetchEventOdds");
+  if (floorChecks !== 1) failures.push("Expected one awaited paid admission check in fetchEventOdds");
+  if (floorFallbacks !== 1) failures.push("Expected one legacy quota floor fallback at the paid boundary");
   return [...new Set(failures)];
 };

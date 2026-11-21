@@ -1,5 +1,6 @@
 "use client";
 
+import { getAuthHeaders } from "@/lib/authHeaders";
 import type { PlayerPropDirection } from "@dfs-ev/domain";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { PLAYER_PROP_MARKETS } from "@/lib/playerPropMarkets";
@@ -236,7 +237,12 @@ export const SlateBrowser = () => {
     if (forceRefresh) params.set("refresh", "true");
 
     try {
+      let subjectHeaders: HeadersInit = {};
+      try { subjectHeaders = await getAuthHeaders(); }
+      catch { console.warn("[odds-subject] token-unavailable"); }
+      if (controller.signal.aborted) return;
       const res = await fetch(`/api/slate/${eventId}/props?${params.toString()}`, {
+        headers: subjectHeaders,
         signal: controller.signal,
       });
       const data = await res.json();

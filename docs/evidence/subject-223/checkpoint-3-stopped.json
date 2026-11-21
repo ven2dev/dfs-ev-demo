@@ -1,0 +1,113 @@
+{
+  "issue": 223,
+  "checkpoint": "C3-uncommitted",
+  "parentCommit": "022269a3b14f0241a198a4e2f3b4e1d9f7683938",
+  "verdict": "not-qualified",
+  "createdAt": "2026-11-20T03:06:38.146539+00:00",
+  "checks": {
+    "browserPassed": 949,
+    "nodePassed": 1018,
+    "nodeSkipped": 1,
+    "skip": "pre-existing opt-in credentialed R2 contract; no credentials used",
+    "ciGatePassed": 63,
+    "lint": "passed",
+    "webTypecheck": "passed",
+    "dbPackageTypecheck": "passed",
+    "focusedDb": {
+      "passed": 23,
+      "failed": 2,
+      "total": 25,
+      "failures": [
+        "100000-row report buffer budget",
+        "admission first/repeated buffer budgets"
+      ]
+    },
+    "fullCoreDb": "not rerun after focused budget gate failed",
+    "buildAndFeatureStore": "C4 not started"
+  },
+  "budgets": {
+    "report": {
+      "rows": 100000,
+      "subjects": 10000,
+      "shared": 1234,
+      "ceiling": 1024,
+      "tempRead": 0,
+      "tempWritten": 0
+    },
+    "admission": {
+      "ordinarySamples": [
+        1376,
+        137,
+        22
+      ],
+      "overlapSameBackendSamples": [
+        52,
+        28,
+        28
+      ],
+      "firstCeiling": 512,
+      "repeatedCeiling": 80,
+      "tempRead": 0,
+      "tempWritten": 0
+    },
+    "statements": {
+      "readyReport": 1,
+      "maintenanceOutsidePaidPath": 2,
+      "unauthorizedReport": 0,
+      "repeatDeniedAdditionalClaimAdmissionRelease": 0
+    }
+  },
+  "recommendation": "Owner-approved bounded production-SQL requalification before C4; no ceiling relaxed. Additional 0.5\u20131h requires revisiting six-hour cap.",
+  "limits": [
+    "production enforcement hard-coded off",
+    "thresholds and retention inactive proposals",
+    "no hosted work, credentials, provider calls, migrations, issue edits, push or C3 commit",
+    "Q0 scratch evidence does not establish production cold-plan ceilings"
+  ],
+  "cleanup": {
+    "lane": "lane-2",
+    "tier": "standard",
+    "downExitCode": 0,
+    "existingDefaultLaneUntouched": true
+  },
+  "sourceSha256": {
+    "apps/web/src/lib/paidOddsBoundary.server.test.ts": "69d053ddc2540adce5a22b9202b01ed91348fa48971ddcb419b8fa71ffd650e8",
+    "apps/web/src/lib/paidOddsBoundary.ts": "81918ec64e6daaf0539159ef4517433eb2c598f61a856983417a2156cefc29a0",
+    "apps/web/src/lib/paidOddsCache.server.test.ts": "1a3e5b33ce2a86fc27b4de7e4ef1f8fd3e54a3b3060546c824c9f881ae27e863",
+    "docs/223-roadmap.md": "218b61b19c7b97718c1f5b2dd211f3dbc22ea0368865f0662c86f5daf095be3c",
+    "docs/223-runbook.md": "d1c045eb66a599dd78eda427760fa3ce04f0ca3fcd893b6b9768394f9feb8cf4",
+    "packages/db/proposals/223_paid_leader_gcra.sql": "4e21468ab630580324278be47957c7c90d727e432bd0f95232d575b68d234256",
+    "packages/db/src/paidOddsAdmission.ts": "eb208f6b90ee25d027a0297bfd614fcb159f51a614704e35f2c584ef4a9423d4",
+    "packages/db/src/runtime.ts": "f16fa6b83c4f90146d4752cb1fb00dd5f464da030c2efea308853582d6c08d56",
+    "packages/db/tooling/tests/paidOddsAdmission.test.ts": "369bf1d9e415baeaf79c475265a9623f9c2984f74e41ea1e475ee23ef43bab98",
+    "apps/web/src/app/api/health/odds-subjects/route.ts": "d07191f2467fad1d0d59e20075f865e1082d6f345f3c0f9936690ec18bb3e2e2",
+    "apps/web/src/lib/oddsSubjectHealth.server.test.ts": "a858a6373361092759df8e7a032d3c723ac5133929d1186058d1a0a161ce6897",
+    "apps/web/src/lib/oddsSubjectHealth.ts": "03f2c28553b849d3f248b2aba39059dbcdddbd425c466e299cfeb2c2cef6c93d",
+    "apps/web/src/lib/oddsSubjectReport.ts": "9b8522b61b201699c84ebe175f33e232148306034e203354648684b7e5a37d1d",
+    "apps/web/src/lib/oddsSubjectReportRoute.server.test.ts": "e05426476c55a9d89d9d0cdb08d79096d59e9d76c98322f6e6009e01c3e5e56a",
+    "docs/223-acceptance-addendum-draft.md": "ffbc2bc3753ec2f26e7ccd27e51a748e37ef18e6412be07017deeac1b7cf9835",
+    "packages/db/src/oddsSubjectReport.ts": "4f597d6715e4af57a52b341dac56c1c429319da5d69ee389ac807b7a3cb87bd9",
+    "packages/db/src/oddsSubjectRetention.ts": "fc71d63dd2f2482c82bedbb9821756b2218b3ec2a67dad3256411101b5e57e2d",
+    "packages/db/tooling/tests/unit/oddsSubjectReport.test.ts": "57e273124e184f3c59bfdb108d435830e484140c771035774bb883bc9c941bd1"
+  },
+  "rawLogSha256": {
+    "dfs223-c3-app.log": "054788101f8e7613827d4d10cb60d06b4d7195cac25c5b3e3a1ea0c2f60009c1",
+    "dfs223-c3-boundary-tests.log": "fdfbee08d707fefda0bbc6c651733f136bef0a0fdb1d2f82cdf728361b2a03e5",
+    "dfs223-c3-db-diagnostic.log": "85d83a1aa8a30d32d480d9316a54717008ffdd5459bedaa4f7efa066383a6787",
+    "dfs223-c3-db-down.log": "764848a28d3ce12e70dd4787dc715cb94c7339588a630a36b2b32d75c82fc4c1",
+    "dfs223-c3-db-final.log": "5bf25f96683eeefae1c91c19257e01676ae9593353f285b3f6e5e2bbce2e0e84",
+    "dfs223-c3-db-focused.log": "21d9e04d9a9bfa5322afd7d569f7e2f0ea4b809e07660b52915826066f4cfea2",
+    "dfs223-c3-db-refined.log": "8959ad84a8142baacbeb4d35097da04b412d624080f3579af91b4eae5247a3b2",
+    "dfs223-c3-db-report-lateral.log": "9ccb414cbfe76c104cc1a4e24568f55f71c21ef588a150dbd2673d44b0023a1d",
+    "dfs223-c3-db-up.log": "c083357cabc73b82ee2a23b05bcca87549ca813d622d67128292653e16cc608d",
+    "dfs223-c3-dbtypes-final.log": "6fe62d25c6df5f41564c7b479813bc699f54145ba3df95498c5c0fb89fb31098",
+    "dfs223-c3-dbtypes.log": "6fe62d25c6df5f41564c7b479813bc699f54145ba3df95498c5c0fb89fb31098",
+    "dfs223-c3-gate-final.log": "8034693d9a29298698155f96031f836ee57990e04bee70be41fba713de52d84c",
+    "dfs223-c3-gate.log": "a972e1d76f9ff4032bd97decbe086f0edbab961766044e81cb01baf3ffdca156",
+    "dfs223-c3-lint-final.log": "eac5dca77fed63f86998afb6fc6d53c583c715f38d632f1f2ec0b593055deccb",
+    "dfs223-c3-lint.log": "4748dddac81ab9e0ee4d6a8acc7675bc016cb9688b94f498795e004d2279395e",
+    "dfs223-c3-report-tests.log": "5a862120baa0ee1769a0a14f80d596ac7151ebac3224c976d39c3191891bb4c3",
+    "dfs223-c3-types-final.log": "f65fd97d2a283a6d774c84d936e0bc3d5153bb69f81b0ebef1975371238ff03e",
+    "dfs223-c3-types.log": "f65fd97d2a283a6d774c84d936e0bc3d5153bb69f81b0ebef1975371238ff03e"
+  }
+}

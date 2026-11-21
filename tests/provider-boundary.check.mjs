@@ -17,7 +17,7 @@ test("guard refuses an extra provider fetch inside the transport module", () => 
   assert.ok(checkProviderBoundary(mutateTransport(source => source + '\nconst bypass = () => fetch("synthetic");')).length);
 });
 test("guard refuses removing or relocating the paid-leader floor check", () => {
-  assert.ok(checkProviderBoundary(mutateTransport(source => source.replace("await checkInteractiveQuotaFloor();", ""))).length);
+  assert.ok(checkProviderBoundary(mutateTransport(source => source.replace("await checkPaidOddsAdmission(paidRequest);", ""))).length);
 });
 test("ordinary weather fetch and test fixtures remain permitted", () => {
   assert.deepEqual(checkProviderBoundary([...sources, { path: "apps/web/src/lib/weather-example.ts", source: 'fetch("https://weather.invalid");' }]), []);
@@ -53,4 +53,10 @@ test("provider mentions outside the hostname and lookalike hosts do not match", 
   ]) {
     assert.deepEqual(checkProviderBoundary([...sources, { path: "apps/web/src/lib/ordinary.ts", source: `const reference = ${JSON.stringify(value)};` }]), [], value);
   }
+});
+
+test("guard refuses removing the legacy floor fallback from composed admission", () => {
+  const broken = sources.map(f => f.path === "apps/web/src/lib/paidOddsBoundary.ts" ?
+    { ...f, source: f.source.replace("fallbackFloor: () => checkInteractiveQuotaFloor()", "fallbackFloor: async () => {}") } : f);
+  assert.ok(checkProviderBoundary(broken).some(s => s.includes("legacy quota floor fallback")));
 });

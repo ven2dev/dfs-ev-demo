@@ -95,6 +95,8 @@ describe("GET /api/health/odds-collector", () => {
       reasons: [],
       warnings: [],
       quota: quotaHealth,
+      limiter: { capability: "not-installed", mode: "log-only", liveUserAttribution: false,
+        reasonCounts: {}, recentError: null, scope: "this-instance" },
     });
     expect(snapshotMock).toHaveBeenCalledWith(new Date("2026-10-03T12:00:00.000Z"), {
       unknownCostLookbackMs: 86_400_000,
@@ -147,6 +149,8 @@ describe("GET /api/health/odds-collector", () => {
       reasons: ["repeated-checkpoint-failure"],
       warnings: [],
       quota: quotaHealth,
+      limiter: { capability: "not-installed", mode: "log-only", liveUserAttribution: false,
+        reasonCounts: {}, recentError: null, scope: "this-instance" },
     });
 
     const warning = healthySnapshot();
@@ -160,6 +164,8 @@ describe("GET /api/health/odds-collector", () => {
       reasons: [],
       warnings: ["quota-policy-degraded"],
       quota: quotaHealth,
+      limiter: { capability: "not-installed", mode: "log-only", liveUserAttribution: false,
+        reasonCounts: {}, recentError: null, scope: "this-instance" },
     });
   });
 

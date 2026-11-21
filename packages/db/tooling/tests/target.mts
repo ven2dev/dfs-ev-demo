@@ -34,6 +34,7 @@ export function assertNoApplicationCredentials(environment: NodeJS.ProcessEnv) {
     "HEALTH_SECRET",
     "MIGRATION_DATABASE_URL",
     "ODDS_API_KEY",
+    "ODDS_SUBJECT_HMAC_KEYS",
     "ODDS_HEALTH_SECRET",
     "R2_SECRET_ACCESS_KEY",
     "YOUTUBE_API_KEY",
