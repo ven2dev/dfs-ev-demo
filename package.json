@@ -96,7 +96,7 @@
     "jsdom": "31.0.1",
     "pg": "8.23.1",
     "tailwindcss": "4.3.5",
-    "turbo": "2.11.11",
+    "turbo": "2.11.13",
     "typescript": "^5",
     "vite-tsconfig-paths": "6.1.1",
     "vitest": "5.1.0"
