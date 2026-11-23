@@ -3,7 +3,9 @@
 2026-11-23. Main basis: 0b15f80dba241fb63ffd70a81d5ccbe402a23c1b.
 Q0 is complete. The owner approved this roadmap and branch creation on 2026-11-23.
 Implementation is on `feature/dfsEV-299-verified-live-stream`, based on the main
-commit above. C1 is client transport; C2 adds expiry-fenced server attribution.
+commit above. C1 is committed as `66a41b4aa13fbc553764a3eb2b656b53d2ca4418`.
+C2 adds expiry-fenced server attribution and is validated with owner commit approval.
+The final validation/evidence checkpoint requires a separate commit approval.
 
 ## Design basis
 
@@ -234,3 +236,53 @@ The owner separately reports the default Turbopack build passing on Node 22.23;
 ALT's Node 24.21.0 Webpack build passed. These are distinct build observations.
 C1 commit is approved, with publication guard verification after commit. C2 may
 then start and must be reported before its own commit.
+
+
+## C2 review report — 2026-11-23
+
+The live route now passes its existing per-tick lazy paid context without the
+network-only restriction. `createPaidRefreshRequest` records only SDK-verified
+expiry and rechecks it before and after memo resolution. An expired signed
+result becomes one memoized anonymous result, including concurrent waiters
+that crossed expiry after starting. No repeat verification occurs within that
+context; invalid/expired credentials log one fixed reason. Signature-only
+verification, lazy Admin import and account-action revocation checks are retained.
+
+The authenticated health marker advertises live-attribution code support;
+capability/schema/keyring status remains separate and enforcement stays hard-coded
+to log-only. The current runbook explains that distinction. Historical #223 results
+are unchanged. No migration, schedule, configuration/driver change or activation.
+
+Final checks on Node 24.21.0: root `npm test` passes **984 browser tests** and
+**1,029 Node tests**, with one existing skip. The **52 focused server tests**,
+**63 CI-gate checks**, full lint (including 12 import-boundary probes), root
+and DB-package typechecks, Webpack production build and diff check pass.
+The earlier owner-reported default Turbopack success applies to C1; C2's local
+build result uses Webpack due the previously observed sandbox port restriction.
+
+Deterministic fixtures prove per-tick context creation, one coalesced verification,
+expiry at actual admission and after concurrent awaits, one existing read and
+zero verifications/odds/weather on fresh live hits in both cache paths, and one
+admission/send/publication for two mock clients sharing a raw refresh. Fresh
+reconnect adds only the existing read, without another admission or send.
+No real token, provider call, DB suite, lane or hosted work was used. Mock counts
+and the build do not establish hosted pre-provider latency or proxy streaming.
+The approved 90ms budget remains cache 10ms + admission 53ms + headroom 27ms.
+
+C1 attribution grep was empty, its worktree was clean before C2 began, and its
+exact-commit publication guard passed. C2 remains uncommitted for owner review;
+publication verification will run on its exact commit after separate approval.
+No push or PR is authorized by this report. Implementation remains within the
+approved 4-hour cap; no scope split or target relaxation was needed.
+
+
+### C2 owner cleanup and commit approval
+
+Removed the unused `networkOnly` parameter and both suppression branches. All
+callers share the verified-identity path; no missing-token behavior changes.
+The obsolete network-only test is removed, while missing-token/no-Admin coverage
+remains. After cleanup, all **349 server tests in 36 files**, **63 CI checks**,
+lint (12 boundary probes), root and DB-package typechecks and whitespace pass.
+The earlier 350-case reviewer result included that removed obsolete test.
+C2 commit is approved. Next is the final full browser/Node suites, build and
+exact-commit evidence; report that checkpoint before its own commit.

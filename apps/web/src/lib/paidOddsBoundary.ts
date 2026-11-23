@@ -102,7 +102,7 @@ const startup = createPaidOddsStartup({
   keysConfigured: () => configuration() !== null && serverConfig.databaseConfigured(),
   warn: record,
 });
-// Enforce is intentionally unavailable in production until #299 and #224's
+// Enforce is intentionally unavailable in production until #224's
 // owner activation. Even a future enforce request downgrades to shadow unless
 // #221 capability selected the shared path; legacy coalescing cannot isolate a
 // creator's denial from eligible joiners. Factories expose enforce for tests.
@@ -113,21 +113,27 @@ export const initializePaidOdds = startup.initialize;
 export const checkPaidOddsAdmission = boundary.check;
 export const shouldDenyPaidRefresh = boundary.beforeClaim;
 export const paidOddsHealth = () => ({
-  capability: startup.status(), mode: "log-only" as const, liveUserAttribution: false,
+  capability: startup.status(), mode: "log-only" as const, liveUserAttribution: true,
   reasonCounts: { ...counts }, recentError: recent && performance.now() - recent.at < 900_000 ? recent.reason : null,
   scope: "this-instance" as const,
 });
-export const createPaidRefreshRequest = (request: NextRequest, networkOnly = false): PaidRefreshRequest => {
+export const createPaidRefreshRequest = (request: NextRequest): PaidRefreshRequest => {
   let resolver: SubjectResolver | undefined;
-  return { resolveSubject: () => {
+  let expiresAt = Infinity;
+  let expired = false;
+  const resolveSubject: SubjectResolver = async () => {
+    if (!expired && Date.now() >= expiresAt) {
+      expired = true;
+      resolver = undefined;
+    }
     if (!resolver) {
       const config = configuration();
       if (!config) return Promise.resolve(null);
       resolver = createOddsSubjectResolver({
-        headers: { get: name => networkOnly && name.toLowerCase() === "authorization" ? null : request.headers.get(name) },
+        headers: request.headers,
         platform: serverConfig.environment() === "local" ? "untrusted" : "vercel", ...config,
         verifiedUid: async () => {
-          if (networkOnly) return null;
+          if (expired) return null;
           const token = parseBearerToken(request);
           if (!token) return null;
           // Attribution is not account authorization. Cached signing keys are
@@ -135,11 +141,25 @@ export const createPaidRefreshRequest = (request: NextRequest, networkOnly = fal
           // Load Admin only here, never merely by importing the collector path.
           const { getAdminAuth } = await import("./firebaseAdmin");
           const decoded = await getAdminAuth().verifyIdToken(token, false);
+          // Only the SDK-verified expiry can bound this request-local memo.
+          if (!Number.isFinite(decoded.exp)) return null;
+          expiresAt = decoded.exp * 1_000;
+          if (Date.now() >= expiresAt) { expired = true; return null; }
           return decoded.uid;
         },
         warn: (reason: SubjectReason) => { if (reason !== "identity-unavailable") record(reason); },
       });
     }
-    return resolver();
-  } };
+    const selected = resolver;
+    const result = await selected();
+    // A follower wait or verification can cross exp. Every concurrent waiter
+    // rechecks after await, even if another waiter has already invalidated it.
+    if ((expired || Date.now() >= expiresAt) && result?.some(d => d.traffic === "signed-in")) {
+      expired = true;
+      if (resolver === selected) resolver = undefined;
+      return resolveSubject();
+    }
+    return result;
+  };
+  return { resolveSubject };
 };

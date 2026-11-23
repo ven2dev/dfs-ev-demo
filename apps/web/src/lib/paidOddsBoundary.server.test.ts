@@ -22,14 +22,14 @@ const setup = (enforce = true) => {
   const boundary = createPaidOddsBoundary({ query, fallbackFloor: floor, warn, initialize, reserve: () => 100, enforce, now: () => now, sharedCacheReady: async () => true, maxDeniedSubjects: 2 });
   return { boundary, query, floor, warn, initialize, time: (n: number) => { now = n; }, request: { resolveSubject: vi.fn(async () => dims) } };
 };
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
 describe("#223 paid boundary and advisory deny cache", () => {
   it("importing the provider/collector transport does not load Firebase Admin", async () => {
     await import("./oddsApi");
     expect(m.sdkLoads).not.toHaveBeenCalled();expect(m.getAuth).not.toHaveBeenCalled();
   });
   it("signed-in subject checks signature/expiry only, never revocation, and coalesces verification", async () => {
-    m.verify.mockResolvedValue({ uid: "synthetic-user" });
+    m.verify.mockResolvedValue({ uid: "synthetic-user", exp: Math.floor(Date.now() / 1_000) + 3_600 });
     const request = createPaidRefreshRequest({ headers: new Headers({
       "x-vercel-forwarded-for": "203.0.113.7", authorization: "Bearer synthetic-token",
     }) } as NextRequest);
@@ -47,13 +47,68 @@ describe("#223 paid boundary and advisory deny cache", () => {
     expect(m.verify.mock.calls).toEqual([["expired-synthetic-token", false]]);
     expect(warn.mock.calls).toEqual([["[paid-odds] invalid-token"]]);
   });
-  it("network-only live attribution never invokes Admin even with an Authorization header", async () => {
-    m.getAuth.mockClear();m.verify.mockClear();
+  it("cached signed identity expires before actual admission with one verification and one warning", async () => {
+    vi.useFakeTimers();vi.setSystemTime(100_000);
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    m.verify.mockClear();m.verify.mockResolvedValue({ uid: "synthetic-user", exp: 101 });
     const request = createPaidRefreshRequest({ headers: new Headers({
-      "x-vercel-forwarded-for": "203.0.113.7", authorization: "Bearer ignored-synthetic-token",
-    }) } as NextRequest, true);
+      "x-vercel-forwarded-for": "203.0.113.7", authorization: "Bearer synthetic-token",
+    }) } as NextRequest);
+    expect(await request.resolveSubject()).toHaveLength(2);
+    // Model the wait for cache ownership between pre-claim resolution and send.
+    vi.setSystemTime(101_000);
+    const s = setup(false);
+    await s.boundary.check(request);
+    await s.boundary.check(request);
+    for (const [, params] of s.query.mock.calls as [string, unknown[]][]) {
+      const dimensions = JSON.parse(params[0] as string);
+      expect(dimensions).toHaveLength(1);
+      expect(dimensions[0].traffic).toBe("anonymous");
+      expect(dimensions[0].keys[0]).toContain(":anonymous-network:");
+    }
+    expect(m.verify.mock.calls).toEqual([["synthetic-token", false]]);
+    expect(warn.mock.calls).toEqual([["[paid-odds] invalid-token"]]);
+  });
+  it("all concurrent cached waiters downgrade when expiry occurs after resolution starts", async () => {
+    vi.useFakeTimers();vi.setSystemTime(100_000);
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    m.verify.mockClear();m.verify.mockResolvedValue({ uid: "synthetic-user", exp: 101 });
+    const request = createPaidRefreshRequest({ headers: new Headers({
+      "x-vercel-forwarded-for": "203.0.113.7", authorization: "Bearer synthetic-token",
+    }) } as NextRequest);
+    expect(await request.resolveSubject()).toHaveLength(2);
+    const pending = [request.resolveSubject(), request.resolveSubject(), request.resolveSubject()];
+    vi.setSystemTime(101_000);
+    const results = await Promise.all(pending);
+    for (const dimensions of results) {
+      expect(dimensions).toHaveLength(1);
+      expect(dimensions![0].traffic).toBe("anonymous");
+    }
+    expect(results[0]).toBe(results[1]);expect(results[1]).toBe(results[2]);
+    expect(m.verify).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls).toEqual([["[paid-odds] invalid-token"]]);
+  });
+  it("a token expiring during SDK verification never supplies signed dimensions", async () => {
+    vi.useFakeTimers();vi.setSystemTime(100_000);
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    let finish!: (decoded: { uid: string; exp: number }) => void;
+    const pending = new Promise<{ uid: string; exp: number }>(resolve => { finish = resolve; });
+    m.verify.mockClear();m.verify.mockReturnValue(pending);
+    const request = createPaidRefreshRequest({ headers: new Headers({
+      "x-vercel-forwarded-for": "203.0.113.7", authorization: "Bearer synthetic-token",
+    }) } as NextRequest);
+    const result = request.resolveSubject();
+    vi.setSystemTime(101_000);finish({ uid: "synthetic-user", exp: 101 });
+    expect(await result).toHaveLength(1);expect(m.verify).toHaveBeenCalledTimes(1);
+  });
+  it("missing credentials are anonymous and never initialize Admin", async () => {
+    m.verify.mockClear();m.getAuth.mockClear();
+    const request = createPaidRefreshRequest({ headers: new Headers({ "x-vercel-forwarded-for": "203.0.113.7" }) } as NextRequest);
     expect(await request.resolveSubject()).toHaveLength(1);
-    expect(m.getAuth).not.toHaveBeenCalled();expect(m.verify).not.toHaveBeenCalled();
+    expect(m.verify).not.toHaveBeenCalled();expect(m.getAuth).not.toHaveBeenCalled();
+  });
+  it("health advertises live attribution support while enforcement stays log-only", () => {
+    expect(paidOddsHealth()).toMatchObject({ mode: "log-only", liveUserAttribution: true });
   });
   it("composed admission does one statement and replaces legacy floor", async () => {
     const s = setup();await s.boundary.check(s.request);expect(s.query).toHaveBeenCalledTimes(1);expect(s.floor).not.toHaveBeenCalled();

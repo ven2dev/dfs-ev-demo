@@ -67,7 +67,13 @@ still use the network; no hosted latency guarantee is inferred. A revoked user
 can retain their user allowance until token expiry (at most the token's remaining
 lifetime, normally <=1h). Account actions keep requireUid's revocation checks.
 The Admin module is dynamically imported only on a signed-in attribution attempt;
-collector, anonymous and network-only live paths do not load it here.
+collector and anonymous paths do not load it here. With #299 deployed, live
+requests carry bearer headers and use the same lazy verifier as discovery.
+The request-local signed memo is fenced by the SDK-verified token expiry at each
+paid resolution, including after follower waits and concurrent awaiters. Expired
+identity becomes anonymous with one reason-only warning and no repeat verification
+in that context. Each live tick creates a fresh lazy context; reconnect obtains
+fresh client headers. Account authorization and its revocation checks are unchanged.
 
 Validated keyring has one or two entries {version,keyHex}, lowercase 32-byte
 hex keys and distinct short versions. The real secret is owner-provisioned;
@@ -129,7 +135,9 @@ remain C3 and owner-approved policy before enforce.
 ## C2 rollout boundary
 
 The application boundary is fixed to log-only; no supplied flag activates
-enforce. Live requests are deliberately network-only until #299. Configured
+enforce. With #299 code deployed, live requests support verified user attribution;
+`liveUserAttribution: true` in health is a code-support marker, not schema, keyring
+or enforcement readiness. Configured
 ready admission replaces, rather than duplicates, the floor read. Not-installed
 or null-subject paths use #222's floor alone; null subjects increment the
 identity-unavailable reason in authenticated instance health. Warm metadata
