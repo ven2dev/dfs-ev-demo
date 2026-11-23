@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 1,
+  "checkpoint": "309-A1",
+  "observedAtUtc": "2026-11-23T20:59:40.373Z",
+  "baseRevision": "0b15f80dba241fb63ffd70a81d5ccbe402a23c1b",
+  "node": "24.18.1",
+  "versions": {
+    "pg": "8.23.1",
+    "pgPool": "3.14.0",
+    "neon": "1.2.1",
+    "vercelFunctions": "3.11.1"
+  },
+  "result": "pass",
+  "fixture": "Synthetic protocol events through installed pg Query and installed Neon HTTP decoder with an injected fetch response; real pg.Pool with an injected synthetic Client. No real database or hosted transport.",
+  "sources": [
+    {
+      "path": "apps/web/src/lib/pgSql.ts",
+      "sha256": "e400963c463ba41d6adf52836c1cbc92be3fd06e82d5c4328c58452b5ce393e2"
+    },
+    {
+      "path": "apps/web/src/lib/pgSql.server.test.ts",
+      "sha256": "013e828047d1a97b4adfda2678bf12ddc7112e9fa3cda975f78ffb7702bf9684"
+    },
+    {
+      "path": "apps/web/package.json",
+      "sha256": "f87bae0ca44b611efc9c16c36628265cb70699368229f1ca6a08f8637a6bc32d"
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "65d5c9b2710fde1a9d67c89c6918d6a6bfe360f121006424d26b4f45071c5f10"
+    }
+  ],
+  "checks": {
+    "focused": {
+      "passed": 37,
+      "failed": 0,
+      "skipped": 0
+    },
+    "ciGate": {
+      "passed": 63,
+      "failed": 0
+    },
+    "rootTypecheck": "pass",
+    "webTypecheck": "pass",
+    "eslintSourceTreeExcludingIgnoredScratch": "pass",
+    "importBoundaries": {
+      "passed": 12,
+      "failed": 0
+    },
+    "diffWhitespace": "pass"
+  },
+  "workBudgets": {
+    "warmOrdinary": {
+      "checkouts": 1,
+      "releases": 1,
+      "domainStatements": 1,
+      "controlStatements": 0,
+      "newConnections": 0
+    },
+    "creatorShapeSuccess": {
+      "checkouts": 1,
+      "releases": 1,
+      "clients": 1,
+      "domainStatements": 4,
+      "controlStatements": 2,
+      "eagerStatements": 0,
+      "namedStatements": 0
+    },
+    "readinessBatches": [
+      {
+        "domainStatements": 2,
+        "controlStatements": 2
+      },
+      {
+        "domainStatements": 3,
+        "controlStatements": 2
+      }
+    ],
+    "statementFailure": {
+      "attemptedDomainStatements": 1,
+      "controlStatements": 2,
+      "laterStatements": 0,
+      "retries": 0
+    }
+  },
+  "compatibility": {
+    "intentionalConsumerChanges": 0,
+    "existingGetSqlUnchanged": true,
+    "existingCallerFilesUnchanged": true,
+    "serializationChange": "none in the synthetic parity corpus",
+    "precision": "Existing typed Date millisecond truncation retained; explicit text values retain sub-millisecond digits",
+    "timezones": [
+      "UTC",
+      "America/Los_Angeles",
+      "Asia/Kolkata"
+    ],
+    "globalPgParsersMutated": false
+  },
+  "dependencies": {
+    "newWebRuntime": {
+      "pg": "8.23.1",
+      "@vercel/functions": "3.11.1"
+    },
+    "newWebDevelopment": {
+      "@types/pg": "8.23.1"
+    },
+    "newLockPackages": 15,
+    "existingResolvedVersionChanges": [
+      {
+        "name": "zod",
+        "from": "4.5.4",
+        "to": "4.6.7",
+        "reason": "@vercel/functions -> @vercel/oidc -> @vercel/cli-config requires ^4.6.6"
+      }
+    ],
+    "s3WorkspaceDeclarationUnchanged": true
+  },
+  "limits": [
+    "A1 only; getSql still uses Neon and no consumers import the adapter",
+    "No PostgreSQL decoding/isolation/rollback, wire, TLS, timeout or Vercel lifecycle certification",
+    "A2 owns bounded runtime pool creation, prompt acquisition/SQL cancellation and backend-timeout proof",
+    "No full warm-path or hosted latency claim; final pool size selected at cutover rehearsal",
+    "Full suite, build and real disposable DB suites are A2/B gates, not reported as run here",
+    "Plain npm run lint includes historical ignored scratch; the same source ESLint plus import checks passed with codex-briefs excluded"
+  ]
+}
