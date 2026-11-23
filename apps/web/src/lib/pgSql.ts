@@ -3,6 +3,9 @@ import "server-only";
 import { TypeOverrides, type Pool, type PoolClient, type QueryConfig, type QueryResult } from "pg";
 
 export type SqlRow = Record<string, unknown>;
+// Failure containment, not the 90 ms pre-provider latency target. Reviewed
+// together with A2 before adoption by getSql(). Queue and connect share it.
+export const PG_ACQUISITION_CEILING_MS = 2_000;
 declare const statement: unique symbol;
 export type TransactionStatement = { readonly [statement]: true };
 
@@ -51,12 +54,43 @@ function rows(result: QueryResult<SqlRow>): SqlRow[] {
   return result.rows;
 }
 
-/**
- * A1 contract only: the pool is injected and getSql() remains on Neon.
- * A2 supplies bounded ownership, TLS, lifecycle and prompt cancellation;
- * signal checks here preserve the option and prevent further batch work.
- */
-export function createPgSql(pool: Pick<Pool, "query" | "connect">): Sql {
+// A cancelled checkout can still complete inside pg. Its continuation owns the
+// late release; neither a client nor a rejected connect promise is abandoned.
+function acquire(pool: Pick<Pool, "connect">, signal?: AbortSignal): Promise<PoolClient> {
+  signal?.throwIfAborted();
+  return new Promise((resolve, reject) => {
+    let waiting = true;
+    const finish = () => { clearTimeout(timer); signal?.removeEventListener("abort", abort); };
+    const refuse = (error: unknown) => {
+      if (!waiting) return;
+      waiting = false; finish(); reject(error);
+    };
+    const abort = () => refuse(signal!.reason);
+    const timer = setTimeout(() => refuse(new Error("Database acquisition timed out.")), PG_ACQUISITION_CEILING_MS);
+    signal?.addEventListener("abort", abort, { once: true });
+    void Promise.resolve().then(() => pool.connect()).then(client => {
+      if (!waiting) { client.release(); return; }
+      waiting = false; finish(); resolve(client);
+    }, refuse);
+  });
+}
+
+function cancelled<T>(run: () => Promise<T>, signal: AbortSignal | undefined, discard: () => void): Promise<T> {
+  signal?.throwIfAborted();
+  if (!signal) return run();
+  return new Promise((resolve, reject) => {
+    const abort = () => { discard(); reject(signal.reason); };
+    signal.addEventListener("abort", abort, { once: true });
+    // Install before starting: a transport/test can synchronously abort inside
+    // query(). Both late fulfillment and rejection remain observed.
+    void Promise.resolve().then(() => { signal.throwIfAborted(); return run(); }).then(value => {
+      signal.removeEventListener("abort", abort); resolve(value);
+    }, error => { signal.removeEventListener("abort", abort); reject(error); });
+  });
+}
+
+/** Isolated adapter; getSql() stays on Neon until checkpoint B. */
+export function createPgSql(pool: Pick<Pool, "connect">): Sql {
   // Query-local overrides preserve the installed text-decoding contract and
   // leave the pipeline's global pg parsers untouched.
   const types = new TypeOverrides();
@@ -64,7 +98,16 @@ export function createPgSql(pool: Pick<Pool, "query" | "connect">): Sql {
     rows(await target.query<SqlRow>({ ...config, types }));
 
   return {
-    query: async (text, parameters) => execute(pool, queryConfig(text, parameters)),
+    query: async (text, parameters) => {
+      const config = queryConfig(text, parameters);
+      const client = await acquire(pool);
+      let discard = false;
+      const onError = () => { discard = true; };
+      client.on("error", onError);
+      try { return await execute(client, config); }
+      catch (error) { discard = true; throw error; }
+      finally { client.removeListener("error", onError); client.release(discard); }
+    },
     async transaction(build, options = {}) {
       const begin = beginStatement(options);
       const signal = options.fetchOptions?.signal;
@@ -85,34 +128,50 @@ export function createPgSql(pool: Pick<Pool, "query" | "connect">): Sql {
       // the transaction after checkout or smuggle an executing promise into it.
       const queries = batch.map(query => descriptions.get(query)!);
       signal?.throwIfAborted();
-      const client = await pool.connect();
+      const client = await acquire(pool, signal);
       let phase: "checkout" | "begin" | "statements" | "commit" = "checkout";
       let discard = false;
+      let released = false;
+      const release = (destroy: boolean) => {
+        if (released) return;
+        released = true; client.release(destroy);
+      };
+      const onError = () => { discard = true; };
+      client.on("error", onError);
+      const run = (config: QueryConfig<unknown[]>) => cancelled(() => execute(client, config), signal, () => {
+        discard = true; release(true);
+      });
       try {
         signal?.throwIfAborted();
         phase = "begin";
-        await execute(client, { text: begin });
+        await run({ text: begin });
         phase = "statements";
         const results: SqlRow[][] = [];
         for (const query of queries) {
           signal?.throwIfAborted();
-          results.push(await execute(client, query));
+          results.push(await run(query));
         }
         signal?.throwIfAborted();
         phase = "commit";
-        await execute(client, { text: "COMMIT" });
+        await run({ text: "COMMIT" });
         return results;
       } catch (error) {
         // COMMIT failure has an ambiguous outcome. Never replay, and never
         // return that connection as healthy. A2 proves protocol/cancel paths.
-        discard = phase !== "statements" || signal?.aborted === true;
+        const code = error && typeof error === "object" && "code" in error ? error.code : undefined;
+        // Only a server SQL error establishes that this is a recoverable
+        // statement failure. Network/client timeouts have uncertain protocol
+        // state; queuing ROLLBACK on them is unsafe and may hang.
+        discard ||= phase !== "statements" || signal?.aborted === true ||
+          typeof code !== "string" || !/^[0-9A-Z]{5}$/.test(code) || /^(08|57P0)/.test(code);
         if (!discard) {
-          try { await execute(client, { text: "ROLLBACK" }); }
+          try { await run({ text: "ROLLBACK" }); }
           catch { discard = true; }
         }
         throw error;
       } finally {
-        client.release(discard);
+        client.removeListener("error", onError);
+        release(discard);
       }
     },
   };

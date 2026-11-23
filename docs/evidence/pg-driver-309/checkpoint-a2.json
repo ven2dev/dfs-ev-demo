@@ -1,0 +1,325 @@
+{
+  "schemaVersion": 1,
+  "checkpoint": "309-A2",
+  "observedAtUtc": "2026-11-23T23:25:03.781Z",
+  "acceptedA1": "7381e1f5449ea086f2858619f0f71c55e89ec08f",
+  "mergedMain": "68dd11e382104621e808fb099e6574ef848b7eb7",
+  "validationHead": "48d0bf9415207e55e98493f641b19d93f9b6bc7d",
+  "result": "pass-local-awaiting-owner-review",
+  "node": "24.18.1",
+  "amendment": "https://github.com/ven2dev/dfs-ev-demo/issues/309#issuecomment-7116161641",
+  "sources": [
+    {
+      "path": "apps/web/src/lib/pgSql.ts",
+      "sha256": "47e3269dd1766ef93ba1d54e762a8812aaa3e14344153fede0ee6ae734bea5f7"
+    },
+    {
+      "path": "apps/web/src/lib/pgSql.server.test.ts",
+      "sha256": "2847edd3588a6289ed06613655e9ac6b6509e6d3f678f29dc7cb9d8087f3f900"
+    },
+    {
+      "path": "apps/web/src/lib/pgPool.server.ts",
+      "sha256": "0cece727412fa25792642e47637e6e9b8884493a7498c33f07c44a71eb1c966a"
+    },
+    {
+      "path": "apps/web/src/lib/pgPool.server.test.ts",
+      "sha256": "bb43196f84ce20e5f6c073883a1a6ab5e294487d18e6d86ff163d4cf85230c42"
+    },
+    {
+      "path": "tests/db/pgDriver309.test.ts",
+      "sha256": "f458ff3b22f5547e83c0e42eb2b16ce0a3d5a87ae3c058ada9b010817681fbaf"
+    },
+    {
+      "path": "scripts/db/db-test-contract.mjs",
+      "sha256": "4e9301540cb28dbb6b3e4006d585e0b824581351048ec6c6ad2d6b1cdd96e550"
+    },
+    {
+      "path": "scripts/db/db-test-lanes.mjs",
+      "sha256": "be7027ed304030b5aa67504b86a14704bb10b33125904f4fee50b31cb6c91960"
+    },
+    {
+      "path": "scripts/db/test-db.mjs",
+      "sha256": "eaee40e144356a49049e0a08dfea0f9834d0c7adfc0a32bf21369c73012943e4"
+    },
+    {
+      "path": "tests/db/report-unit.check.mjs",
+      "sha256": "2f1ccd4b839555f2352ef228bb0392bdce875199757408901ed31b711117d487"
+    },
+    {
+      "path": "apps/web/package.json",
+      "sha256": "99f01a4587013033bb698b7ba6ac53eb15d5b03c8adec787c6d81778c7b8de49"
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "e034057a2430c557fe62bc4eff189c411cbeba3ad5b65c2e8f29e55e2088b134"
+    }
+  ],
+  "versions": {
+    "pg": "8.23.1",
+    "pgPool": "3.14.0",
+    "vercelFunctions": "3.11.1",
+    "zod": "4.6.7",
+    "appEventsourceParser": "4.1.3"
+  },
+  "acquisitionProposal": {
+    "ceilingMs": 2000,
+    "state": "proposed-for-owner-review-before-commit",
+    "rationale": "About 22 times the 90 ms latency target, one tenth of the 20 s provider abort; finite cold-connection/queue containment, not full-path enforcement.",
+    "shorterOriginalCallerSignalWins": true,
+    "signalRestartedBetweenStatements": false,
+    "domainOrSetupStatementsAdded": 0
+  },
+  "poolHypotheses": {
+    "minimum": 0,
+    "idleTimeoutMs": 5000,
+    "maximumLifetimeSeconds": 60,
+    "clientQueryTimeoutMs": 15000,
+    "maximum": "Explicitly required; deployed value selected at cutover from observed limits and I * G * m + Hclient <= Bclient."
+  },
+  "testsAdded": {
+    "total": 21,
+    "poolLifecycleCancellation": 13,
+    "realPostgres": 7,
+    "mandatoryReportContract": 1
+  },
+  "intentionalTestChanges": "Two A1 rollback fixtures now carry recoverable server SQLSTATE 23505. An unclassified transport failure intentionally discards instead of issuing rollback. No consumers have moved.",
+  "checks": {
+    "postMergeAndLockfileInstall": true,
+    "browser": {
+      "passed": 984,
+      "failed": 0
+    },
+    "node": {
+      "passed": 1078,
+      "failed": 0,
+      "skipped": 1,
+      "skip": "existing opt-in live R2 contract"
+    },
+    "isolatedAdapter": {
+      "passed": 50,
+      "failed": 0
+    },
+    "ciGate": {
+      "passed": 63,
+      "failed": 0
+    },
+    "rootTypecheck": "pass",
+    "webTypecheck": "pass",
+    "eslintExcludingIgnoredScratch": "pass",
+    "importBoundaries": {
+      "passed": 12,
+      "failed": 0
+    },
+    "firebaseAdminNodeRuntime": "pass",
+    "productionBuild": {
+      "result": "pass",
+      "bundler": "turbopack",
+      "fixtureMode": true,
+      "liveSecrets": false
+    },
+    "coreDb": {
+      "passed": 96,
+      "failed": 0,
+      "nodeToolingPassed": 79,
+      "mandatoryNodeCases": 75,
+      "leaseCases": 13,
+      "readinessCases": 4,
+      "corpusCases": 8,
+      "pgDriverCases": 7
+    },
+    "featureStoreDb": {
+      "passed": 301,
+      "failed": 0
+    },
+    "buildIsolation": {
+      "verdict": "pass",
+      "positiveBuild": true,
+      "nodePositiveControl": true,
+      "isolatedOutputFiles": 94,
+      "edgeFilesChecked": 13,
+      "clientImportRefused": true,
+      "edgeImportRefused": true,
+      "bundler": "webpack",
+      "privateDotenvFilesCopied": 0,
+      "candidateFilesCopied": 209
+    },
+    "publicationGuard": {
+      "result": "pass",
+      "checkpoint": "48d0bf9415207e55e98493f641b19d93f9b6bc7d",
+      "trackedPaths": 1041,
+      "approvedFindingPaths": 8,
+      "unapprovedFindingPaths": 0,
+      "limit": "Normal command scans committed HEAD only. Uncommitted A2 files are not certified by that run; rerun on the approved A2 commit."
+    }
+  },
+  "localPostgres": {
+    "image": "postgres:18.6-alpine3.24@sha256:9ba53c7d41ea093baf5c1ba635ba5434c4f979880527d49bb7d9237d3193085b",
+    "lane": "lane-3",
+    "tier": "standard",
+    "syntheticRecordsOnly": true,
+    "timeouts": {
+      "statementMs": 5000,
+      "lockMs": 1000,
+      "idleInTransactionMs": 5000,
+      "cancellationContainmentFixtureStatementMs": 1000,
+      "readinessTransactionLocalStatementMs": 2000,
+      "readinessTransactionLocalLockMs": 1000,
+      "newPerBorrowSetupStatements": 0
+    },
+    "work": {
+      "leaders": 20,
+      "owners": 2,
+      "maximumPerOwner": 2,
+      "beforeSendStatements": [
+        5
+      ],
+      "totalStatements": [
+        7
+      ],
+      "counts": [
+        {
+          "connects": 2,
+          "acquisitions": 72,
+          "releases": 72,
+          "discards": 0,
+          "peak": 2
+        },
+        {
+          "connects": 2,
+          "acquisitions": 72,
+          "releases": 72,
+          "discards": 0,
+          "peak": 2
+        }
+      ],
+      "timing": [
+        {
+          "connectionMs": {
+            "samples": 2,
+            "totalMs": 15.362999999997555,
+            "maxMs": 7.810750000000553
+          },
+          "checkoutMs": {
+            "samples": 70,
+            "totalMs": 399.03061900000466,
+            "maxMs": 13.692833000000974
+          },
+          "sqlMs": {
+            "samples": 70,
+            "totalMs": 86.91616299999805,
+            "maxMs": 9.48949999999968
+          }
+        },
+        {
+          "connectionMs": {
+            "samples": 2,
+            "totalMs": 14.811541999999463,
+            "maxMs": 7.471709000001283
+          },
+          "checkoutMs": {
+            "samples": 70,
+            "totalMs": 393.3898339999978,
+            "maxMs": 13.860375000000204
+          },
+          "sqlMs": {
+            "samples": 70,
+            "totalMs": 86.24458499997854,
+            "maxMs": 9.081084000001283
+          }
+        }
+      ],
+      "namedProtocolMessages": 0
+    },
+    "cleanup": {
+      "down": "pass",
+      "containerAbsent": true,
+      "networkAbsent": true,
+      "otherLaneUntouched": true
+    }
+  },
+  "syntheticTimingScreen": {
+    "verdict": "pass",
+    "node": "24.18.1",
+    "fixture": "installed pg.Pool + injected microtask client, actual production createPgSql",
+    "envelopeMs": 1,
+    "passingP95Ms": 0.7,
+    "timings": [
+      {
+        "round": 1,
+        "shape": "query",
+        "samplesEach": 1000,
+        "baselineP95Ms": 0.002375000000000682,
+        "adapterP95Ms": 0.0036249999999995453,
+        "headroomFraction": 0.9963750000000005
+      },
+      {
+        "round": 1,
+        "shape": "transaction",
+        "samplesEach": 1000,
+        "baselineP95Ms": 0.001999999999995339,
+        "adapterP95Ms": 0.0050420000000030996,
+        "headroomFraction": 0.9949579999999969
+      },
+      {
+        "round": 2,
+        "shape": "query",
+        "samplesEach": 1000,
+        "baselineP95Ms": 0.0013749999999959073,
+        "adapterP95Ms": 0.002082999999998947,
+        "headroomFraction": 0.997917000000001
+      },
+      {
+        "round": 2,
+        "shape": "transaction",
+        "samplesEach": 1000,
+        "baselineP95Ms": 0.0016669999999976426,
+        "adapterP95Ms": 0.004292000000006624,
+        "headroomFraction": 0.9957079999999934
+      },
+      {
+        "round": 3,
+        "shape": "query",
+        "samplesEach": 1000,
+        "baselineP95Ms": 0.001290999999994824,
+        "adapterP95Ms": 0.002042000000002986,
+        "headroomFraction": 0.997957999999997
+      },
+      {
+        "round": 3,
+        "shape": "transaction",
+        "samplesEach": 1000,
+        "baselineP95Ms": 0.0014170000000035543,
+        "adapterP95Ms": 0.003959000000008928,
+        "headroomFraction": 0.9960409999999911
+      }
+    ],
+    "work": [
+      {
+        "connections": 0,
+        "checkouts": 6000,
+        "releases": 6000,
+        "domain": 15000,
+        "controls": 6000
+      },
+      {
+        "connections": 0,
+        "checkouts": 6000,
+        "releases": 6000,
+        "domain": 15000,
+        "controls": 6000
+      }
+    ],
+    "networkAttempts": 0,
+    "allPoolsEnded": true,
+    "limits": "Synthetic scheduling screen only; no hosted, database, 90ms-path or pool-sizing claim",
+    "scriptSha256": "17880868b37b6378f5609fac00c50501d164f26026119f3be0bfde2d80d76869"
+  },
+  "limits": [
+    "getSql remains on Neon; no consumer migration, hosted database, provider operation or Production command.",
+    "Local direct PostgreSQL does not certify transaction-pooler backend settings or capacity, real TLS, or Vercel suspension.",
+    "Hosted fresh/reassigned-backend timeouts, Fluid cleanup, pool-owner fan-out/overlap and final capacity remain cutover readiness gates.",
+    "90 ms full warm path and p95 <=63 ms remain real-app PlanetScale Preview cutover measurements; no shared runtime timer is added.",
+    "Full-path runtime enforcement is only a possible follow-up if that cutover measurement shows a need.",
+    "The driver PR stays unmerged until the real-app PlanetScale Preview passes during cutover."
+  ]
+}

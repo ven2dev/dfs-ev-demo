@@ -218,7 +218,7 @@ describe("#309 deferred single-client transactions", () => {
 
   it("rolls back a statement failure, stops later statements and never replays", async () => {
     const f = fixture();
-    const error = new Error("synthetic statement refusal");
+    const error = Object.assign(new Error("synthetic statement refusal"), { code: "23505" });
     f.failures.set("INSERT synthetic", error);
     await expect(f.sql.transaction(tx => [tx.query("INSERT synthetic"), tx.query("SELECT must_not_run")])).rejects.toBe(error);
     expect(f.trace.map(q => q.config.text)).toEqual(["BEGIN", "INSERT synthetic", "ROLLBACK"]);
@@ -227,7 +227,7 @@ describe("#309 deferred single-client transactions", () => {
 
   it("discards on rollback failure while retaining the original failure", async () => {
     const f = fixture();
-    const original = new Error("synthetic write refusal");
+    const original = Object.assign(new Error("synthetic write refusal"), { code: "23505" });
     f.failures.set("INSERT synthetic", original);
     f.failures.set("ROLLBACK", new Error("synthetic rollback refusal"));
     await expect(f.sql.transaction(tx => [tx.query("INSERT synthetic")])).rejects.toBe(original);
