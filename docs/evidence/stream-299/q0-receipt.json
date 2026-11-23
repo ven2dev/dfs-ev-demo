@@ -1,0 +1,133 @@
+{
+  "fixture": "223-live-auth-stream",
+  "issue": 299,
+  "phase": "Q0",
+  "createdAt": "2026-11-23T17:02:59.336760+00:00",
+  "baseMain": "0b15f80dba241fb63ffd70a81d5ccbe402a23c1b",
+  "verdict": "mock qualification passed",
+  "node": "24.21.0",
+  "parser": {
+    "name": "eventsource-parser",
+    "version": "4.1.3",
+    "direct": "scratch runtime dependency only; repository unchanged",
+    "integrity": "sha512-jZVIVilXZfAx6H20ZKKEj5dabbpD9ETmMj3uHsjMmgBzBHB6tsHrmdWB4mAiy3amtN6MOoVkfXRQu4wf1n88Rw=="
+  },
+  "checks": {
+    "browserHookPassed": 10,
+    "serverAndParserPassed": 57,
+    "totalPassed": 67,
+    "existingMainStreamRouteTests": 24,
+    "failures": 0,
+    "wallClockAssertions": 0
+  },
+  "workEvidence": [
+    {
+      "name": "Q0_PARSER_WORK",
+      "byteSplitCases": 81,
+      "eventsPerCase": 1
+    },
+    {
+      "name": "Q0_REPO_WORK",
+      "mode": "legacy",
+      "freshReconnectStatements": 1,
+      "freshReconnectVerifications": 0,
+      "oddsFetches": 1,
+      "weatherFetches": 1
+    },
+    {
+      "name": "Q0_REPO_WORK",
+      "mode": "shared",
+      "freshReconnectStatements": 1,
+      "freshReconnectVerifications": 0,
+      "oddsFetches": 1,
+      "weatherFetches": 1
+    },
+    {
+      "name": "Q0_RAW_WORK",
+      "clients": 2,
+      "transportLookups": 4,
+      "transportRequests": 4,
+      "delivered": 4,
+      "reads": 5,
+      "claims": 2,
+      "admissions": 1,
+      "sends": 1,
+      "publishes": 1,
+      "verifications": 1,
+      "freshReconnectStatements": 1,
+      "freshReconnectAdditionalSqlVsBaseline": 0,
+      "freshReconnectAddedSends": 0
+    },
+    {
+      "name": "Q0_REPRESENTATIVE_FRAME",
+      "payloadBytes": 2048,
+      "byteSplitCases": 2057,
+      "eventsPerCase": 1
+    },
+    {
+      "name": "Q0_TRANSPORT_WORK",
+      "frames": 20,
+      "lookups": 1,
+      "fetches": 1
+    }
+  ],
+  "qualified": [
+    "incremental UTF-8/BOM/CRLF/multiline parsing; complete events only",
+    "pending and complete event 65536-code-unit bounds",
+    "single logical fetch/reader; abort, EOF and terminal idle behavior",
+    "generation fencing for props/windows, auth A-B-A and StrictMode cleanup",
+    "integer Retry-After capped at 300s; dates/invalid values fall back; no slicing",
+    "expiry of request-local signed result at actual admission, no revocation lookup",
+    "shared/legacy live context propagation, fresh reads skip auth/weather/provider",
+    "two mocked clients share one actual cache-kernel admission/send; fresh reconnect adds zero SQL beyond existing freshness read",
+    "reason-only auth/payload diagnostics"
+  ],
+  "limits": [
+    "Q0 scratch prototypes, not production implementation or full app regression",
+    "React tested in jsdom; Node server uses mocked SDK/query/provider; no real Firebase signature/certificate latency claim",
+    "No Next production build/browser deployment/buffering proof yet",
+    "Mock query statement counts are not DB/plan measurements; no DB server, suite or lane used",
+    "In-flight Firebase SDK promise itself cannot be cancelled; only its effects are fenced",
+    "Client timing screen intentionally removed by owner; framework durations are not a latency qualification"
+  ],
+  "scope": {
+    "featureBranchCreated": false,
+    "repositorySourceOrLockEdits": false,
+    "dbCalls": 0,
+    "lane2Use": false,
+    "realProviderCalls": 0,
+    "realCredentials": false,
+    "hostedActions": false,
+    "commits": false
+  },
+  "postedComment": "https://github.com/ven2dev/dfs-ev-demo/issues/224#issuecomment-7107715995",
+  "sourceSha256": {
+    "package.json": "6f410a46a5a6071646642a449810d7c7076275b237fdf132bdeb7bf0f491905c",
+    "package-lock.json": "7117ef1bbf8d4d6bc463a303af5b8a9430c6dcb66753e7bd02c3a91e7c005e76",
+    "transport.ts": "d949209e383de34fc88e7785ee0a2246bb5048af7d750549c3599e1d9336c735",
+    "transport.test.ts": "cf6824eb3c48868fa6d38bf4ad305c2a3fc837a5558e4d9dbe2d2fdeb713915e",
+    "hook.test.ts": "dbf11c953c815aaec5543b30685558e737fe157c9ea87baca05c6467ab4d3546",
+    "expiry.server.test.ts": "90f8fb6bb69b39993dfbb3b59af292973af6eedaf947b59865ecbb165dc64b65",
+    "cacheModes.server.test.ts": "2156c5f0acc287c9e78d9d28693d763ceee98cd91dedd2f87d7e9bc525013551",
+    "vitest.browser.config.mts": "f2757cc49e7cb04c303223fb1e201e0472d44f16be6b4494c9cced572e2dbdf2",
+    "vitest.server.config.mts": "3382df3c3af392ed6d0963c78d0d9522bff7215e86e6e9374b4ba18985e10283",
+    "approved-roadmap.md": "ddaf511473ab5eb5957603144a6d8eae6b2e6c2774bc10dd813e31986fadd294",
+    "main/apps/web/src/store/useLiveOddsStream.ts": "0f3ec9fca196d8c6400028a26c5f55e1c06bb3708a2d84f50495c5ffea313cb9",
+    "main/apps/web/src/lib/paidOddsBoundary.ts": "5ead1aabe7854ca13b747ffa9fffb30b43a1205e30b8e710f12eff40fe3b9325",
+    "main/apps/web/src/app/api/stream/route.ts": "5d08765dcb6d890edb93cffed85ec9a01fdd6a8d08b5ae54c9e6d39a6f186b5e"
+  },
+  "rawReceiptsSha256": {
+    "browser-results.json": "b76155cfccdcfb0ae24575dfcf944485f01f9e89f2060e0af5f6dd5b0cce3ec4",
+    "server-results.json": "75ceafe8383a450d8220302d55f3e0ec9b07fe5193c08981199305e5614cc5fe",
+    "browser-final.log": "3ab1876dae227788d3421605ac2181107e385052577c2131b8e1b34b36c164b8",
+    "server-final.log": "0852b191a62b5d97d37c7d7266c1bd8e30d3fbb2cd0da587fa4e391e01f008df",
+    "attempt-1-server.log": "8162dc4f2b5c4a0cf1a0f5d6cea5bd6b70ba06cba5e4408e86ab7fa379422b11",
+    "attempt-1-browser.log": "30ddfbc3944762c62de2ee9b1e173144f044a6d468e85621d9a03b6f03d572ac"
+  },
+  "implementationLearnings": [
+    "Parser pending-buffer option alone did not bound a completed event in the tested chunk layout; guard decoded event length before JSON parsing as well.",
+    "Reject non-object JSON as a terminal protocol failure, not a retryable exception.",
+    "Preserve server Retry-After deadline across identity/effect replacement.",
+    "Reuse existing per-tick context but fence its memoized identity at trusted expiry."
+  ]
+}

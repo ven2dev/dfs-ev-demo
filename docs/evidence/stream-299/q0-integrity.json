@@ -1,0 +1,6 @@
+{
+  "receipt": "q0-receipt.json",
+  "sha256": "e51bc72deade4324526412006ac10e1b6345c8445d6ce06ca961be6efd7b251f",
+  "originalReceiptUnmodified": true,
+  "scope": "Q0 mock qualification, before branch implementation"
+}

@@ -1,0 +1,10 @@
+{
+  "schema": "stream-299-final-integrity-v1",
+  "implementationCheckpoint": "f7bdfbeffddf28e292bdc1143a79dd34968c1535",
+  "sha256": {
+    "docs/299-results.md": "eee97377740a3e76406576b257eb1886a878c4275f3949a01e00159714a5a26c",
+    "docs/299-roadmap.md": "cc6a150860668781573a43edd88628910ff5cc9cbb3beab285eb741a526c26c5",
+    "docs/evidence/stream-299/final-validation.json": "375d261f541fb7b8d45bfedb4fe543beaa0cdb1e2bfb98a637450c39ff554a77"
+  },
+  "priorReceiptsUnmodifiedByFinalCheckpoint": true
+}

@@ -1,0 +1,110 @@
+{
+  "schema": "stream-299-final-validation-v1",
+  "issue": 299,
+  "checkpoint": "f7bdfbeffddf28e292bdc1143a79dd34968c1535",
+  "createdAt": "2026-11-23T19:47:53.459378+00:00",
+  "node": "24.21.0",
+  "branch": "feature/dfsEV-299-verified-live-stream",
+  "baseMain": "0b15f80dba241fb63ffd70a81d5ccbe402a23c1b",
+  "validation": {
+    "fullSuite": {
+      "command": "npm test",
+      "browserFilesPassed": 70,
+      "browserTestsPassed": 984,
+      "nodeFilesPassed": 78,
+      "nodeFilesSkipped": 1,
+      "nodeTestsPassed": 1028,
+      "nodeTestsSkipped": 1,
+      "exitCode": 0
+    },
+    "productionBuild": {
+      "command": "npm run build -- --webpack",
+      "compile": "pass",
+      "typescript": "pass",
+      "staticPages": 16,
+      "traces": "pass",
+      "exitCode": 0
+    },
+    "c2ReviewChecks": {
+      "serverFiles": 36,
+      "serverTestsPassed": 349,
+      "ciGatePassed": 63,
+      "lint": "pass including 12 import-boundary probes",
+      "rootTypecheck": "pass",
+      "dbPackageTypecheck": "pass, no DB connection",
+      "obsoleteNetworkOnlyCaseRemoved": true
+    },
+    "publicationGuard": {
+      "schema": "published-evidence-guard-v1",
+      "checkpoint": "f7bdfbeffddf28e292bdc1143a79dd34968c1535",
+      "verdict": "pass",
+      "scope": "complete-tested-Git-tree",
+      "trackedPaths": 1034,
+      "compressedPaths": 30,
+      "archiveLeafMembers": 341,
+      "decodedJsonStrings": 305,
+      "decodedBase64Sources": 154,
+      "approvedFindingPaths": 8,
+      "unapprovedFindingPaths": 0
+    },
+    "branchAttributionGrepOutput": "",
+    "worktreeCleanAfterC2Commit": true,
+    "reviewerDefaultProductionBuild": {
+      "command": "npm run build",
+      "bundler": "Turbopack",
+      "checkpoint": "f7bdfbeffddf28e292bdc1143a79dd34968c1535",
+      "node": "22.23",
+      "reportedBy": "reviewer",
+      "verdict": "pass",
+      "provenance": "reviewer report in codex-briefs/299-intake-review.md; not executed by ALT"
+    }
+  },
+  "buildQualification": {
+    "altFinalWebpackBuild": "passed on exact checkpoint, Node 24.21.0",
+    "defaultTurbopack": "reviewer-reported pass on final implementation f7bdfbe, Node 22.23; earlier C1 pass was also reported by the reviewer, not the owner",
+    "defaultFinalTurbopackPassClaim": true,
+    "defaultFinalTurbopackCheckpoint": "f7bdfbeffddf28e292bdc1143a79dd34968c1535",
+    "defaultFinalTurbopackNode": "22.23",
+    "defaultFinalTurbopackReportedBy": "reviewer",
+    "altDefaultTurbopackLimit": "previously blocked by local worker-port binding; final ALT build used Webpack"
+  },
+  "workBudgets": {
+    "headerLookupPerAttempt": 1,
+    "fetchesFor20Frames": 1,
+    "parserPendingAndCompletedLimitCodeUnits": 65536,
+    "parserFeedSliceCodeUnits": 8192,
+    "representativePayloadBytes": 2048,
+    "byteSplitCases": 2057,
+    "retiredGenerationEffects": 0,
+    "retryAfterCapSeconds": 300,
+    "localBackoffSurvivesEffectReplacement": false,
+    "serverRetryAfterSurvivesEffectReplacement": true,
+    "sdkVerificationPerSignedPaidContext": 1,
+    "expiredCachedSignedResultsAtAdmission": 0,
+    "extraFreshHitSQL": 0,
+    "freshHitVerifications": 0,
+    "freshHitOddsOrWeatherFetches": 0,
+    "sharedRefreshClients": 2,
+    "sharedRefreshAdmissions": 1,
+    "sharedRefreshMockSends": 1,
+    "sharedRefreshPublications": 1
+  },
+  "scope": {
+    "dbSuitesRun": 0,
+    "lane2Use": false,
+    "hostedWork": false,
+    "realTokensOrProviderCalls": false,
+    "orderedMigrations": 0,
+    "schedulesAdded": 0,
+    "driverChanges": false,
+    "enforcement": "hard-coded log-only",
+    "pushed": false,
+    "prOpened": false
+  },
+  "limits": [
+    "Mock work counts do not prove hosted 90ms pre-provider latency",
+    "No deployed proxy buffering or browser deployment qualification",
+    "Signing-key cold fetch and refresh latency remain real-network considerations"
+  ],
+  "next": "Final documentation/evidence commit requires owner approval; push and PR each require fresh consent"
+}
