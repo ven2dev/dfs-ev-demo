@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { openLiveStream, type LiveStreamFailure, type LiveStreamAttempt } from "@/lib/liveStream";
+import { getAuthHeaders } from "@/lib/authHeaders";
 import { isOddsDataSource } from "@/lib/oddsDataSource";
 import { STALE_TIMEOUT_MS } from "@/lib/streamConfig";
 import { buildWatchPropId } from "@/lib/watchPropId";
@@ -14,7 +16,11 @@ const MAX_RECONNECT_DELAY_MS = 30000;
 export function useLiveOddsStream() {
   const setConnectionStatus = useSetConnectionStatus();
   const sampleWindow = useSampleWindow();
+  const identityGeneration = useAppStore(state => state.identityGeneration);
   const primaryWatch = usePrimaryWatch();
+  const retryNotBefore = useRef(0);
+  const activeAttempt = useRef<LiveStreamAttempt | undefined>(undefined);
+  const teardown = useRef<Promise<void>>(Promise.resolve());
   const [historySessionId] = useState(() => crypto.randomUUID());
 
   useEffect(() => {
@@ -23,7 +29,15 @@ export function useLiveOddsStream() {
       return;
     }
 
-    let eventSource: EventSource | undefined;
+    const selection = primaryWatch;
+    let generation = 0;
+    const retire = () => {
+      const previous = activeAttempt.current;
+      activeAttempt.current = undefined;
+      previous?.close();
+      // Persist across effect replacements: cancellation can finish asynchronously.
+      if (previous) teardown.current = teardown.current.then(() => previous.done);
+    };
     let reconnectDelay = INITIAL_RECONNECT_DELAY_MS;
     let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
     let staleTimer: ReturnType<typeof setTimeout> | undefined;
@@ -55,24 +69,40 @@ export function useLiveOddsStream() {
       }, STALE_TIMEOUT_MS);
     };
 
-    const connect = () => {
+    const connect = async () => {
       if (cancelled) return;
+      const epoch = ++generation;
+      retire();
+      await teardown.current;
+      if (cancelled || epoch !== generation) return;
+      if (Date.now() < retryNotBefore.current) {
+        reconnectTimer = setTimeout(connect, retryNotBefore.current - Date.now());
+        return;
+      }
       setConnectionStatus("connecting");
       markRefresh("updating");
       const params = new URLSearchParams({
-        eventId: primaryWatch.eventId,
-        sportKey: primaryWatch.sportKey,
-        marketKey: primaryWatch.marketKey,
-        playerName: primaryWatch.playerName,
-        bookmakerKey: primaryWatch.bookmakerKey,
-        direction: primaryWatch.direction,
+        eventId: selection.eventId,
+        sportKey: selection.sportKey,
+        marketKey: selection.marketKey,
+        playerName: selection.playerName,
+        bookmakerKey: selection.bookmakerKey,
+        direction: selection.direction,
         sampleWindow: String(sampleWindow),
       });
-      const source = new EventSource(`/api/stream?${params.toString()}`);
-      eventSource = source;
-      const isCurrent = () => !cancelled && source === eventSource;
+      const isCurrent = () => !cancelled && epoch === generation;
+      const source = openLiveStream({
+        url: `/api/stream?${params.toString()}`,
+        getHeaders: getAuthHeaders,
+        fetch: globalThis.fetch,
+        isCurrent,
+        onOpen: () => onOpen(),
+        onData: onMessage,
+        onFailure: failure => onFailure(failure),
+      });
+      activeAttempt.current = source;
 
-      source.onopen = () => {
+      const onOpen = () => {
         if (!isCurrent()) return;
         setConnectionStatus("live");
         reconnectDelay = INITIAL_RECONNECT_DELAY_MS;
@@ -80,12 +110,19 @@ export function useLiveOddsStream() {
         resetStaleTimer();
       };
 
-      source.onmessage = (event) => {
+      function onMessage(value: Record<string, unknown>) {
         if (!isCurrent()) return;
-        const data = JSON.parse(event.data);
+        // This is our same-origin wire shape. Retain the existing field checks below.
+        const data = value as Partial<WatchedProp> & {
+          type?: string;
+          timestamp: number;
+          oddsStatus?: string;
+          oddsCapturedAt: string;
+          evScore?: NonNullable<WatchedProp["evScore"]>;
+        };
 
         if (data.type === "error") {
-          console.error("[useLiveOddsStream] server-side tick error:", data.message);
+          console.error("[live-stream] payload-error");
           markRefresh("failed");
           setConnectionStatus("stale");
           if (staleTimer) clearTimeout(staleTimer);
@@ -93,14 +130,15 @@ export function useLiveOddsStream() {
         }
 
         if (data.type === "idle") {
-          console.warn("[useLiveOddsStream] stream idle:", data.message);
+          source.close();
+          console.warn("[live-stream] idle");
           markRefresh("paused");
           setConnectionStatus("stale");
           if (staleTimer) clearTimeout(staleTimer);
           return;
         }
 
-        if (!["tick", "stale"].includes(data.type) || data.propId !== expectedPropId) return;
+        if (!["tick", "stale"].includes(data.type ?? "") || data.propId !== expectedPropId) return;
         if (data.sampleWindow !== undefined && data.sampleWindow !== sampleWindow) return;
         if (!data.evScore || !data.stages || !Number.isFinite(data.timestamp)
           || !Number.isFinite(data.evScore.edge)) return;
@@ -116,7 +154,7 @@ export function useLiveOddsStream() {
         }
 
         const line = Number.isFinite(data.line) ? data.line as number : undefined;
-        const quote = line !== undefined && data.quote?.bookmakerKey === primaryWatch.bookmakerKey
+        const quote = line !== undefined && data.quote?.bookmakerKey === selection.bookmakerKey
           && Number.isFinite(data.quote.price) && data.quote.price > 1
           ? { bookmakerKey: data.quote.bookmakerKey as string, price: data.quote.price as number,
             line, timestamp: observedAt as number,
@@ -137,7 +175,7 @@ export function useLiveOddsStream() {
               ...retainedHistory,
               { timestamp: data.timestamp, evScore: data.evScore.edge, context: {
                 propId: expectedPropId, bookmakerKey: quote?.bookmakerKey,
-                direction: primaryWatch.direction, sampleWindow,
+                direction: selection.direction, sampleWindow,
                 dataSource: isOddsDataSource(data.dataSource) ? data.dataSource : undefined,
                 line, price: quote?.price,
                 marketProbability: Number.isFinite(data.evScore.impliedProb)
@@ -148,7 +186,8 @@ export function useLiveOddsStream() {
             quote: quote ?? existing?.quote,
             stages: data.stages,
             sampleWindow,
-            sampleSize: Number.isInteger(data.sampleSize) && data.sampleSize > 0 && data.sampleSize <= sampleWindow
+            sampleSize: typeof data.sampleSize === "number" && Number.isInteger(data.sampleSize)
+              && data.sampleSize > 0 && data.sampleSize <= sampleWindow
               ? data.sampleSize : undefined,
             updatedAt: observedAt,
             refreshState: staleOdds ? "paused" : undefined,
@@ -162,16 +201,18 @@ export function useLiveOddsStream() {
         if (staleOdds) {
           if (staleTimer) clearTimeout(staleTimer);
         } else resetStaleTimer();
-      };
+      }
 
-      source.onerror = () => {
+      const onFailure = (failure: LiveStreamFailure) => {
         if (!isCurrent()) return;
-        markRefresh("failed");
-        setConnectionStatus("disconnected");
-        source.close();
-        eventSource = undefined;
+        markRefresh(failure.reason === "idle" ? "paused" : "failed");
+        setConnectionStatus(failure.retry ? "disconnected" : "stale");
+        retire();
         if (staleTimer) clearTimeout(staleTimer);
-        reconnectTimer = setTimeout(connect, reconnectDelay);
+        if (!failure.retry) return;
+        // Only server deadlines survive prop/identity effect replacement.
+        if (failure.after !== undefined) retryNotBefore.current = Date.now() + failure.after;
+        reconnectTimer = setTimeout(connect, Math.max(reconnectDelay, retryNotBefore.current - Date.now()));
         reconnectDelay = Math.min(reconnectDelay * 2, MAX_RECONNECT_DELAY_MS);
       };
     };
@@ -180,10 +221,11 @@ export function useLiveOddsStream() {
 
     return () => {
       cancelled = true;
-      eventSource?.close();
+      generation++;
+      retire();
       if (reconnectTimer) clearTimeout(reconnectTimer);
       if (staleTimer) clearTimeout(staleTimer);
     };
-  }, [setConnectionStatus, sampleWindow, primaryWatch, historySessionId]);
+  }, [setConnectionStatus, sampleWindow, primaryWatch, historySessionId, identityGeneration]);
   return historySessionId;
 }
