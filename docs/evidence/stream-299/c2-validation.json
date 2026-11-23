@@ -1,0 +1,93 @@
+{
+  "issue": 299,
+  "checkpoint": "C2",
+  "createdAt": "2026-11-23T17:54:02.367125+00:00",
+  "baseCommit": "66a41b4aa13fbc553764a3eb2b656b53d2ca4418",
+  "status": "validated after owner cleanup; C2 commit approved",
+  "checks": {
+    "rootNpmTest": {
+      "browserPassed": 984,
+      "nodePassed": 1029,
+      "nodeSkipped": 1,
+      "exitCode": 0
+    },
+    "focusedServerTests": 51,
+    "ciGatePassed": 63,
+    "lint": "passed, including 12 import-boundary probes",
+    "rootTypecheck": "passed",
+    "dbPackageTypecheck": "passed; no DB connection",
+    "webpackProductionBuild": "passed",
+    "defaultTurbopackBuild": "owner-reported C1 pass on Node 22.23; C2 local build uses Webpack due previously observed worker-port restriction",
+    "diffCheck": "passed",
+    "reviewCleanupServerSuite": {
+      "files": 36,
+      "passed": 349,
+      "removedObsoleteNetworkOnlyCase": 1
+    }
+  },
+  "workBudgets": {
+    "verifiedPaidContext": {
+      "sdkVerifications": 1,
+      "revocationLookup": false,
+      "expiryAtAdmission": "anonymous after expiry",
+      "concurrentExpiryWaiters": 3,
+      "lateSignedResults": 0,
+      "invalidReasonWarningsPerContext": 1
+    },
+    "freshLiveHit": {
+      "modes": [
+        "legacy",
+        "shared"
+      ],
+      "existingReads": 1,
+      "extraReads": 0,
+      "verifications": 0,
+      "oddsFetches": 0,
+      "weatherFetches": 0
+    },
+    "sharedRawRefresh": {
+      "clients": 2,
+      "admissions": 1,
+      "mockSends": 1,
+      "publishes": 1,
+      "verifications": 1,
+      "freshReconnectExistingReads": 1,
+      "freshReconnectExtraAdmissions": 0,
+      "freshReconnectExtraSends": 0
+    }
+  },
+  "c1Publication": {
+    "checkpoint": "66a41b4aa13fbc553764a3eb2b656b53d2ca4418",
+    "verdict": "pass",
+    "unapprovedFindingPaths": 0,
+    "attributionGrepOutput": "",
+    "worktreeCleanBeforeC2": true
+  },
+  "scope": {
+    "node": "24.21.0",
+    "dbSuites": 0,
+    "laneUse": false,
+    "realProviderCalls": 0,
+    "realCredentials": false,
+    "hostedWork": false,
+    "enforcement": "hard-coded log-only",
+    "orderedMigrations": 0,
+    "schedules": 0,
+    "pushed": false
+  },
+  "limitations": [
+    "mock verifier cannot prove Firebase certificate-fetch or hosted latency",
+    "no deployed proxy/buffering qualification",
+    "C2 publication guard awaits an approved exact commit"
+  ],
+  "sourceSha256": {
+    "apps/web/src/app/api/stream/route.ts": "5d08765dcb6d890edb93cffed85ec9a01fdd6a8d08b5ae54c9e6d39a6f186b5e",
+    "apps/web/src/lib/paidOddsBoundary.ts": "bd983729ae06c524f70a873ff1647129d222fea3c5861628b375dcde55d2ea2a",
+    "apps/web/src/lib/paidOddsBoundary.server.test.ts": "4e4209b7ef372864adda1459f7bfe66ea76268f679ddf3d1c97f56da2db856be",
+    "apps/web/src/lib/streamRoute.server.test.ts": "fd4cc1081e778a7fead706ac5f0694d07ee28d5256b30911d6d030155a91592a",
+    "apps/web/src/lib/liveStreamAttribution.server.test.ts": "670266b39eac4e4d9381eab6f1a85739b267700b7e0ffe9c24f61648ead93765",
+    "apps/web/src/lib/oddsCollectorHealthRoute.server.test.ts": "1f07d997a3a2f3e1be082cb47023322718f276ffd49c02d93f81350df55f3989",
+    "docs/223-runbook.md": "bffaf3beb755ae8835be3e062c0c5845449a4da4509b6a2933220cab499d3857"
+  },
+  "reviewCleanup": "Removed networkOnly parameter, authorization-header suppression and verifier branch. Missing-token anonymous coverage remains; all production callers use the same verified attribution path."
+}

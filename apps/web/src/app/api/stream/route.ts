@@ -257,7 +257,7 @@ export async function GET(request: NextRequest) {
                     awayTeam: awayTeamName,
                     venueLat,
                     venueLon,
-                    paidRequest: createPaidRefreshRequest(request, true),
+                    paidRequest: createPaidRefreshRequest(request),
                   }
                 );
           if (!inputs) throw new Error("Fixture live inputs are unavailable");

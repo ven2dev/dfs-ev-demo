@@ -7,6 +7,8 @@ const getVenueForTeamMock = vi.fn();
 const getNflverseTeamAbbreviationMock = vi.fn();
 const getRealRecentGameStatsMock = vi.fn();
 const getSharedLivePropInputsMock = vi.fn();
+const createPaidRefreshRequestMock = vi.fn(() => ({ resolveSubject: vi.fn(async () => null) }));
+vi.mock("./paidOddsBoundary", () => ({ createPaidRefreshRequest: createPaidRefreshRequestMock }));
 
 vi.mock("./oddsApi", () => ({
   DEFAULT_SPORT_KEY: "americanfootball_nfl",
@@ -28,9 +30,10 @@ vi.mock("./livePropCacheRepo", () => ({
 
 let { GET } = await import("@/app/api/stream/route");
 
-const requestFor = (searchParams: Record<string, string>) =>
+const requestFor = (searchParams: Record<string, string>, headers: HeadersInit = {}) =>
   ({
     nextUrl: new URL(`https://example.test/api/stream?${new URLSearchParams(searchParams)}`),
+    headers: new Headers(headers),
   }) as NextRequest;
 
 beforeEach(async () => {
@@ -218,6 +221,27 @@ describe("GET /api/stream consensus devig ticks", () => {
       ],
       weather: { temperatureF: 65, windSpeedMph: 5, precipitationMm: 0 },
     });
+  });
+
+  it("creates a fresh lazy authenticated paid context per tick without the network-only restriction", async () => {
+    vi.useFakeTimers();
+    const request = requestFor({ eventId: "evt-1", marketKey: "player_pass_yds",
+      playerName: "Jalen Hurts", bookmakerKey: "draftkings", direction: "over", sampleWindow: "3",
+    }, { Authorization: "Bearer synthetic" });
+    const response = await GET(request);
+    const reader = response.body!.getReader();
+    await reader.read();
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+    await reader.read();
+    await reader.cancel();
+    expect(createPaidRefreshRequestMock.mock.calls).toEqual([[request], [request]]);
+    const first = createPaidRefreshRequestMock.mock.results[0].value;
+    const second = createPaidRefreshRequestMock.mock.results[1].value;
+    expect(first).not.toBe(second);
+    expect(getSharedLivePropInputsMock.mock.calls[0][1].paidRequest).toBe(first);
+    expect(getSharedLivePropInputsMock.mock.calls[1][1].paidRequest).toBe(second);
+    expect(first.resolveSubject).not.toHaveBeenCalled();expect(second.resolveSubject).not.toHaveBeenCalled();
+    expect(request.headers.get("authorization")).toBe("Bearer synthetic");
   });
 
   it("emits a normal tick when the cache says the data is still inside its caller TTL", async () => {
