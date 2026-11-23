@@ -4,8 +4,8 @@
 Q0 is complete. The owner approved this roadmap and branch creation on 2026-11-23.
 Implementation is on `feature/dfsEV-299-verified-live-stream`, based on the main
 commit above. C1 is committed as `66a41b4aa13fbc553764a3eb2b656b53d2ca4418`.
-C2 adds expiry-fenced server attribution and is validated with owner commit approval.
-The final validation/evidence checkpoint requires a separate commit approval.
+C2 is committed as `f7bdfbeffddf28e292bdc1143a79dd34968c1535`.
+Final validation passes; documentation/evidence awaits separate commit approval.
 
 ## Design basis
 
@@ -232,7 +232,7 @@ Retry-After sets the cross-effect deadline; local 1→30s backoff remains in eac
 effect. A prop change during 16s network backoff connects immediately; an identity
 change after a 429 honors the remaining 120s server deadline. All focused/browser,
 CI gate, lint and typecheck checks above were rerun after this fix and pass.
-The owner separately reports the default Turbopack build passing on Node 22.23;
+The reviewer separately reports the default Turbopack build passing on Node 22.23;
 ALT's Node 24.21.0 Webpack build passed. These are distinct build observations.
 C1 commit is approved, with publication guard verification after commit. C2 may
 then start and must be reported before its own commit.
@@ -257,7 +257,7 @@ Final checks on Node 24.21.0: root `npm test` passes **984 browser tests** and
 **1,029 Node tests**, with one existing skip. The **52 focused server tests**,
 **63 CI-gate checks**, full lint (including 12 import-boundary probes), root
 and DB-package typechecks, Webpack production build and diff check pass.
-The earlier owner-reported default Turbopack success applies to C1; C2's local
+The earlier reviewer-reported default Turbopack success applies to C1; C2's local
 build result uses Webpack due the previously observed sandbox port restriction.
 
 Deterministic fixtures prove per-tick context creation, one coalesced verification,
@@ -286,3 +286,28 @@ lint (12 boundary probes), root and DB-package typechecks and whitespace pass.
 The earlier 350-case reviewer result included that removed obsolete test.
 C2 commit is approved. Next is the final full browser/Node suites, build and
 exact-commit evidence; report that checkpoint before its own commit.
+
+
+## Final checkpoint — report before commit
+
+C2 is committed as `f7bdfbe`; its attribution grep was empty, tree clean and
+publication guard passed. On that exact implementation, the final full suites
+pass: **984 browser / 1,028 Node tests, one existing skip**. The Node count is one
+lower than the pre-cleanup run because the obsolete network-only case was removed.
+The final Webpack production build passes. No DB suite or lane was used.
+
+See `docs/299-results.md` and `docs/evidence/stream-299/final-validation.json` for
+results, deterministic work budgets, build provenance and remaining hosted limits.
+Final report/evidence remain uncommitted for owner review. Push/PR consent is
+still separate; enforcement and schema activation remain outside this change.
+
+
+### Final reviewer build and evidence approval
+
+The reviewer reports the default Turbopack `npm run build` passing on the final
+implementation `f7bdfbe` with Node 22.23. The earlier C1 Turbopack result was also
+reported by the reviewer, not the owner. The results report and final receipt
+now distinguish that evidence from ALT's Node 24.21.0 Webpack build. Hashes are
+regenerated after this correction. The owner approved committing the four final
+documentation/evidence files. After publication verification, stop with a PR-body
+draft; no push or PR creation is authorized.
