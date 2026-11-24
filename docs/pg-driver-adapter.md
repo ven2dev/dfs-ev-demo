@@ -67,6 +67,12 @@ SQL text/JSON projections retain their full textual precision; typed JavaScript
 Date values retain the existing driver's millisecond precision. Changing those
 semantics would require a separately reported behavior decision.
 
+`TypeOverrides` does not freeze or isolate the underlying parser registry: an
+unset override falls back to pg's current global registry. The adapter does not
+mutate that registry. A later global parser mutation could therefore affect its
+decoding; the installed-driver parity suite checks the required behavior when
+it runs. No stronger isolation is claimed.
+
 The SQL PREPARE guard conservatively rejects that whole word anywhere in an
 internal statement, including comments/literals. This small API is for the
 inventoried repository SQL, not arbitrary user SQL; no SQL parser is introduced.
@@ -278,6 +284,11 @@ qualification configuration, not deployed capacity approval. Cutover selects
 the final maximum from the formula and observed limits above. There are no new
 configuration inputs, domain SQL changes, repository edits or caller type edits.
 
+At cutover, decide whether the selected maximum remains an explicit code value
+or becomes a validated server configuration input. Either choice uses the same
+observed capacity budget; exposing a setting alone does not establish a safe
+maximum. The provisional value of two is not rollout approval.
+
 An AST inventory against fetched main `68dd11e` finds **34 acquisitions across
 17 caller modules and three transaction sites**. Every caller file is byte-for-byte
 unchanged from main. The [B1 receipt](evidence/pg-driver-309/checkpoint-b1.json)
@@ -326,6 +337,17 @@ still discard. Transaction phase/cancellation and rollback protections stay
 intact. The real publication-failure probe also proves its next read opens no
 replacement connection. This intentionally changes the draft's overcautious
 discard on ordinary SQL refusals, preventing extra TLS setup on the warm path.
+
+Database error messages and causes are intentionally removed at the existing
+configuration boundary because they can contain SQL parameters, data or target
+details. Safe codes remain available on the sanitized error. One accepted
+diagnostic limit in #309 is that the odds collector stores only `error.message`
+as checkpoint `last_error`: a database failure becomes
+`Application dependency unavailable.` and its SQLSTATE is not persisted there.
+The stable `outcome_reason` remains `collection-attempt-failed` or
+`retry-window-exhausted`; retry/skip policy is unchanged. This preserves the
+value-free error boundary at the cost of less specific persisted diagnostics.
+The collector's schema and logging are unchanged by this driver replacement.
 
 ## B1 validation and cutover limits
 

@@ -98,8 +98,8 @@ function cancelled<T>(run: () => Promise<T>, signal: AbortSignal | undefined, di
 
 /** Row-array adapter used by getSql(); the pool owner contains transport policy. */
 export function createPgSql(pool: Pick<Pool, "connect">): Sql {
-  // Query-local overrides preserve the installed text-decoding contract and
-  // leave the pipeline's global pg parsers untouched.
+  // Query-scoped parser lookup does not mutate pg's global registry. Unset
+  // overrides still fall back to that registry; this is not a frozen snapshot.
   const types = new TypeOverrides();
   const execute = async (target: Pick<PoolClient, "query">, config: QueryConfig<unknown[]>) =>
     rows(await target.query<SqlRow>({ ...config, types }));
