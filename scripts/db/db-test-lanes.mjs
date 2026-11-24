@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 
 export const SERIAL_FILES = Object.freeze(["packages/db/tooling/tests/bootstrap.test.ts", "packages/db/tooling/tests/lease.test.ts",
   "packages/db/tooling/tests/orchestrator.test.ts", "packages/db/tooling/tests/readiness.test.ts", "packages/db/tooling/tests/corpus.test.ts", "services/pipeline/tests/creator/corpusImport.test.ts", "packages/db/tooling/tests/sharedOdds.test.ts",
-  "packages/db/tooling/tests/quotaFloor.test.ts", "packages/db/tooling/tests/paidOddsAdmission.test.ts", "tests/db/sharedOddsViews.test.ts", "tests/db/sharedOdds.process.test.ts", "tests/db/pgDriver309.test.ts"]);
+  "packages/db/tooling/tests/quotaFloor.test.ts", "packages/db/tooling/tests/paidOddsAdmission.test.ts", "tests/db/sharedOddsViews.test.ts", "tests/db/sharedOdds.process.test.ts", "tests/db/pgDriver309.test.ts", "tests/db/pgDriver309Entry.test.ts"]);
 const root = fileURLToPath(new URL("../../", import.meta.url));
 
 // Every retained file must execute. Missing/failed/skipped/duplicated results

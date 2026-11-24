@@ -4,7 +4,7 @@ import { TypeOverrides, type Pool, type PoolClient, type QueryConfig, type Query
 
 export type SqlRow = Record<string, unknown>;
 // Failure containment, not the 90 ms pre-provider latency target. Reviewed
-// together with A2 before adoption by getSql(). Queue and connect share it.
+// in A2 before adoption by getSql(). Queue and connect share it.
 export const PG_ACQUISITION_CEILING_MS = 2_000;
 declare const statement: unique symbol;
 export type TransactionStatement = { readonly [statement]: true };
@@ -54,6 +54,13 @@ function rows(result: QueryResult<SqlRow>): SqlRow[] {
   return result.rows;
 }
 
+function recoverableSqlError(error: unknown): boolean {
+  const code = error && typeof error === "object" && "code" in error ? error.code : undefined;
+  // A completed server refusal leaves the protocol usable. Connection-class
+  // and shutdown errors, client timeouts and unknown failures do not prove it.
+  return typeof code === "string" && code.length === 5 && /^[0-9A-Z]{5}$/.test(code) && !/^(08|57P0)/.test(code);
+}
+
 // A cancelled checkout can still complete inside pg. Its continuation owns the
 // late release; neither a client nor a rejected connect promise is abandoned.
 function acquire(pool: Pick<Pool, "connect">, signal?: AbortSignal): Promise<PoolClient> {
@@ -89,7 +96,7 @@ function cancelled<T>(run: () => Promise<T>, signal: AbortSignal | undefined, di
   });
 }
 
-/** Isolated adapter; getSql() stays on Neon until checkpoint B. */
+/** Row-array adapter used by getSql(); the pool owner contains transport policy. */
 export function createPgSql(pool: Pick<Pool, "connect">): Sql {
   // Query-local overrides preserve the installed text-decoding contract and
   // leave the pipeline's global pg parsers untouched.
@@ -105,7 +112,7 @@ export function createPgSql(pool: Pick<Pool, "connect">): Sql {
       const onError = () => { discard = true; };
       client.on("error", onError);
       try { return await execute(client, config); }
-      catch (error) { discard = true; throw error; }
+      catch (error) { discard ||= !recoverableSqlError(error); throw error; }
       finally { client.removeListener("error", onError); client.release(discard); }
     },
     async transaction(build, options = {}) {
@@ -158,12 +165,10 @@ export function createPgSql(pool: Pick<Pool, "connect">): Sql {
       } catch (error) {
         // COMMIT failure has an ambiguous outcome. Never replay, and never
         // return that connection as healthy. A2 proves protocol/cancel paths.
-        const code = error && typeof error === "object" && "code" in error ? error.code : undefined;
         // Only a server SQL error establishes that this is a recoverable
         // statement failure. Network/client timeouts have uncertain protocol
         // state; queuing ROLLBACK on them is unsafe and may hang.
-        discard ||= phase !== "statements" || signal?.aborted === true ||
-          typeof code !== "string" || !/^[0-9A-Z]{5}$/.test(code) || /^(08|57P0)/.test(code);
+        discard ||= phase !== "statements" || signal?.aborted === true || !recoverableSqlError(error);
         if (!discard) {
           try { await run({ text: "ROLLBACK" }); }
           catch { discard = true; }

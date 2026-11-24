@@ -1,0 +1,517 @@
+{
+  "schemaVersion": 1,
+  "checkpoint": "309-B1",
+  "observedAtUtc": "2026-11-24T01:23:03.255Z",
+  "acceptedA2": "272fe4b60f5e1c3732ab1954a8016e64d44ddd21",
+  "mergedMain": "68dd11e382104621e808fb099e6574ef848b7eb7",
+  "result": "pass-local-owner-approved-after-review-correction",
+  "node": "24.18.1",
+  "sources": [
+    {
+      "path": "apps/web/src/lib/db.ts",
+      "sha256": "c19afc638f2a144048cb2f4766c1ade2000546d7392d5bb8745dd8d5368aac63"
+    },
+    {
+      "path": "apps/web/src/lib/pgSql.ts",
+      "sha256": "735d4b8fe6b823f96d93f9e0625d05eb04ce4a9a373c5825fc229cd6a18951e6"
+    },
+    {
+      "path": "apps/web/src/lib/pgSql.server.test.ts",
+      "sha256": "2b5e6dd4d1dfe18f9df5ba2bf15cf7e89a8df98f83d92cf15a7439b6a5acee29"
+    },
+    {
+      "path": "apps/web/src/lib/configBoundary.server.test.ts",
+      "sha256": "a3a66cf3f9430dd2b5dac4227f01907b9e3782360d1cbc58b542ab3ce6416f52"
+    },
+    {
+      "path": "apps/web/src/lib/configConsumers.server.test.ts",
+      "sha256": "5fde1d5280e3d9682693c6702c6afa228d2c0d772e7744833b609d1b2954a696"
+    },
+    {
+      "path": "tests/config-definition-import.probe.mts",
+      "sha256": "e42d02e93e025857887cd48aaa4bf6c6c71afe008ddb517c00fad5817b1446f6"
+    },
+    {
+      "path": "apps/web/package.json",
+      "sha256": "1e3b15cdb782989f92ad0d3516cebd8982177b6c406b7195d1c266efdb868e84"
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "aacff2ba694766a03f68348b4f76591b334d15b463c1f89ae55d2cc11d82e3c0"
+    },
+    {
+      "path": "scripts/db/db-test-contract.mjs",
+      "sha256": "ec8bbe8bfd72486065d3af9c2827f48df5e5b0500718258cf91a3447c19157e1"
+    },
+    {
+      "path": "scripts/db/db-test-lanes.mjs",
+      "sha256": "092daeeadc6660a639eab6e12f7c39996b5e02a55f5da50f329aedf35a12dd4c"
+    },
+    {
+      "path": "scripts/db/test-db.mjs",
+      "sha256": "0c6c76654cd3ce471deb541878cbdf527e5b1fa52978ed316b35a9fdda9a38ac"
+    },
+    {
+      "path": "tests/db/report-unit.check.mjs",
+      "sha256": "d7aab727ea65b263d2cc53c9c7a5059e120a79d0037106c21ffdb2c5c9ad73d9"
+    },
+    {
+      "path": "tests/db/pgDriver309Entry.test.ts",
+      "sha256": "6daeac054d48dffd490d23c310745186a43f4a0981c53c9720dad64cd95a7c6e"
+    },
+    {
+      "path": "docs/pg-driver-adapter.md",
+      "sha256": "888f8eeda4fbbaae6899ce01fe8bf43446273394a8a59e278bb51068d250c9b2"
+    }
+  ],
+  "integration": {
+    "entry": "apps/web/src/lib/db.ts",
+    "transport": "pg",
+    "provisionalMaximumPerOwner": 2,
+    "finalMaximum": "Selected at cutover from I * G * m + Hclient <= Bclient and separate backend/reserve budget.",
+    "acquisitionCeilingMs": 2000,
+    "newEnvironmentInputs": 0,
+    "callerOrDomainSqlEdits": 0,
+    "providerFallback": false,
+    "neon": "Web declaration moved runtime to development for installed-driver parity tests; DB tooling and root compatibility declarations retained.",
+    "lockfile": "Only web Neon declaration moved to development; all resolved packages, versions, integrities and other entries unchanged; S3 unchanged."
+  },
+  "versions": {
+    "pg": "8.23.1",
+    "pgPool": "3.14.0",
+    "vercelFunctions": "3.11.1",
+    "zod": "4.6.7",
+    "appEventsourceParser": "4.1.3"
+  },
+  "callerInventory": {
+    "main": "68dd11e382104621e808fb099e6574ef848b7eb7",
+    "modules": 17,
+    "acquisitions": 34,
+    "transactions": 3,
+    "callers": [
+      {
+        "path": "apps/web/src/lib/creatorSubmissionsRepo.ts",
+        "getSqlLines": [
+          56,
+          94
+        ],
+        "transactionLines": [
+          58
+        ],
+        "sha256": "b745d3995482c06f24f558b8eae3bd5addd3d0333ad4c016cb7b5d5d00aaa75a",
+        "unchangedFromMain": true
+      },
+      {
+        "path": "apps/web/src/lib/dbReadinessRepo.ts",
+        "getSqlLines": [
+          9
+        ],
+        "transactionLines": [
+          14,
+          21
+        ],
+        "sha256": "f2a9dae5fecd8068e87c79cf522b6773f3806065b27fb2a64a7bb79ccea4a566",
+        "unchangedFromMain": true
+      },
+      {
+        "path": "apps/web/src/lib/historicalOddsQueryRepo.ts",
+        "getSqlLines": [
+          95
+        ],
+        "transactionLines": [],
+        "sha256": "6cc3ce1e7e6d8d0ad77a8affbbd0f0b6ee3f0056ca11294815346b6d17c8b2ac",
+        "unchangedFromMain": true
+      },
+      {
+        "path": "apps/web/src/lib/livePropCacheRepo.ts",
+        "getSqlLines": [
+          39,
+          75
+        ],
+        "transactionLines": [],
+        "sha256": "21678b79f3943fb8fe0d748fedd9ed01f4e0fa956ec32359a7a1fe6c20af411e",
+        "unchangedFromMain": true
+      },
+      {
+        "path": "apps/web/src/lib/oddsApiTelemetryRepo.ts",
+        "getSqlLines": [
+          86
+        ],
+        "transactionLines": [],
+        "sha256": "f4637ca2e58be02fffc9100e5e5c43a3ce712e959ba53add0e1ec834e1abc5da",
+        "unchangedFromMain": true
+      },
+      {
+        "path": "apps/web/src/lib/oddsCacheRepo.ts",
+        "getSqlLines": [
+          132
+        ],
+        "transactionLines": [],
+        "sha256": "b84611b0dca720bb1f336443c1c95ab5582afbf45ec7275a2d29a23c1b56973b",
+        "unchangedFromMain": true
+      },
+      {
+        "path": "apps/web/src/lib/oddsCacheStartup.ts",
+        "getSqlLines": [
+          67
+        ],
+        "transactionLines": [],
+        "sha256": "68c67bbef83fd7ffbc8b236b94ab790ba61f8d008eeea984409858e676117d24",
+        "unchangedFromMain": true
+      },
+      {
+        "path": "apps/web/src/lib/oddsCollectionRepo.ts",
+        "getSqlLines": [
+          245,
+          285,
+          352,
+          397,
+          431,
+          510,
+          552,
+          586,
+          627,
+          666
+        ],
+        "transactionLines": [],
+        "sha256": "f23fcb6877c8b4ca34cc68fee8dc09c9780308f0603f95e45cd4706048e32bb2",
+        "unchangedFromMain": true
+      },
+      {
+        "path": "apps/web/src/lib/oddsCollectorHealthRepo.ts",
+        "getSqlLines": [
+          153
+        ],
+        "transactionLines": [],
+        "sha256": "9e9a3c841825f75a3056d751afbea9fb9a32db1e2dbddfdd969c08e5996c1429",
+        "unchangedFromMain": true
+      },
+      {
+        "path": "apps/web/src/lib/oddsSnapshotRepo.ts",
+        "getSqlLines": [
+          281
+        ],
+        "transactionLines": [],
+        "sha256": "6a1258e6cb8af7f4a07db832846c772d656aea87393915b43e1743bc84b14c9e",
+        "unchangedFromMain": true
+      },
+      {
+        "path": "apps/web/src/lib/oddsSubjectReport.ts",
+        "getSqlLines": [
+          8
+        ],
+        "transactionLines": [],
+        "sha256": "9b8522b61b201699c84ebe175f33e232148306034e203354648684b7e5a37d1d",
+        "unchangedFromMain": true
+      },
+      {
+        "path": "apps/web/src/lib/paidOddsBoundary.ts",
+        "getSqlLines": [
+          101,
+          110
+        ],
+        "transactionLines": [],
+        "sha256": "bd983729ae06c524f70a873ff1647129d222fea3c5861628b375dcde55d2ea2a",
+        "unchangedFromMain": true
+      },
+      {
+        "path": "apps/web/src/lib/playerCrosswalkRepo.ts",
+        "getSqlLines": [
+          13,
+          29
+        ],
+        "transactionLines": [],
+        "sha256": "afeefb1b5cefe2e05095c2b441aaca1453088a7ff5fa2dd9ca46c6d98dd52603",
+        "unchangedFromMain": true
+      },
+      {
+        "path": "apps/web/src/lib/playerRosterRepo.ts",
+        "getSqlLines": [
+          54,
+          83
+        ],
+        "transactionLines": [],
+        "sha256": "882ea51a7b782fc0cb636edf5c4af9871c193a218682d50c7340e69679007973",
+        "unchangedFromMain": true
+      },
+      {
+        "path": "apps/web/src/lib/playerStatsRepo.ts",
+        "getSqlLines": [
+          18,
+          45,
+          55,
+          84
+        ],
+        "transactionLines": [],
+        "sha256": "35e545dd35a16b86e17bb73b4a997a10468c574d6032961a7d0b423998010670",
+        "unchangedFromMain": true
+      },
+      {
+        "path": "apps/web/src/lib/providerQuota.ts",
+        "getSqlLines": [
+          18
+        ],
+        "transactionLines": [],
+        "sha256": "eca3e984a528fba80c11c31e09e5b9c97b0f45049e825e41c1bf22261a4b5665",
+        "unchangedFromMain": true
+      },
+      {
+        "path": "apps/web/src/lib/sharedOddsRepo.ts",
+        "getSqlLines": [
+          33
+        ],
+        "transactionLines": [],
+        "sha256": "65b7b66fe8ca77bbc4c1c5b02106fed0e8efc7d3e56200e38d11d0760771f78d",
+        "unchangedFromMain": true
+      }
+    ]
+  },
+  "testsAdded": {
+    "total": 15,
+    "singleQueryFailureAndReuse": 7,
+    "syntheticEntryConfiguration": 3,
+    "realPostgresEntry": 4,
+    "mandatoryReportContract": 1
+  },
+  "testChanges": {
+    "intentional": "Existing configuration probes now trap pg Pool instead of the retired Neon constructor; cached binding mismatch verification strengthened. Review correction intentionally returns a healthy client after a completed single-query SQLSTATE refusal, sharing the transaction classifier. Connection/shutdown/network/timeout/non-SQLSTATE failures still discard. Accepted statuses, row values and work ceilings unchanged.",
+    "fixtureCorrections": "Draft assertions corrected to existing bigint-string creator IDs and the 12-market discovery registry. Both drivers return bigint strings; no domain coercion/type repair."
+  },
+  "entryProofs": {
+    "creatorAndReadiness": {
+      "pools": 1,
+      "connections": 1,
+      "checkouts": 4,
+      "releases": 4,
+      "domainStatements": 10,
+      "transactionControls": 6,
+      "lazyImportPools": 0,
+      "bigintIdRuntime": "string under both drivers"
+    },
+    "composed": {
+      "beforeSend": 5,
+      "cacheBeforeSend": 4,
+      "cacheTotal": 6,
+      "admission": 1,
+      "telemetry": 1,
+      "history": 1,
+      "freshHit": 1,
+      "subjectResolutions": 1
+    },
+    "cooldown": {
+      "initialFailedKeys": 1,
+      "discoveryKeys": 12,
+      "secondProviderCalls": 1,
+      "secondProviderKeys": 11,
+      "failedKeyRefetched": false,
+      "emptySlicesPublished": 11
+    },
+    "publicationFailure": {
+      "safeCode": "P0001",
+      "secretMarkersLogged": 0,
+      "secondProviderCalls": 0,
+      "secondAdmissionStatements": 0,
+      "epochStaysUnpublished": true,
+      "connections": 1,
+      "discards": 0,
+      "subsequentReadReusesClient": true
+    },
+    "unchangedAppDefaults": {
+      "pollMs": 250,
+      "leaseMs": 30000,
+      "renewIntervalMs": 10000,
+      "followerMaxWaitMs": 45000,
+      "providerAbortMs": 20000,
+      "distinction": "A2 separately proves an explicitly configured 45 s lease; it is not the default lease."
+    }
+  },
+  "checks": {
+    "browser": {
+      "passed": 984,
+      "failed": 0
+    },
+    "node": {
+      "passed": 1088,
+      "failed": 0,
+      "skipped": 1,
+      "skip": "Existing opt-in live R2 test"
+    },
+    "focused": {
+      "passed": 79,
+      "failed": 0
+    },
+    "rerunAfterReviewCorrection": [
+      "focused",
+      "node",
+      "ciGate",
+      "webTypecheck",
+      "eslintExcludingIgnoredScratch",
+      "productionBuild",
+      "coreDb",
+      "featureStoreDb",
+      "syntheticTimingScreen"
+    ],
+    "ciGate": {
+      "passed": 63,
+      "failed": 0
+    },
+    "rootTypecheck": "pass",
+    "webTypecheck": "pass",
+    "eslintExcludingIgnoredScratch": "pass",
+    "importBoundaries": {
+      "passed": 12,
+      "failed": 0
+    },
+    "firebaseAdminNodeRuntime": "pass",
+    "productionBuild": {
+      "result": "pass",
+      "bundler": "turbopack",
+      "fixtureMode": true,
+      "liveSecrets": false
+    },
+    "coreDb": {
+      "passed": 100,
+      "failed": 0,
+      "nodeToolingPassed": 80,
+      "mandatory": {
+        "nodeRequiredCases": 76,
+        "leaseRequiredCases": 13,
+        "readinessRequiredCases": 4,
+        "corpusRequiredCases": 8,
+        "pgDriverRequiredCases": 7,
+        "pgEntryRequiredCases": 4,
+        "result": "verified"
+      }
+    },
+    "featureStoreDb": {
+      "passed": 301,
+      "failed": 0
+    },
+    "buildIsolation": {
+      "verdict": "pass",
+      "positiveBuild": true,
+      "nodePositiveControl": true,
+      "isolatedOutputFiles": 94,
+      "edgeFilesChecked": 13,
+      "clientImportRefused": true,
+      "edgeImportRefused": true,
+      "bundler": "webpack",
+      "privateDotenvFilesCopied": 0,
+      "candidateFilesCopied": 209
+    },
+    "publicationGuard": {
+      "schema": "published-evidence-guard-v1",
+      "checkpoint": "272fe4b60f5e1c3732ab1954a8016e64d44ddd21",
+      "verdict": "pass",
+      "scope": "complete-tested-Git-tree",
+      "trackedPaths": 1045,
+      "compressedPaths": 30,
+      "archiveLeafMembers": 341,
+      "decodedJsonStrings": 305,
+      "decodedBase64Sources": 154,
+      "approvedFindingPaths": 8,
+      "unapprovedFindingPaths": 0,
+      "limit": "Scans committed A2 only; rerun the complete-tree guard after the approved B1 commit. A separate supplemental candidate byte scan covers B1 before commit."
+    }
+  },
+  "localPostgres": {
+    "lane": "lane-3",
+    "tier": "standard",
+    "syntheticRecordsOnly": true,
+    "image": "postgres:18.6-alpine3.24@sha256:9ba53c7d41ea093baf5c1ba635ba5434c4f979880527d49bb7d9237d3193085b",
+    "testOnlySocketDestinationInjection": true,
+    "runtimeTlsPolicyWeakened": false,
+    "cleanup": {
+      "down": "pass",
+      "containerAbsent": true,
+      "networkAbsent": true,
+      "otherLaneUntouched": true
+    }
+  },
+  "syntheticTimingScreen": {
+    "verdict": "pass",
+    "node": "24.18.1",
+    "fixture": "actual getSql/config boundary/owner/adapter and installed Vercel attachment + real pg.Pool with injected microtask Client",
+    "envelopeMs": 1,
+    "passingP95Ms": 0.7,
+    "timings": [
+      {
+        "round": 1,
+        "shape": "query",
+        "samplesEach": 1000,
+        "baselineP95Ms": 0.002999999999985903,
+        "entryP95Ms": 0.005124999999992497,
+        "headroomFraction": 0.9948750000000075
+      },
+      {
+        "round": 1,
+        "shape": "transaction",
+        "samplesEach": 1000,
+        "baselineP95Ms": 0.00333299999999781,
+        "entryP95Ms": 0.007125000000002046,
+        "headroomFraction": 0.992874999999998
+      },
+      {
+        "round": 2,
+        "shape": "query",
+        "samplesEach": 1000,
+        "baselineP95Ms": 0.0016669999999976426,
+        "entryP95Ms": 0.0032910000000185846,
+        "headroomFraction": 0.9967089999999814
+      },
+      {
+        "round": 2,
+        "shape": "transaction",
+        "samplesEach": 1000,
+        "baselineP95Ms": 0.0017919999999946867,
+        "entryP95Ms": 0.004917000000006055,
+        "headroomFraction": 0.995082999999994
+      },
+      {
+        "round": 3,
+        "shape": "query",
+        "samplesEach": 1000,
+        "baselineP95Ms": 0.0014590000000112013,
+        "entryP95Ms": 0.0028330000000096334,
+        "headroomFraction": 0.9971669999999904
+      },
+      {
+        "round": 3,
+        "shape": "transaction",
+        "samplesEach": 1000,
+        "baselineP95Ms": 0.0016660000000001673,
+        "entryP95Ms": 0.004958000000016227,
+        "headroomFraction": 0.9950419999999838
+      }
+    ],
+    "work": [
+      {
+        "connections": 0,
+        "checkouts": 6000,
+        "releases": 6000,
+        "domain": 15000,
+        "controls": 6000
+      },
+      {
+        "connections": 0,
+        "checkouts": 6000,
+        "releases": 6000,
+        "domain": 15000,
+        "controls": 6000
+      }
+    ],
+    "networkAttempts": 0,
+    "allPoolsEnded": true,
+    "limits": "Synthetic scheduling screen only; no database/hosted timing, 90 ms qualification or capacity claim.",
+    "scriptSha256": "d0879e712f355d3c273446a836854c98d74d08732c5c26cc9a81632b0cd05323"
+  },
+  "limits": [
+    "No hosted database/provider operation, Production command, push, PR or merge.",
+    "Local direct PostgreSQL does not certify transaction-pooler backend settings/capacity, actual TLS or Vercel suspension.",
+    "Hosted new/reassigned-backend timeouts, Fluid cleanup, pool-owner fan-out/overlap and final client/backend capacity remain cutover readiness gates.",
+    "Cutover confirms PlanetScale pooler acceptance of the whitespace options startup parameter; #220 nonblank options are not proof.",
+    "90 ms full warm path and p95 <=63 ms remain real-app PlanetScale Preview cutover measurements; no shared runtime timer added.",
+    "The driver PR stays unmerged until that Preview passes during cutover, so Production never runs pg against Neon.",
+    "Separate B2 S3 lock declaration alignment remains unimplemented and separately approved."
+  ]
+}

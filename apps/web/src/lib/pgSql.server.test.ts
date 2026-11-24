@@ -90,6 +90,30 @@ describe("#309 query rows and installed-driver decoding parity", () => {
     expect(f.trace[1].config.values).not.toBe(input);
   });
 
+  it.each(["P0001", "23505"])("reuses the same pooled client after a single-query server refusal %s", async code => {
+    const f = fixture();
+    const error = Object.assign(new Error("synthetic server refusal"), { code });
+    f.failures.set("INSERT synthetic", error);
+    await expect(f.sql.query("INSERT synthetic")).rejects.toBe(error);
+    expect(f.counts).toEqual({ connects: 1, acquires: 1, releases: 1, discards: 0 });
+    expect(await f.sql.query("SELECT 1")).toEqual([{ id: 1 }]);
+    expect(f.counts).toEqual({ connects: 1, acquires: 2, releases: 2, discards: 0 });
+    expect(f.trace.map(q => q.config.text)).toEqual(["INSERT synthetic", "SELECT 1"]);
+    expect(new Set(f.trace.map(q => q.client)).size).toBe(1);
+  });
+
+  it.each(["08006", "57P01", "ECONNRESET", undefined, "23505\n"])("discards a single-query client with uncertain failure code %j", async code => {
+    const f = fixture();
+    const error = Object.assign(new Error("synthetic connection failure or client timeout"), { code });
+    f.failures.set("SELECT failing", error);
+    await expect(f.sql.query("SELECT failing")).rejects.toBe(error);
+    expect(f.counts.discards).toBe(1);
+    expect(f.pool.totalCount).toBe(0);
+    await f.sql.query("SELECT 1");
+    expect(f.counts).toEqual({ connects: 2, acquires: 2, releases: 2, discards: 1 });
+    expect(new Set(f.trace.map(q => q.client)).size).toBe(2);
+  });
+
   const cases: [string, number, string | null, unknown][] = [
     ["integer id", 23, "2147483647", 2147483647],
     ["bigint beyond JS integer range", 20, "9007199254740993", "9007199254740993"],

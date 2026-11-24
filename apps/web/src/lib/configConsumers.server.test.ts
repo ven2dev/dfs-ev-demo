@@ -1,4 +1,5 @@
 import { generateKeyPairSync } from "node:crypto";
+import { EventEmitter } from "node:events";
 import { inspect } from "node:util";
 import { NextRequest } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -6,12 +7,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const m = vi.hoisted(() => ({
   cert: vi.fn(), initialize: vi.fn(), getApp: vi.fn(), getApps: vi.fn(),
   auth: vi.fn(), firestore: vi.fn(), verify: vi.fn(), readDocument: vi.fn(),
-  neon: vi.fn(), query: vi.fn(), syncStats: vi.fn(), syncRoster: vi.fn(),
+  pool: vi.fn(), connect: vi.fn(), query: vi.fn(), release: vi.fn(), syncStats: vi.fn(), syncRoster: vi.fn(),
 }));
 vi.mock("firebase-admin/app", () => ({ cert: m.cert, initializeApp: m.initialize, getApp: m.getApp, getApps: m.getApps }));
 vi.mock("firebase-admin/auth", () => ({ getAuth: m.auth }));
 vi.mock("firebase-admin/firestore", () => ({ getFirestore: m.firestore }));
-vi.mock("@neondatabase/serverless", () => ({ neon: m.neon }));
+vi.mock("pg", async original => ({ ...await original<typeof import("pg")>(), Pool: m.pool }));
 vi.mock("./playerStatsSync", () => ({ syncPlayerStats: m.syncStats }));
 vi.mock("./nflverseRosterSync", () => ({ syncNflverseRoster: m.syncRoster }));
 
@@ -50,7 +51,11 @@ beforeEach(() => {
   m.verify.mockResolvedValue({ uid: "synthetic-user" });
   m.auth.mockReturnValue({ verifyIdToken: m.verify });
   m.firestore.mockReturnValue({ collection: () => ({ doc: () => ({ get: m.readDocument }) }) });
-  m.neon.mockReturnValue({ query: m.query });
+  m.query.mockResolvedValue({ rows: [] });
+  m.connect.mockResolvedValue(Object.assign(new EventEmitter(), { query: m.query, release: m.release }));
+  m.pool.mockImplementation(function (options) {
+    return Object.assign(new EventEmitter(), { options, connect: m.connect, end: vi.fn().mockResolvedValue(undefined) });
+  });
   vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("Unexpected synthetic network use"));
 });
 afterEach(() => {
@@ -83,7 +88,7 @@ describe("#99 migrated configuration call paths", () => {
     expect(m.auth).toHaveBeenCalledTimes(2);
     expect(m.firestore).toHaveBeenCalledOnce();
     expect(m.cert).toHaveBeenCalledOnce();
-    expect(m.neon).not.toHaveBeenCalled();
+    expect(m.pool).not.toHaveBeenCalled();
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -112,7 +117,7 @@ describe("#99 migrated configuration call paths", () => {
     expect(m.cert).toHaveBeenCalledOnce();
     expect(m.getApps).toHaveBeenCalledTimes(2);
     expect(m.getApp).not.toHaveBeenCalled();
-    expect(m.neon).not.toHaveBeenCalled();
+    expect(m.pool).not.toHaveBeenCalled();
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -139,7 +144,7 @@ describe("#99 migrated configuration call paths", () => {
     expect(m.initialize).not.toHaveBeenCalled();
     expect(m.auth).not.toHaveBeenCalled();
     expect(m.readDocument).not.toHaveBeenCalled();
-    expect(m.neon).not.toHaveBeenCalled();
+    expect(m.pool).not.toHaveBeenCalled();
     expect(fetch).not.toHaveBeenCalled();
     expect(inspect(log.mock.calls)).not.toContain(marker);
     expect(inspect(log.mock.calls)).not.toContain("synthetic-other");
@@ -151,12 +156,42 @@ describe("#99 migrated configuration call paths", () => {
     vi.doMock("./config.server", () => ({ ...actual, serverConfig: { ...actual.serverConfig, database } }));
     const { getSql } = await import("./db");
     expect(getSql()).toBe(getSql());
-    expect(m.neon).toHaveBeenCalledOnce();
+    expect(m.pool).toHaveBeenCalledOnce();
     expect(database).toHaveBeenCalledTimes(2);
+    database.mockReturnValueOnce("postgresql://synthetic:synthetic@changed.invalid/synthetic");
+    expect(getSql).toThrow("configuration unavailable (environment-policy)");
     database.mockImplementationOnce(() => { throw new actual.ConfigurationError("invalid"); });
     expect(getSql).toThrow("configuration unavailable (invalid)");
-    expect(m.neon).toHaveBeenCalledOnce();
+    expect(m.pool).toHaveBeenCalledOnce();
+    expect(m.connect).not.toHaveBeenCalled();
     expect(m.query).not.toHaveBeenCalled();
+  });
+
+  it.each([undefined, "synthetic-invalid-url"])("refuses database input %s through getSql before pool creation", async value => {
+    vi.stubEnv("DATABASE_URL", value);
+    const { getSql } = await import("./db");
+    expect(getSql).toThrow("configuration unavailable");
+    expect(getSql).toThrow("configuration unavailable");
+    expect(m.pool).not.toHaveBeenCalled();
+    expect(m.connect).not.toHaveBeenCalled();
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("returns rows and normalizes query failures through the real getSql entry point", async () => {
+    const { getSql } = await import("./db");
+    m.query.mockResolvedValueOnce({ rows: [{ id: 7 }] });
+    expect(await getSql().query("SELECT $1::int AS id", [7])).toEqual([{ id: 7 }]);
+    expect(m.query.mock.calls[0][0]).toMatchObject({ text: "SELECT $1::int AS id", values: [7] });
+    expect(m.release).toHaveBeenLastCalledWith(false);
+    m.query.mockRejectedValueOnce(Object.assign(new Error(marker, { cause: marker }), { code: "23505" }));
+    const error = await getSql().query("SELECT $1", [marker]).catch(error => error);
+    expect(error).toMatchObject({ code: "23505", message: "Application dependency unavailable." });
+    expect(inspect(error, { depth: 10 })).not.toContain(marker);
+    expect(m.release).toHaveBeenLastCalledWith(false);
+    expect(m.pool).toHaveBeenCalledOnce();
+    expect(m.connect).toHaveBeenCalledTimes(2);
+    expect(m.release).toHaveBeenCalledTimes(2);
+    expect(fetch).not.toHaveBeenCalled();
   });
 
   it.each(["23505", "auth/invalid-credential"])("keeps safe diagnostics %s in the real route logger without raw messages or causes", async code => {
@@ -213,7 +248,7 @@ describe("#99 migrated configuration call paths", () => {
     const response = await GET(request("/api/slate"));
     expect(response.status).toBe(500);
     expect(fetch).toHaveBeenCalledOnce();
-    expect(m.neon).not.toHaveBeenCalled();
+    expect(m.pool).not.toHaveBeenCalled();
     expect(inspect(log.mock.calls, { depth: 10 })).not.toContain(marker);
   });
 

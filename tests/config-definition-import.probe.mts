@@ -8,8 +8,8 @@ vi.mock("firebase-admin/app", () => ({
   cert: () => { counters.sdkCalls++; throw new Error("Unexpected synthetic SDK call."); },
   initializeApp: () => { counters.sdkCalls++; throw new Error("Unexpected synthetic SDK call."); },
 }));
-vi.mock("@neondatabase/serverless", () => ({
-  neon: () => { counters.sqlCalls++; throw new Error("Unexpected synthetic database initialization."); },
+vi.mock("pg", async original => ({ ...await original<typeof import("pg")>(),
+  Pool: function () { counters.sqlCalls++; throw new Error("Unexpected synthetic database initialization."); },
 }));
 
 describe("value-free executable definition import", () => {

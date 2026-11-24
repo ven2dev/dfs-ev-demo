@@ -8,7 +8,7 @@ import { mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { NODE_REQUIRED_CASES, validateCorpusDbReport, validateLeaseDbReport, validateNodeDbReport, validateReadinessDbReport, validatePgDriverDbReport } from "./db-test-contract.mjs";
+import { NODE_REQUIRED_CASES, validateCorpusDbReport, validateLeaseDbReport, validateNodeDbReport, validateReadinessDbReport, validatePgDriverDbReport, validatePgEntryDbReport } from "./db-test-contract.mjs";
 import {
   assertNoApplicationCredentials,
   getTestDatabaseLane,
@@ -130,7 +130,8 @@ async function runSuite(environment, filters, leaseSignal) {
     const readinessRequiredCases = validateReadinessDbReport(report);
     const corpusRequiredCases = validateCorpusDbReport(report);
     const pgDriverRequiredCases = validatePgDriverDbReport(report);
-    console.log(JSON.stringify({ nodeRequiredCases, leaseRequiredCases, readinessRequiredCases, corpusRequiredCases, pgDriverRequiredCases, result: "verified" }));
+    const pgEntryRequiredCases = validatePgEntryDbReport(report);
+    console.log(JSON.stringify({ nodeRequiredCases, leaseRequiredCases, readinessRequiredCases, corpusRequiredCases, pgDriverRequiredCases, pgEntryRequiredCases, result: "verified" }));
     leaseSignal.throwIfAborted();
     return 0;
   } catch (error) {
