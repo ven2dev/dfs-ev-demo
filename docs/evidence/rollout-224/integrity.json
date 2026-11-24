@@ -1,0 +1,10 @@
+{
+  "schema": "rollout-224-evidence-integrity-v1",
+  "sha256": {
+    "q0-receipt.json": "59c19d5f500a483d7c3dc8b51a200d6c841111c8cd5bedfd46590effe57512df",
+    "source-manifest.json": "1ecf0ccd07ecda2174b6cd7de0bb77aba5abbfc269cbcfcbb129abebe1904497",
+    "work-metrics.json": "cbb21b3d0d2568267420329fb914268fdc0ca44245be6e236c3f9754bb29d26b",
+    "c1-validation.json": "7e0d11ae7eff3ab5ccce58cd55b902a3b48217747cbea6e658795f3fc16271ff"
+  },
+  "note": "Q0 files copied unchanged from approved scratch run. Original full scratch outputs and their separate wrapper remain retained privately; this wrapper covers the compact repository copies."
+}

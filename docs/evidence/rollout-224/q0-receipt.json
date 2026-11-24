@@ -1,0 +1,86 @@
+{
+  "schema": "rollout-224-q0-v1",
+  "createdAt": "2026-11-24T00:59:00.061889+00:00",
+  "baseMain": "68dd11e382104621e808fb099e6574ef848b7eb7",
+  "fixture": "224-rollout-two-instances-20-leaders",
+  "spike": "224-rollout-mode-and-rollback",
+  "node": "24.21.0",
+  "tests": {
+    "passed": 20,
+    "failed": 0,
+    "exitCode": 0,
+    "wallClockAssertions": 0
+  },
+  "metrics": [
+    {
+      "name": "twenty-leaders",
+      "leaders": 20,
+      "owners": 2,
+      "admissionStatements": 20,
+      "extraModeStatements": 0
+    },
+    {
+      "name": "rollback",
+      "oldAdmissionStatements": 1,
+      "replacementAdmissionStatements": 1,
+      "resetStatements": 0,
+      "oldCachedDenialStillRequiresDrain": true
+    },
+    {
+      "name": "fresh-hit",
+      "existingReads": 1,
+      "admissionStatements": 0,
+      "verifications": 0
+    },
+    {
+      "name": "eventual-follower",
+      "existingReads": 2,
+      "existingClaims": 1,
+      "extraFollowerStatements": 0,
+      "admissionStatements": 0,
+      "verifications": 1
+    },
+    {
+      "name": "repeat-cached-denial",
+      "requests": 5,
+      "existingFreshnessReads": 5,
+      "addedClaimAdmissionReleaseStatements": 0
+    }
+  ],
+  "sourceManifest": "source-manifest.json",
+  "remoteActions": {
+    "retentionIssue": "https://github.com/ven2dev/dfs-ev-demo/issues/311",
+    "labels": [
+      "phase:8",
+      "type:bug"
+    ],
+    "project": "https://github.com/orgs/ven2dev/projects/1",
+    "projectItemId": "PVTI_lADODwZPmc4Bh3sTzhLThgc",
+    "blocks": 224,
+    "acceptanceComment": "https://github.com/ven2dev/dfs-ev-demo/issues/224#issuecomment-7118534988",
+    "remoteBodiesReadBackAndMatched": true
+  },
+  "scope": {
+    "modeCandidate": "scratch only",
+    "boundary": "unchanged main source snapshot",
+    "owners": "two independent factory instances in one process, not hosted instances",
+    "databaseAccessAttempts": 0,
+    "networkProviderCalls": 0,
+    "realTokensOrCredentials": false,
+    "branchCreated": false,
+    "appSourceEdits": false,
+    "dbOrLaneUse": false,
+    "hostedOrWafActions": false,
+    "wafMockTests": false,
+    "retentionQ0Run": false,
+    "retentionExecutionGate": "Relay changeover complete and lane-2 window cleared"
+  },
+  "limits": [
+    "No real DB, GCRA SQL concurrency, buffers or latency proof",
+    "SDK verification is mocked; no signing-key/network cost qualification",
+    "Mode parsing/projection is a scratch prototype, not integrated #99 configuration/HTTP health proof",
+    "No app build/full suite in this cheap spike; C1-C4 integration remain",
+    "No real 24h observation or WAF rule execution; WAF remains a written draft"
+  ],
+  "verdict": "mock feasibility passed; final roadmap and branch approval next"
+}

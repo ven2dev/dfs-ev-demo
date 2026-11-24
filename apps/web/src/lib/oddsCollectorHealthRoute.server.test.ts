@@ -95,7 +95,8 @@ describe("GET /api/health/odds-collector", () => {
       reasons: [],
       warnings: [],
       quota: quotaHealth,
-      limiter: { capability: "not-installed", mode: "log-only", liveUserAttribution: true,
+      limiter: { capability: "not-installed", mode: "log-only", requestedMode: "log-only",
+        effectiveMode: "log-only", sharedCache: "not-initialized", modeReasons: [], liveUserAttribution: true,
         reasonCounts: {}, recentError: null, scope: "this-instance" },
     });
     expect(snapshotMock).toHaveBeenCalledWith(new Date("2026-10-03T12:00:00.000Z"), {
@@ -149,7 +150,8 @@ describe("GET /api/health/odds-collector", () => {
       reasons: ["repeated-checkpoint-failure"],
       warnings: [],
       quota: quotaHealth,
-      limiter: { capability: "not-installed", mode: "log-only", liveUserAttribution: true,
+      limiter: { capability: "not-installed", mode: "log-only", requestedMode: "log-only",
+        effectiveMode: "log-only", sharedCache: "not-initialized", modeReasons: [], liveUserAttribution: true,
         reasonCounts: {}, recentError: null, scope: "this-instance" },
     });
 
@@ -164,7 +166,8 @@ describe("GET /api/health/odds-collector", () => {
       reasons: [],
       warnings: ["quota-policy-degraded"],
       quota: quotaHealth,
-      limiter: { capability: "not-installed", mode: "log-only", liveUserAttribution: true,
+      limiter: { capability: "not-installed", mode: "log-only", requestedMode: "log-only",
+        effectiveMode: "log-only", sharedCache: "not-initialized", modeReasons: [], liveUserAttribution: true,
         reasonCounts: {}, recentError: null, scope: "this-instance" },
     });
   });

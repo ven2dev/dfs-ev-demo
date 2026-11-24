@@ -13,6 +13,7 @@ const m = vi.hoisted(() => ({
 vi.mock("./db", () => ({ getSql: () => ({ query: m.query }) }));
 vi.mock("./firebaseAdmin", () => ({ getAdminAuth: () => ({ verifyIdToken: m.verify }) }));
 vi.mock("./config.server", () => ({ serverConfig: {
+  paidOddsMode: () => "log-only",
   environment: () => "production", databaseConfigured: () => true,
   collectorHealth: () => ({ quotaReserve: 100 }),
   paidOdds: () => ({ keyring: [{ version: "v1", keyHex: "11".repeat(32) }], policies: {

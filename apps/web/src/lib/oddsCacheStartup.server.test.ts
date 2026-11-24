@@ -2,6 +2,18 @@ import { describe, expect, it, vi } from "vitest";
 import { createOddsCacheStartup } from "./oddsCacheStartup";
 
 describe("odds-cache startup routing", () => {
+  it("status reads never initialize, query or retry a dependency", async () => {
+    let now = 0;
+    const query = vi.fn().mockRejectedValueOnce(new Error("unavailable")).mockResolvedValue([{ ready: true }]);
+    const startup = createOddsCacheStartup(query, () => now);
+    expect(startup.status()).toBe("not-initialized");expect(query).not.toHaveBeenCalled();
+    await expect(startup.initialize()).rejects.toThrow("unavailable");
+    expect(startup.status()).toBe("unavailable");
+    now = 5000;
+    expect(startup.status()).toBe("unavailable");expect(query).toHaveBeenCalledTimes(1);
+    await startup.initialize();
+    expect(startup.status()).toBe("shared");expect(query).toHaveBeenCalledTimes(2);
+  });
   it.each([false, true])("latches verified readiness %s across concurrent initialization and selection", async ready => {
     const query = vi.fn().mockResolvedValue([{ ready }]);
     const startup = createOddsCacheStartup(query);

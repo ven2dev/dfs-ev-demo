@@ -111,11 +111,18 @@ const inputDefinition = <T>(classification: "secret" | "ordinary configuration" 
 });
 
 // Executable, value-free definitions: inspecting these does not read inputs.
+export type PaidOddsMode = "log-only" | "enforce";
+
 export const serverInputDefinitions = {
   VERCEL: inputDefinition("ordinary configuration", ["environment"], optionalText),
   VERCEL_ENV: inputDefinition("ordinary configuration", ["environment"], enumeration(["production", "preview", "development"])),
   ODDS_DATA_SOURCE: inputDefinition("ordinary configuration", ["odds"], enumeration(["live", "fixture"])),
   ODDS_SUBJECT_HMAC_KEYS: inputDefinition("secret", ["paid-odds"], raw => optionalText(raw) ? parseSubjectKeyring(JSON.parse(raw!)) : undefined),
+  ODDS_SUBJECT_MODE: inputDefinition("ordinary configuration", ["paid-odds-mode"], (raw): PaidOddsMode => {
+    if (raw === undefined) return "log-only";
+    if (raw === "log-only" || raw === "enforce") return raw;
+    return refuse("invalid");
+  }),
   ODDS_SUBJECT_POLICIES: inputDefinition("ordinary configuration", ["paid-odds"], raw => optionalText(raw) ? parseSubjectPolicies(JSON.parse(raw!)) : undefined),
   ODDS_API_KEY: inputDefinition("secret", ["live-odds"], token),
   DATABASE_URL: inputDefinition("secret", ["database", "database-presence"], databaseUrl),
@@ -196,6 +203,10 @@ export const createServerConfig = (
 
   return Object.freeze({
     environment, odds, liveOdds, firebase,
+    paidOddsMode: () => capability("paid-odds-mode", () => {
+      environment();
+      return input("ODDS_SUBJECT_MODE");
+    }),
     paidOdds: () => capability("paid-odds", () => {
       environment();
       const keyring = input("ODDS_SUBJECT_HMAC_KEYS"), policies = input("ODDS_SUBJECT_POLICIES");
