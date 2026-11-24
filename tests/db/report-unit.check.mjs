@@ -2,15 +2,55 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join, relative } from "node:path";
+import { join, relative, resolve } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { CORPUS_REQUIRED_CASES, LEASE_REQUIRED_CASES, READINESS_REQUIRED_CASES, validateCorpusDbReport,
-  validateLeaseDbReport, validateNodeDbReport, validateReadinessDbReport } from "../../scripts/db/db-test-contract.mjs";
+  validateLeaseDbReport, validateNodeDbReport, validateReadinessDbReport, PG_DRIVER_REQUIRED_CASES, validatePgDriverDbReport,
+  PG_ENTRY_REQUIRED_CASES, validatePgEntryDbReport } from "../../scripts/db/db-test-contract.mjs";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const reporter = fileURLToPath(new URL("../../scripts/db/db-test-reporter.mjs", import.meta.url));
 const fixtureNames = ["required first", "required second"];
+
+test("pg entry DB report requires every real entry proof in its original file", () => {
+  const report = { success: true, numPassedTests: PG_ENTRY_REQUIRED_CASES.length, testResults: [{
+    name: resolve(root, "tests/db/pgDriver309Entry.test.ts"),
+    assertionResults: PG_ENTRY_REQUIRED_CASES.map(fullName => ({ fullName, status: "passed" })),
+  }] };
+  assert.equal(validatePgEntryDbReport(report), 4);
+  for (const name of PG_ENTRY_REQUIRED_CASES) {
+    const changed = structuredClone(report);
+    changed.testResults[0].assertionResults = changed.testResults[0].assertionResults.filter(row => row.fullName !== name);
+    changed.numPassedTests--;
+    assert.throws(() => validatePgEntryDbReport(changed));
+  }
+  for (const status of ["skipped", "pending", "failed", "todo"]) {
+    const changed = structuredClone(report); changed.testResults[0].assertionResults[0].status = status;
+    assert.throws(() => validatePgEntryDbReport(changed));
+  }
+  const changed = structuredClone(report); changed.testResults[0].name = resolve(root, "tests/db/elsewhere.test.ts");
+  assert.throws(() => validatePgEntryDbReport(changed));
+});
+
+test("pg driver DB report refuses missing skipped failed or relocated proof cases", () => {
+  const file = { name: resolve(root, "tests/db/pgDriver309.test.ts"),
+    assertionResults: PG_DRIVER_REQUIRED_CASES.map(fullName => ({ fullName, status: "passed" })) };
+  const report = { success: true, numPassedTests: PG_DRIVER_REQUIRED_CASES.length, testResults: [file] };
+  assert.equal(validatePgDriverDbReport(report), 7);
+  for (const name of PG_DRIVER_REQUIRED_CASES) {
+    const changed = structuredClone(report);
+    changed.testResults[0].assertionResults = changed.testResults[0].assertionResults.filter(row => row.fullName !== name);
+    changed.numPassedTests--;
+    assert.throws(() => validatePgDriverDbReport(changed));
+  }
+  for (const status of ["skipped", "pending", "failed", "todo"]) {
+    const changed = structuredClone(report); changed.testResults[0].assertionResults[0].status = status;
+    assert.throws(() => validatePgDriverDbReport(changed));
+  }
+  const changed = structuredClone(report); changed.testResults[0].name = resolve(root, "tests/db/elsewhere.test.ts");
+  assert.throws(() => validatePgDriverDbReport(changed));
+});
 
 async function runFixture(source, options = []) {
   const directory = await mkdtemp(join(tmpdir(), "dfs-ev-db-report-"));

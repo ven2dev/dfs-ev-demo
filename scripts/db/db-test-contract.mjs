@@ -33,6 +33,23 @@ export const CORPUS_REQUIRED_CASES = Object.freeze([
   "corpus API expiry removes complete stale snapshots while preserving permanent owner history",
 ]);
 
+export const PG_DRIVER_REQUIRED_CASES = Object.freeze([
+  "pg309 real wire preserves decoding, public serialization and unnamed protocol",
+  "pg309 real creator race returns one ID and rolls back a later statement failure",
+  "pg309 real readiness skips absent ledger and detects DDL between its two batches",
+  "pg309 real Repeatable Read snapshot is stable and writes are refused",
+  "pg309 real backend timeouts fire on fresh and reused clients without local-setting leakage",
+  "pg309 real cancellation discards its client and the server contains abandoned work",
+  "pg309 twenty composed leaders span two bounded owners and overlapping generations",
+]);
+
+export const PG_ENTRY_REQUIRED_CASES = Object.freeze([
+  "pg309 entry preserves creator and readiness rows with one bounded lazy owner",
+  "pg309 entry composed leader and fresh hit preserve SQL and attribution budgets",
+  "pg309 entry failed key stays in cooldown while eleven other markets publish empty slices",
+  "pg309 entry publication failure is sanitized and cannot trigger a second paid send",
+]);
+
 export const NODE_REQUIRED_CASES = Object.freeze({
   "packages/db/tooling/tests/target.check.mjs": Object.freeze([
     "accepts only explicit loopback test connections",
@@ -48,6 +65,8 @@ export const NODE_REQUIRED_CASES = Object.freeze({
     "Vitest DB report preserves all required lease cases and refuses missing, skipped, todo or failed results",
     "Vitest DB report requires the readiness cases independently of the existing 13 lease cases",
     "Vitest DB report requires every corpus schema case independently of the other DB suites",
+    "pg driver DB report refuses missing skipped failed or relocated proof cases",
+    "pg entry DB report requires every real entry proof in its original file",
   ]),
   "packages/db/tooling/tests/readiness-manifest-unit.check.mjs": Object.freeze([
     "readiness generation binds the explicit minimum to validated migration and table contracts",
@@ -163,3 +182,19 @@ export function validateLeaseDbReport(report, required = LEASE_REQUIRED_CASES) {
 
 export const validateReadinessDbReport = (report) => validateLeaseDbReport(report, READINESS_REQUIRED_CASES);
 export const validateCorpusDbReport = (report) => validateLeaseDbReport(report, CORPUS_REQUIRED_CASES);
+
+export const validatePgDriverDbReport = (report) => {
+  validateLeaseDbReport(report, PG_DRIVER_REQUIRED_CASES);
+  const files = report.testResults.filter(file => file.name?.replaceAll("\\", "/").endsWith("/tests/db/pgDriver309.test.ts"));
+  if (files.length !== 1 || files[0].assertionResults.length !== PG_DRIVER_REQUIRED_CASES.length ||
+      PG_DRIVER_REQUIRED_CASES.some(name => files[0].assertionResults.filter(test => test.fullName === name && test.status === "passed").length !== 1)) refuse();
+  return PG_DRIVER_REQUIRED_CASES.length;
+};
+
+export const validatePgEntryDbReport = (report) => {
+  validateLeaseDbReport(report, PG_ENTRY_REQUIRED_CASES);
+  const files = report.testResults.filter(file => file.name?.replaceAll("\\", "/").endsWith("/tests/db/pgDriver309Entry.test.ts"));
+  if (files.length !== 1 || files[0].assertionResults.length !== PG_ENTRY_REQUIRED_CASES.length ||
+      PG_ENTRY_REQUIRED_CASES.some(name => files[0].assertionResults.filter(test => test.fullName === name && test.status === "passed").length !== 1)) refuse();
+  return PG_ENTRY_REQUIRED_CASES.length;
+};

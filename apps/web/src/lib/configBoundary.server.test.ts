@@ -7,8 +7,8 @@ import { ConfigurationError, createServerConfig, serverInputDefinitions, type Se
 // Attach counters to the real database adapter import, not an unattached fake.
 // Checkpoint (a) should never initialize it, even on successful validation.
 const database = vi.hoisted(() => ({ initialize: vi.fn(), query: vi.fn() }));
-vi.mock("@neondatabase/serverless", () => ({
-  neon: () => { database.initialize(); return { query: database.query }; },
+vi.mock("pg", async original => ({ ...await original<typeof import("pg")>(),
+  Pool: function () { database.initialize(); throw new Error("Unexpected synthetic pool initialization."); },
 }));
 const sdk = vi.hoisted(() => ({ cert: vi.fn(), initializeApp: vi.fn(), getApp: vi.fn(), getApps: vi.fn() }));
 vi.mock("firebase-admin/app", () => sdk);
