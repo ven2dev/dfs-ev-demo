@@ -1,0 +1,35 @@
+{
+  "schema": "rollout-224-c2-validation-v1",
+  "checkpoint": "C2 uncommitted",
+  "parent": "417186b13de305e4c2a3d4c022feaf50254d8812",
+  "node": "24.21.0",
+  "checks": {
+    "c2Cases": 18,
+    "serverMockTests": 386,
+    "ciGateTests": 63,
+    "lint": "passed",
+    "importBoundaryTests": 12,
+    "webTypecheck": "passed",
+    "diffCheck": "passed",
+    "c1ExactCommitPublicationGuard": "passed"
+  },
+  "work": {
+    "leaders": 20,
+    "leaderAdmissionStatements": 20,
+    "addedModeStatements": 0,
+    "freshHitReads": 1,
+    "freshHitVerifications": 0,
+    "eventualFollowerVerifications": 1,
+    "eventualFollowerAddedSql": 0,
+    "repeatDenialRequests": 5,
+    "repeatDenialFreshnessReads": 5,
+    "repeatDenialAddedClaimAdmissionRelease": 0,
+    "rollbackResetStatements": 0
+  },
+  "limits": [
+    "Mocks only; no SQL behavior or hosted latency qualification.",
+    "No DB, lane, hosted, WAF, provider or credential actions.",
+    "Old enforced instances require draining; new mode does not mutate old instances.",
+    "C3 runbook and C4 final validation remain."
+  ]
+}

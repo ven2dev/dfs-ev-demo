@@ -69,12 +69,13 @@ describe("#99 isolated configuration boundary", () => {
     const initialize = (credential: Readonly<ServiceAccount>) => initializeApp({ credential: cert(credential) });
     const network = vi.spyOn(globalThis, "fetch").mockImplementation(() => { throw new Error("Unexpected network."); });
     const first = {
-      paidOdds: config.paidOdds(), odds: config.odds(), collector: config.collector(), health: config.collectorHealth(),
+      paidOddsMode: config.paidOddsMode(), paidOdds: config.paidOdds(), odds: config.odds(), collector: config.collector(), health: config.collectorHealth(),
       firebase: config.firebase(), app: config.firebaseApp(initialize), database: config.database(),
       admin: config.adminUid(), cron: config.cronSecret(), oddsHealth: config.oddsHealthSecret(),
       readiness: config.dbReadinessSecret(), browser: browser.firebase(),
     };
     for (let repeat = 0; repeat < 2; repeat++) {
+      expect(config.paidOddsMode()).toBe(first.paidOddsMode);
       expect(config.paidOdds()).toBe(first.paidOdds);
       expect(config.odds()).toBe(first.odds);
       expect(config.liveOdds()).toBe(first.odds);

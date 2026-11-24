@@ -6,6 +6,7 @@ vi.mock("./firebaseAdmin", () => {
   return { getAdminAuth: m.getAuth.mockImplementation(() => ({ verifyIdToken: m.verify })) };
 });
 vi.mock("./config.server", () => ({ serverConfig: {
+  paidOddsMode: () => "log-only",
   environment: () => "production", databaseConfigured: () => true,
   collectorHealth: () => ({ quotaReserve: 100 }),
   paidOdds: () => ({ keyring: [{ version: "v1", keyHex: "11".repeat(32) }], policies: {

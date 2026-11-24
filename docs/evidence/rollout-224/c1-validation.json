@@ -1,0 +1,27 @@
+{
+  "schema": "rollout-224-c1-validation-v1",
+  "base": "68dd11e382104621e808fb099e6574ef848b7eb7",
+  "node": "24.21.0",
+  "checks": {
+    "serverMockTests": 368,
+    "ciGateTests": 63,
+    "lint": "passed",
+    "importBoundaries": "passed",
+    "webTypecheck": "passed",
+    "dbPackageStaticTypecheck": "passed"
+  },
+  "work": {
+    "readyLeaderAdmissionStatements": 1,
+    "addedModeStatements": 0,
+    "healthAddedProbes": 0,
+    "unauthorizedHealthStatements": 0
+  },
+  "limits": [
+    "App and mocks only; no DB, lane, hosted or WAF actions.",
+    "C2 rollback and token-budget journeys remain.",
+    "C3 written WAF draft and runbook remain.",
+    "C4 full validation remains; no hosted 90 ms claim.",
+    "No configuration activated; default remains log-only.",
+    "Preparation PR uses Refs #224; #311 remains blocking."
+  ]
+}
