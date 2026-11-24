@@ -4,6 +4,7 @@ import { getSql } from "./db";
 import { serverConfig } from "./config.server";
 
 export type OddsCacheMode = "legacy" | "shared";
+export type OddsCacheStatus = OddsCacheMode | "not-initialized" | "unavailable";
 type SchemaQuery = (text: string, params: unknown[]) => Promise<unknown>;
 
 // Successful capability selection is latched. Only failed checks retry,
@@ -29,6 +30,7 @@ export const createOddsCacheStartup = (
   query?: SchemaQuery,
   monotonicNow: () => number = () => performance.now()
 ) => {
+  let state: OddsCacheStatus = "not-initialized";
   let pending: Promise<OddsCacheMode> | undefined;
   let retryAfter = Number.NEGATIVE_INFINITY;
   let failure: unknown;
@@ -36,16 +38,18 @@ export const createOddsCacheStartup = (
     if (pending) return pending; // Coalesce checks and retain verified modes.
     if (monotonicNow() < retryAfter) return Promise.reject(failure);
     const attempt = Promise.resolve().then(async (): Promise<OddsCacheMode> => {
-      if (!query) return "legacy"; // Keep database-free local setup usable.
+      if (!query) { state = "legacy"; return state; } // Keep database-free local setup usable.
       const rows = await query(oddsCacheSchemaQuery, []);
       if (!Array.isArray(rows) || rows.length !== 1 || typeof rows[0]?.ready !== "boolean") {
         throw new Error("Invalid odds-cache schema capability result");
       }
-      return rows[0].ready ? "shared" : "legacy";
+      state = rows[0].ready ? "shared" : "legacy";
+      return state;
     });
     pending = attempt;
     void attempt.catch(error => {
       // Keep refusing during the cooldown; a failure is never a legacy result.
+      state = "unavailable";
       failure = error;
       retryAfter = monotonicNow() + RETRY_INTERVAL_MS;
       if (pending === attempt) pending = undefined;
@@ -54,6 +58,7 @@ export const createOddsCacheStartup = (
   };
   return {
     initialize,
+    status: (): OddsCacheStatus => state,
     async select<T>(legacy: T, shared: T): Promise<T> {
       return (await initialize()) === "shared" ? shared : legacy;
     },
@@ -73,3 +78,6 @@ export const initializeOddsCache = (): Promise<OddsCacheMode> => getStartup().in
 
 export const selectOddsCachePath = <T>(legacy: T, shared: T): Promise<T> =>
   getStartup().select(legacy, shared);
+
+// Read-only observation: does not construct startup, validate inputs or query.
+export const oddsCacheStatus = (): OddsCacheStatus => startup?.status() ?? "not-initialized";

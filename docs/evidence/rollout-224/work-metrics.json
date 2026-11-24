@@ -1,0 +1,36 @@
+[
+  {
+    "name": "twenty-leaders",
+    "leaders": 20,
+    "owners": 2,
+    "admissionStatements": 20,
+    "extraModeStatements": 0
+  },
+  {
+    "name": "rollback",
+    "oldAdmissionStatements": 1,
+    "replacementAdmissionStatements": 1,
+    "resetStatements": 0,
+    "oldCachedDenialStillRequiresDrain": true
+  },
+  {
+    "name": "fresh-hit",
+    "existingReads": 1,
+    "admissionStatements": 0,
+    "verifications": 0
+  },
+  {
+    "name": "eventual-follower",
+    "existingReads": 2,
+    "existingClaims": 1,
+    "extraFollowerStatements": 0,
+    "admissionStatements": 0,
+    "verifications": 1
+  },
+  {
+    "name": "repeat-cached-denial",
+    "requests": 5,
+    "existingFreshnessReads": 5,
+    "addedClaimAdmissionReleaseStatements": 0
+  }
+]

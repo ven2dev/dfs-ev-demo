@@ -12,7 +12,7 @@ describe("#223 explicit configuration with no enforcement default", () => {
     expect(fixture({ ODDS_SUBJECT_HMAC_KEYS: undefined }).config.paidOdds()).toBeNull();
     expect(fixture({ ODDS_SUBJECT_POLICIES: undefined }).config.paidOdds()).toBeNull();
   });
-  it("valid configuration is parsed once and never adds an enforce flag", () => {
+  it("subject configuration is parsed once and keeps deployment mode separate", () => {
     const { config, read } = fixture();const first = config.paidOdds();expect(first).not.toBeNull();expect(config.paidOdds()).toBe(first);
     expect(first).not.toHaveProperty("enforce");
     expect(read.mock.calls.filter(([n]) => n === "ODDS_SUBJECT_HMAC_KEYS")).toHaveLength(1);
@@ -21,4 +21,21 @@ describe("#223 explicit configuration with no enforcement default", () => {
     expect(() => fixture({ ODDS_SUBJECT_HMAC_KEYS: "private-synthetic-invalid" }).config.paidOdds()).toThrow("Application configuration unavailable (invalid).");
     expect(() => fixture({ ODDS_SUBJECT_POLICIES: JSON.stringify({ ...policy, signedNetwork: { intervalMs: 10000, burst: 1 } }) }).config.paidOdds()).toThrow("Application configuration unavailable (invalid).");
   });
+  it.each([undefined, "log-only", "enforce"])("deployment mode %s is validated and cached once", raw => {
+    const { config, read } = fixture({ ODDS_SUBJECT_MODE: raw });
+    expect(config.paidOddsMode()).toBe(raw ?? "log-only");
+    expect(config.paidOddsMode()).toBe(raw ?? "log-only");
+    expect(read.mock.calls.filter(([name]) => name === "ODDS_SUBJECT_MODE")).toHaveLength(1);
+  });
+  it.each(["", "ENFORCE", " enforce ", "private-mode-value"])("invalid mode %j refuses without reflecting it", raw => {
+    const { config, read } = fixture({ ODDS_SUBJECT_MODE: raw });
+    for (let i = 0; i < 2; i++) expect(() => config.paidOddsMode()).toThrow("Application configuration unavailable (invalid).");
+    expect(read.mock.calls.filter(([name]) => name === "ODDS_SUBJECT_MODE")).toHaveLength(1);
+  });
+  it("requested mode is independent of missing keys/policies", () => {
+    const { config } = fixture({ ODDS_SUBJECT_MODE: "enforce", ODDS_SUBJECT_HMAC_KEYS: undefined });
+    expect(config.paidOddsMode()).toBe("enforce");
+    expect(config.paidOdds()).toBeNull();
+  });
+
 });

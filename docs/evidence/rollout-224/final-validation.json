@@ -1,0 +1,86 @@
+{
+  "schema": "rollout-224-final-validation-v1",
+  "testedCommit": "3c105cd15a58880a709f7cec3508e77984c75ce3",
+  "base": "68dd11e382104621e808fb099e6574ef848b7eb7",
+  "node": "24.21.0",
+  "checks": {
+    "browser": {
+      "passed": 984,
+      "failed": 0
+    },
+    "node": {
+      "passed": 1065,
+      "skipped": 1,
+      "failed": 0
+    },
+    "ciGate": 63,
+    "importBoundaries": 12,
+    "lint": "passed",
+    "rootTypecheck": "passed",
+    "webTypecheck": "passed",
+    "dbPackageStaticTypecheck": "passed",
+    "webpackProductionBuild": "passed",
+    "defaultTurbopackBuild": "passed in reviewer environment on testedCommit (Node 24.21.0); ALT environment blocked separately",
+    "branchWhitespace": "passed",
+    "attributionScan": "no matches",
+    "exactCommitPublicationGuard": "passed"
+  },
+  "executionNotes": [
+    "Restricted mock test run initially failed loopback listeners; full rerun with local socket access passed.",
+    "Restricted default build first failed Google Fonts download; network-enabled retry failed Turbopack child-process port binding. Webpack production build passed.",
+    "Reviewer reported a successful default Turbopack npm run build and matching full npm test on 3c105cd with Node 24.21.0; ALT did not reproduce the default-build pass in its environment.",
+    "No DB suites, lane resources, hosted/WAF actions, real credentials or provider requests.",
+    "No claim of hosted 90 ms qualification, production observation or activation.",
+    "PR draft uses Refs #224; #311 remains blocking."
+  ],
+  "sourceSha256": {
+    "apps/web/.env.example": "e6c492ce79554ad9a482b3f33c75e657ed48e84086cc396b21b79e27fac2aa40",
+    "apps/web/src/lib/config.server.ts": "45a9246078ecbf7f514da493ea1aa2946ded00dc3bd1ec7de6ecb28d9d0d9458",
+    "apps/web/src/lib/configBoundary.server.test.ts": "135541a5bccec9aee9f3787826da207483df3ccd4c9df8fdf4ee6b56a10c7aed",
+    "apps/web/src/lib/liveStreamAttribution.server.test.ts": "32b92f10555c95361fc5b4009441b4f3aeb8d7b01af9500fc5cc3d188efb2cd7",
+    "apps/web/src/lib/oddsCacheStartup.server.test.ts": "90e1d43b30dea15ac2c202d9f22616d57e0ce4ffe85c1a6ff9e24b93e695464c",
+    "apps/web/src/lib/oddsCacheStartup.ts": "97d851b4dc5e4fca9beb698a997c2ab4707c578c36a63c5777210ab0d5e9b33f",
+    "apps/web/src/lib/oddsCollectorHealthRoute.server.test.ts": "b4d5648974301538e941f7474622f5734522ff98431f037d24b8dddef9f16b16",
+    "apps/web/src/lib/paidOddsBoundary.server.test.ts": "5198208d9ef75ac27ac89246836f5b0ebc199695ffa87151b899c692c3376995",
+    "apps/web/src/lib/paidOddsBoundary.ts": "bd8d0dc3fbbe7e801f3d3d8e5987be8bebb3f0d8f35e2dff903f8fe334141baf",
+    "apps/web/src/lib/paidOddsConfiguration.server.test.ts": "aed18f4fc0e3411da094888cf08bd590b3eb33b23d360e32c48d315193d6391b",
+    "apps/web/src/lib/paidOddsMode.server.test.ts": "8b160a0cbdeb7f9c24adf875bd125eeac97e4b6b0b6c69689c2d48d0b9c8c768",
+    "apps/web/src/lib/paidOddsMode.ts": "e99bd99af05945f23851ec3f21bcea87f302a832134cc5b641c4e44df80488a7",
+    "apps/web/src/lib/paidOddsRollout.server.test.ts": "beeb8fcda9f93a5f482a1aee82e03aed104c7ad2616728b00eaf90c28efd17fc",
+    "docs/224-c2-results.md": "ba7bc9832b9d5c7afaa13a9a9e9a0f5be89dedab6c46a9e81f46cebd6ba11c3c",
+    "docs/224-roadmap.md": "03e2ae740db9c4d05055d59c7b768690262b54ab584006948ffa0547772f6f9c",
+    "docs/224-rollout-runbook.md": "00e55a4d88fd3cbf041ea60dfb04462b8bffa13971cd54b09d7b201417757643",
+    "docs/224-waf-rule-draft.md": "972ff874dd68a957a1e5a0f37abc4288d077eff4f2bd9ad22117a55021adc82b",
+    "docs/evidence/rollout-224/c1-validation.json": "7e0d11ae7eff3ab5ccce58cd55b902a3b48217747cbea6e658795f3fc16271ff",
+    "docs/evidence/rollout-224/c2-validation.json": "7e878508853bdd8868a5e05d0bdd7265d6e94ec7ea50b6c77e9f21b05ab3914b",
+    "docs/evidence/rollout-224/integrity.json": "77dbeb47181471eb8bd2f511b48996165a845f7cedd101994178162379e5d282",
+    "docs/evidence/rollout-224/q0-receipt.json": "59c19d5f500a483d7c3dc8b51a200d6c841111c8cd5bedfd46590effe57512df",
+    "docs/evidence/rollout-224/source-manifest.json": "1ecf0ccd07ecda2174b6cd7de0bb77aba5abbfc269cbcfcbb129abebe1904497",
+    "docs/evidence/rollout-224/work-metrics.json": "cbb21b3d0d2568267420329fb914268fdc0ca44245be6e236c3f9754bb29d26b",
+    "docs/secrets-inventory.json": "550ad5851089cdb72ed304905454c55ff1f396dbeebe4824b8dacec621c3e44a"
+  },
+  "retainedLocalLogSha256": {
+    "fullSuites": "1c6492d787c5f9fb6679ea744be01491d9c664b068138aae9e108b317aa70e1c",
+    "ciGate": "b0b123d80d8848e9c6239e52dc9438e23b33521604551a4f85471a9e88e111e5",
+    "lint": "eeaa13a1fb0d3042cd2b2fb2bf20a310675dacfd4f9c5791bc80935c84b52cbc",
+    "rootTypes": "f65fd97d2a283a6d774c84d936e0bc3d5153bb69f81b0ebef1975371238ff03e",
+    "webTypes": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "dbPackageTypes": "6fe62d25c6df5f41564c7b479813bc699f54145ba3df95498c5c0fb89fb31098",
+    "webpackBuild": "3054c76a48d9a92a1fb4833533dc588ac56ea8cad6e2ed0af4e047dd698144fc",
+    "turbopackBlocked": "ee6262891077e973aac1f5c223de9e42a399c919d9182e339ada2ac9ad60bd54",
+    "publicationGuard": "144364e6313d4695ee14bf3d95c158edc5697f93b2629656acf4ed0517dfb9a9"
+  },
+  "reviewerValidation": {
+    "reportedBy": "reviewer",
+    "testedCommit": "3c105cd15a58880a709f7cec3508e77984c75ce3",
+    "node": "24.21.0",
+    "defaultTurbopackCommand": "npm run build",
+    "defaultTurbopackBuild": "passed",
+    "fullTestCommand": "npm test",
+    "browserPassed": 984,
+    "nodePassed": 1065,
+    "nodeSkipped": 1,
+    "matchesAltFullSuite": true
+  },
+  "sourceHashScope": "Files at testedCommit, not later evidence edits; verify using git show testedCommit:path."
+}

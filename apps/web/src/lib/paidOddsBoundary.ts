@@ -5,7 +5,8 @@ import { createOddsSubjectResolver, type SubjectReason } from "./oddsSubject";
 import { checkInteractiveQuotaFloor, InteractiveQuotaUnavailable } from "./providerQuota";
 import { getSql } from "./db";
 import { serverConfig } from "./config.server";
-import { initializeOddsCache } from "./oddsCacheStartup";
+import { createPaidOddsMode } from "./paidOddsMode";
+import { initializeOddsCache, oddsCacheStatus } from "./oddsCacheStartup";
 import { parseBearerToken } from "./parseBearerToken";
 import type { NextRequest } from "next/server";
 import { TRACKABLE_PLAYER_PROP_MARKET_KEYS } from "./playerPropMarkets";
@@ -13,7 +14,7 @@ import { TRACKABLE_PLAYER_PROP_MARKET_KEYS } from "./playerPropMarkets";
 export type SubjectResolver = () => Promise<readonly SubjectDimension[] | null>;
 export type PaidRefreshRequest = { resolveSubject: SubjectResolver };
 const reasons = ["identity-unavailable", "invalid-token", "subject-configuration-unavailable", "not-installed",
-  "capability-unavailable", "limiter-evaluation-failed", "limiter-counter-failed", "limiter-storage-failed", "quota-read-failed"] as const;
+  "capability-unavailable", "mode-configuration-unavailable", "limiter-evaluation-failed", "limiter-counter-failed", "limiter-storage-failed", "quota-read-failed"] as const;
 type Reason = typeof reasons[number];
 const counts: Partial<Record<Reason, number>> = {};
 let recent: { reason: Reason; at: number } | null = null;
@@ -32,7 +33,7 @@ export const createPaidOddsBoundary = (deps: {
   query: AdmissionQuery;
   fallbackFloor: () => Promise<void>;
   reserve: () => number;
-  enforce: boolean;
+  enforce: boolean | (() => boolean);
   sharedCacheReady: () => Promise<boolean>;
   warn: (reason: Reason) => void;
   now?: () => number;
@@ -57,7 +58,7 @@ export const createPaidOddsBoundary = (deps: {
     }
   };
   const canEnforce = async () => {
-    if (!deps.enforce) return false;
+    if (!(typeof deps.enforce === "function" ? deps.enforce() : deps.enforce)) return false;
     try { return await deps.sharedCacheReady(); } catch { return false; }
   };
   const beforeClaim = async (request?: PaidRefreshRequest) => {
@@ -102,18 +103,25 @@ const startup = createPaidOddsStartup({
   keysConfigured: () => configuration() !== null && serverConfig.databaseConfigured(),
   warn: record,
 });
-// Enforce is intentionally unavailable in production until #224's
-// owner activation. Even a future enforce request downgrades to shadow unless
-// #221 capability selected the shared path; legacy coalescing cannot isolate a
-// creator's denial from eligible joiners. Factories expose enforce for tests.
+// Deployment selection is lazy/cached. Preparation defaults to log-only; real
+// enforcement still requires owner-approved release/observation/drain gates.
+const mode = createPaidOddsMode({
+  read: () => serverConfig.paidOddsMode(), capability: startup.status,
+  sharedCache: () => oddsCacheStatus(), warn: record,
+});
 const boundary = createPaidOddsBoundary({ initialize: startup.initialize,
   query: (text, params) => getSql().query(text, params), fallbackFloor: () => checkInteractiveQuotaFloor(),
-  reserve: () => serverConfig.collectorHealth().quotaReserve, enforce: false, sharedCacheReady: async () => await initializeOddsCache() === "shared", warn: record });
-export const initializePaidOdds = startup.initialize;
+  reserve: () => serverConfig.collectorHealth().quotaReserve,
+  enforce: () => mode.requested() === "enforce",
+  sharedCacheReady: async () => startup.status() === "ready" && await initializeOddsCache() === "shared", warn: record });
+export const initializePaidOdds = () => {
+  mode.requested(); // Refuse invalid mode safely without rejecting global startup.
+  return startup.initialize();
+};
 export const checkPaidOddsAdmission = boundary.check;
 export const shouldDenyPaidRefresh = boundary.beforeClaim;
 export const paidOddsHealth = () => ({
-  capability: startup.status(), mode: "log-only" as const, liveUserAttribution: true,
+  ...mode.health(), liveUserAttribution: true,
   reasonCounts: { ...counts }, recentError: recent && performance.now() - recent.at < 900_000 ? recent.reason : null,
   scope: "this-instance" as const,
 });
