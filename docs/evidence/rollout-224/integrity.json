@@ -5,7 +5,8 @@
     "source-manifest.json": "1ecf0ccd07ecda2174b6cd7de0bb77aba5abbfc269cbcfcbb129abebe1904497",
     "work-metrics.json": "cbb21b3d0d2568267420329fb914268fdc0ca44245be6e236c3f9754bb29d26b",
     "c1-validation.json": "7e0d11ae7eff3ab5ccce58cd55b902a3b48217747cbea6e658795f3fc16271ff",
-    "c2-validation.json": "7e878508853bdd8868a5e05d0bdd7265d6e94ec7ea50b6c77e9f21b05ab3914b"
+    "c2-validation.json": "7e878508853bdd8868a5e05d0bdd7265d6e94ec7ea50b6c77e9f21b05ab3914b",
+    "final-validation.json": "31b828e29bc9c08a9681ef8ac62b5c4b06dd0a23ada08b9061763a71ade8fe39"
   },
   "note": "Q0 files copied unchanged from approved scratch run. Original full scratch outputs and their separate wrapper remain retained privately; this wrapper covers the compact repository copies."
 }
